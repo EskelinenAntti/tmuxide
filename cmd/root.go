@@ -1,10 +1,13 @@
 package cmd
 
 import (
-	"fmt"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 
+	"github.com/eskelinenantti/tmuxide/internal/project"
+	"github.com/eskelinenantti/tmuxide/internal/session"
 	"github.com/spf13/cobra"
 )
 
@@ -12,47 +15,41 @@ var rootCmd = &cobra.Command{
 	Use:   "tmuxide",
 	Short: "",
 	Long:  ``,
-	Run:   run,
+	RunE:  run,
 }
 
-func run(cmd *cobra.Command, args []string) {
-	var selectedPath string
+func run(cmd *cobra.Command, args []string) error {
+	var selected string
 	var err error
 	switch len(args) {
 	case 0:
-		selectedPath, err = os.Getwd()
-		if err != nil {
-			fmt.Println("An error occurred:", err)
-			return
-		}
+		selected, err = os.Getwd()
 	case 1:
-		selectedPath, err = dirAbsPath(args[0])
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		selected, err = filepath.Abs(args[0])
 	default:
-		fmt.Println("An unexpected error occurred")
-		return
+		// We should never end up here, but handle the error nicely nevertheless.
+		cmd.Help()
+		return errors.New("Invalid number of arguments.")
 	}
 
-	fmt.Println(selectedPath)
+	if err != nil {
+		return err
+	}
+
+	root, err := project.Root(selected)
+	if err != nil {
+		return err
+	}
+
+	tmuxCmd := exec.Command("tmux", "new", "-c", root, "-s", session.Name(selected))
+	return attachAndRun(tmuxCmd)
 }
 
-// Get absolute path to enclosing directory, or to the directory itself if it's a file.
-func dirAbsPath(inputPath string) (string, error) {
-	fileInfo, err := os.Stat(inputPath)
-	if err != nil {
-		return "", err
-	}
-	absolutePath, err := filepath.Abs(inputPath)
-	if err != nil {
-		return "", err
-	}
-	if !fileInfo.IsDir() {
-		return filepath.Dir(absolutePath), nil
-	}
-	return absolutePath, nil
+func attachAndRun(cmd *exec.Cmd) error {
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func Execute() {
