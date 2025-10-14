@@ -28,7 +28,6 @@ func run(cmd *cobra.Command, args []string) error {
 		selected, err = filepath.Abs(args[0])
 	default:
 		// We should never end up here, but handle the error nicely nevertheless.
-		cmd.Help()
 		return errors.New("Invalid number of arguments.")
 	}
 
@@ -57,7 +56,4 @@ func Execute() {
 	if err != nil {
 		os.Exit(1)
 	}
-}
-
-func init() {
 }
