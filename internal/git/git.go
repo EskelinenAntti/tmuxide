@@ -3,6 +3,7 @@ package git
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
 type RepositoryResolver struct{}
@@ -13,5 +14,5 @@ func (RepositoryResolver) Root(target string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%s is not a valid Git repository", target)
 	}
-	return string(out), nil
+	return strings.TrimSpace(string(out)), nil
 }

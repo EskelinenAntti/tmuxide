@@ -6,14 +6,26 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/go-git/go-git/v6"
 )
+
+type RepositoryResolverStub struct {
+	root string
+	err  error
+}
+
+func (resolver RepositoryResolverStub) Root(path string) (string, error) {
+	return resolver.root, resolver.err
+}
+
+var notInGitRepo = RepositoryResolverStub{
+	root: "",
+	err:  errors.New("not a git repo"),
+}
 
 func TestRootDirectory(t *testing.T) {
 	var dir = t.TempDir()
 
-	root, err := Root(dir)
+	root, err := Root(dir, notInGitRepo)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -29,7 +41,7 @@ func TestRootFile(t *testing.T) {
 	file := dir + "/file.txt"
 	os.WriteFile(file, []byte{}, 0644)
 
-	root, err := Root(file)
+	root, err := Root(file, notInGitRepo)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -44,7 +56,7 @@ func TestRootInvalidFile(t *testing.T) {
 	dir := t.TempDir()
 	file := dir + "/does-not-exist.txt"
 
-	_, err := Root(file)
+	_, err := Root(file, notInGitRepo)
 
 	var pathError *os.PathError
 	if got, want := err, &pathError; !errors.As(got, want) {
@@ -58,7 +70,10 @@ func TestRootInvalidFile(t *testing.T) {
 
 func TestRootRepository(t *testing.T) {
 	repository := t.TempDir()
-	git.PlainInit(repository, false)
+	rootResolver := RepositoryResolverStub{
+		root: repository,
+		err:  nil,
+	}
 
 	dir := filepath.Join(repository, "path/to/dir/in/repository")
 
@@ -66,7 +81,7 @@ func TestRootRepository(t *testing.T) {
 		t.Fatalf("err=%v", err)
 	}
 
-	root, err := Root(dir)
+	root, err := Root(dir, rootResolver)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
