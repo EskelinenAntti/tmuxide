@@ -3,21 +3,23 @@ package project
 import (
 	"os"
 	"path/filepath"
-
-	"github.com/go-git/go-git/v6"
 )
 
-func Root(inputPath string) (string, error) {
-	absolutePath, err := filepath.Abs(inputPath)
+type RepositoryResolver interface {
+	Root(string) (string, error)
+}
+
+func Root(target string, resolver RepositoryResolver) (string, error) {
+	absolutePath, err := filepath.Abs(target)
 	if err != nil {
 		return "", err
 	}
 
-	if repository, err := getGitRoot(absolutePath); err == nil {
+	if repository, err := resolver.Root(absolutePath); err == nil {
 		return repository, nil
 	}
 
-	fileInfo, err := os.Stat(inputPath)
+	fileInfo, err := os.Stat(target)
 	if err != nil {
 		return "", err
 	}
@@ -27,18 +29,4 @@ func Root(inputPath string) (string, error) {
 	}
 
 	return absolutePath, nil
-}
-
-func getGitRoot(path string) (string, error) {
-	repo, err := git.PlainOpenWithOptions(path, &git.PlainOpenOptions{
-		DetectDotGit: true, // detect parent .git directories
-	})
-	if err != nil {
-		return "", err
-	}
-	wt, err := repo.Worktree()
-	if err != nil {
-		return "", err
-	}
-	return wt.Filesystem.Root(), nil
 }

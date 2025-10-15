@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/eskelinenantti/tmuxide/internal/git"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/session"
 	"github.com/spf13/cobra"
@@ -19,13 +20,13 @@ var rootCmd = &cobra.Command{
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	var selected string
+	var target string
 	var err error
 	switch len(args) {
 	case 0:
-		selected, err = os.Getwd()
+		target, err = os.Getwd()
 	case 1:
-		selected, err = filepath.Abs(args[0])
+		target, err = filepath.Abs(args[0])
 	default:
 		// We should never end up here, but handle the error nicely nevertheless.
 		return errors.New("Invalid number of arguments.")
@@ -35,12 +36,12 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	root, err := project.Root(selected)
+	root, err := project.Root(target, git.RepositoryResolver{})
 	if err != nil {
 		return err
 	}
 
-	tmuxCmd := exec.Command("tmux", "new", "-c", root, "-s", session.Name(selected))
+	tmuxCmd := exec.Command("tmux", "new", "-c", root, "-s", session.Name(target))
 	return attachAndRun(tmuxCmd)
 }
 
