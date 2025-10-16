@@ -9,6 +9,7 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/git"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/session"
+	"github.com/eskelinenantti/tmuxide/internal/tmux"
 	"github.com/spf13/cobra"
 )
 
@@ -33,23 +34,45 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	if err != nil {
-		return err
+		cmd.PrintErr(err)
 	}
+
+	editor, hasEditor := os.LookupEnv("EDITOR")
+	if !hasEditor {
+		cmd.PrintErr(
+			"No editor was configured. Specify the editor you would like to use by setting the $EDITOR variable.\n\n" +
+				"For example, to use Vim as your editor, add the following line to your ~/.zshrc:\n" +
+				"export EDITOR=vim\n",
+		)
+		return errors.New("$EDITOR not set")
+	}
+
+	if _, err := exec.LookPath("tmux"); err != nil {
+		cmd.PrintErr(
+			"Did not find tmux, which is a required dependency for ide command.\n\n" +
+
+				"You can install tmux e.g. via homebrew by running\n" +
+				"brew install tmux\n",
+		)
+		return errors.New("tmux is not installed")
+	}
+
+	// TODO
+	// Check if lazygit is installed
+	// tests for tmux magic
 
 	root, err := project.Root(target, git.RepositoryResolver{})
 	if err != nil {
 		return err
 	}
 
-	tmuxCmd := exec.Command("tmux", "new", "-c", root, "-s", session.Name(target))
-	return attachAndRun(tmuxCmd)
-}
-
-func attachAndRun(cmd *exec.Cmd) error {
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	something := &tmux.AttachedSession{
+		Session:    session.Name(target),
+		WorkingDir: root,
+		Command:    editor,
+		Target:     target,
+	}
+	return tmux.Start(something)
 }
 
 func Execute() {
