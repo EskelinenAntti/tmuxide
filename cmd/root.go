@@ -41,13 +41,12 @@ func run(cmd *cobra.Command, args []string) error {
 
 	// TODO: move this to TMUX package
 	if _, err := exec.LookPath("tmux"); err != nil {
-		cmd.PrintErr(
+		return errors.New(
 			"Did not find tmux, which is a required dependency for ide command.\n\n" +
 
 				"You can install tmux e.g. via homebrew by running\n" +
 				"brew install tmux\n",
 		)
-		return errors.New("tmux is not installed")
 	}
 
 	root, err := project.Root(target, git.RepositoryResolver{})
