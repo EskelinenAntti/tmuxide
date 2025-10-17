@@ -8,8 +8,6 @@ import (
 
 	"github.com/eskelinenantti/tmuxide/internal/git"
 	"github.com/eskelinenantti/tmuxide/internal/ide"
-	"github.com/eskelinenantti/tmuxide/internal/project"
-	"github.com/eskelinenantti/tmuxide/internal/tmux"
 	"github.com/spf13/cobra"
 )
 
@@ -49,15 +47,12 @@ func run(cmd *cobra.Command, args []string) error {
 		)
 	}
 
-	root, err := project.Root(target, git.RepositoryResolver{})
+	project, err := ide.ProjectFor(target, git.Repository{})
 	if err != nil {
-		return err
+		return nil
 	}
 
-	return ide.Start(target, &tmux.Session{
-		Name:       project.Name(target),
-		WorkingDir: root,
-	})
+	return ide.Start(&project)
 }
 
 func Execute() {
