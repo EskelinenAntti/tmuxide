@@ -2,7 +2,6 @@ package ide
 
 import (
 	"errors"
-	"fmt"
 	"os"
 )
 
@@ -20,7 +19,6 @@ func Start(target string, session Session) error {
 	}
 
 	if !session.Exists() {
-		fmt.Println("new session")
 		if err := session.New(editor, target); err != nil {
 			return err
 		}

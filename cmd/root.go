@@ -9,7 +9,6 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/git"
 	"github.com/eskelinenantti/tmuxide/internal/ide"
 	"github.com/eskelinenantti/tmuxide/internal/project"
-	"github.com/eskelinenantti/tmuxide/internal/session"
 	"github.com/eskelinenantti/tmuxide/internal/tmux"
 	"github.com/spf13/cobra"
 )
@@ -40,6 +39,7 @@ func run(cmd *cobra.Command, args []string) error {
 		cmd.PrintErr(err)
 	}
 
+	// TODO: move this to TMUX package
 	if _, err := exec.LookPath("tmux"); err != nil {
 		cmd.PrintErr(
 			"Did not find tmux, which is a required dependency for ide command.\n\n" +
@@ -56,7 +56,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	return ide.Start(target, &tmux.Session{
-		Session:    session.Name(target),
+		Session:    project.Name(target),
 		WorkingDir: root,
 	})
 }
