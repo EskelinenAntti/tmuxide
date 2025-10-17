@@ -1,81 +1,51 @@
 package tmux
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 )
 
-type Session interface {
-	Exists() (bool, error)
-	New() error
-	Attach() error
-	Switch() error
-	IsActive() bool
-}
-
-type AttachedSession struct {
+type Session struct {
 	Session    string
 	WorkingDir string
-	Command    string
-	Target     string
 }
 
-func (tmux *AttachedSession) Exists() (bool, error) {
+func (tmux *Session) Exists() bool {
 	cmd := exec.Command("tmux", "has-session", "-t", tmux.Session)
-
-	if err := cmd.Run(); err != nil {
-		var exitErr *exec.ExitError
-		if !errors.As(err, &exitErr) {
-			return false, err
-		}
-		if exitErr.ExitCode() != 1 {
-			return false, err
-		}
-
-		return false, nil
-	}
-
-	return true, nil
+	return cmd.Run() == nil
 }
 
-func (tmux *AttachedSession) New() error {
-	cmd := exec.Command("tmux", "new-session", "-ds", tmux.Session, "-c", tmux.WorkingDir, tmux.Command, tmux.Target)
-	return cmd.Run()
-}
+func (tmux *Session) New(command string, args ...string) error {
+	tmuxArgs := append([]string{
+		"new-session", "-ds", tmux.Session, "-c", tmux.WorkingDir, command,
+	}, args...)
 
-func (*AttachedSession) IsActive() bool {
-	_, alreadyInSession := os.LookupEnv("TMUX")
-	return alreadyInSession
-}
+	cmd := exec.Command("tmux", tmuxArgs...)
+	err := cmd.Run()
 
-func (tmux *AttachedSession) Attach() error {
-	cmd := exec.Command("tmux", "attach", "-t", tmux.Session)
-	return attachAndRun(cmd)
-}
-
-func (tmux *AttachedSession) Switch() error {
-	cmd := exec.Command("tmux", "switch-client", "-t", tmux.Session)
-	return attachAndRun(cmd)
-}
-
-func Start(tmux Session) error {
-	exists, err := tmux.Exists()
 	if err != nil {
-		return err
+		return fmt.Errorf("Failed to create session: %w", err)
 	}
+	return nil
+}
 
-	if !exists {
-		if err := tmux.New(); err != nil {
-			return err
-		}
+func (tmux *Session) Attach() error {
+	cmd := exec.Command("tmux", "attach", "-t", tmux.Session)
+	err := attachAndRun(cmd)
+	if err != nil {
+		return fmt.Errorf("Failed to attach session: %w", err)
 	}
+	return nil
+}
 
-	if tmux.IsActive() {
-		return tmux.Switch()
+func (tmux *Session) Switch() error {
+	cmd := exec.Command("tmux", "switch-client", "-t", tmux.Session)
+	err := attachAndRun(cmd)
+	if err != nil {
+		return fmt.Errorf("Failed to switch session: %w", err)
 	}
-
-	return tmux.Attach()
+	return nil
 }
 
 func attachAndRun(cmd *exec.Cmd) error {
