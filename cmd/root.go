@@ -55,7 +55,7 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 
 	return ide.Start(target, &tmux.Session{
-		Session:    project.Name(target),
+		Name:       project.Name(target),
 		WorkingDir: root,
 	})
 }
