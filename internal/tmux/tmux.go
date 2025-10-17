@@ -1,10 +1,16 @@
-package ide
+package tmux
 
 import (
 	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/eskelinenantti/tmuxide/internal/ide"
 )
+
+type Session struct {
+	ide.Project
+}
 
 func (project *Project) Exists() bool {
 	cmd := exec.Command("tmux", "has-session", "-t", project.Name)
