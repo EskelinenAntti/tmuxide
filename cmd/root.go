@@ -3,7 +3,7 @@ package cmd
 import (
 	"errors"
 	"os"
-	"os/exec"
+
 	"path/filepath"
 
 	"github.com/eskelinenantti/tmuxide/internal/git"
