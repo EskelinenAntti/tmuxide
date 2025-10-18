@@ -24,6 +24,7 @@ func run(cmd *cobra.Command, args []string) error {
 
 	var target string
 	var err error
+
 	switch len(args) {
 	case 0:
 		target, err = os.Getwd()
