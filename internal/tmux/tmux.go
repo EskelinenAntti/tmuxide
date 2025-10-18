@@ -13,12 +13,12 @@ type Session struct {
 	ide.Project
 }
 
-func (session *Session) Exists() bool {
+func (session Session) Exists() bool {
 	cmd := exec.Command("tmux", "has-session", "-t", session.Name)
 	return cmd.Run() == nil
 }
 
-func (session *Session) New() error {
+func (session Session) New() error {
 	window := session.Windows[0]
 	args := []string{"new-session", "-ds", session.Name, "-c", session.Root}
 
@@ -34,7 +34,7 @@ func (session *Session) New() error {
 	return nil
 }
 
-func (session *Session) Attach() error {
+func (session Session) Attach() error {
 	cmd := exec.Command("tmux", "attach", "-t", session.Name)
 	err := attachAndRun(cmd)
 	if err != nil {
@@ -43,7 +43,7 @@ func (session *Session) Attach() error {
 	return nil
 }
 
-func (session *Session) Switch() error {
+func (session Session) Switch() error {
 	cmd := exec.Command("tmux", "switch-client", "-t", session.Name)
 	err := attachAndRun(cmd)
 	if err != nil {
