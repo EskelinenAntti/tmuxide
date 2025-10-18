@@ -8,24 +8,10 @@ import (
 	"testing"
 )
 
-type RepositoryStub struct {
-	root string
-	err  error
-}
-
-func (resolver RepositoryStub) Root(path string) (string, error) {
-	return resolver.root, resolver.err
-}
-
-var notInGitRepo = RepositoryStub{
-	root: "",
-	err:  errors.New("not a git repo"),
-}
-
 func TestRootDirectory(t *testing.T) {
 	var dir = t.TempDir()
 
-	project, err := ProjectFor(dir, notInGitRepo)
+	project, err := ProjectFor(dir, "")
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -41,7 +27,7 @@ func TestRootFile(t *testing.T) {
 	file := dir + "/file.txt"
 	os.WriteFile(file, []byte{}, 0644)
 
-	project, err := ProjectFor(file, notInGitRepo)
+	project, err := ProjectFor(file, "")
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -53,13 +39,8 @@ func TestRootFile(t *testing.T) {
 }
 
 func TestRootRepository(t *testing.T) {
-	repositoryPath := t.TempDir()
-	repository := RepositoryStub{
-		root: repositoryPath,
-		err:  nil,
-	}
-
-	dir := filepath.Join(repositoryPath, "path/to/dir/in/repository")
+	repository := t.TempDir()
+	dir := filepath.Join(repository, "path/to/dir/in/repository")
 
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 		t.Fatalf("err=%v", err)
@@ -71,7 +52,7 @@ func TestRootRepository(t *testing.T) {
 		t.Fatalf("err=%v", err)
 	}
 
-	if got, want := project.Root, repository.root; got != want {
+	if got, want := project.Root, repository; got != want {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
@@ -80,7 +61,7 @@ func TestRootInvalidFile(t *testing.T) {
 	dir := t.TempDir()
 	file := dir + "/does-not-exist.txt"
 
-	_, err := ProjectFor(file, notInGitRepo)
+	_, err := ProjectFor(file, "")
 
 	var pathError *os.PathError
 	if got, want := err, &pathError; !errors.As(got, want) {

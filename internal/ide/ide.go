@@ -6,14 +6,15 @@ import (
 
 type Session interface {
 	Exists() bool
-	New() error
+	New(window Window) error
+	NewWindow(window Window) error
 	Attach() error
 	Switch() error
 }
 
-func Start(session Session) error {
+func Start(session Session, windows []Window) error {
 	if !session.Exists() {
-		if err := session.New(); err != nil {
+		if err := create(session, windows); err != nil {
 			return err
 		}
 	}
@@ -23,6 +24,20 @@ func Start(session Session) error {
 	}
 
 	return session.Attach()
+}
+
+func create(session Session, windows []Window) error {
+	if err := session.New(windows[0]); err != nil {
+		return err
+	}
+
+	for _, window := range windows[1:] {
+		if err := session.NewWindow(window); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func isAttached() bool {

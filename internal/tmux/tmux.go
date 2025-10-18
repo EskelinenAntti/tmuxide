@@ -31,12 +31,6 @@ func (session Session) New(window ide.Window) error {
 		return fmt.Errorf("Failed to create session: %w", err)
 	}
 
-	for _, window := range session.Windows[1:] {
-		if err := session.NewWindow(window); err != nil {
-			return fmt.Errorf("Failed to create window %s: %w", window.Cmd, err)
-		}
-	}
-
 	return nil
 }
 

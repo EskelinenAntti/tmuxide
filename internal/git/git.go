@@ -6,9 +6,7 @@ import (
 	"strings"
 )
 
-type Repository struct{}
-
-func (Repository) Root(target string) (string, error) {
+func Repository(target string) (string, error) {
 	cmd := exec.Command("git", "-C", target, "rev-parse", "--show-toplevel")
 	out, err := cmd.Output()
 	if err != nil {
