@@ -33,7 +33,7 @@ func (session Session) New() error {
 	}
 
 	for _, window := range session.Windows[1:] {
-		if err := session.createWindow(window); err != nil {
+		if err := session.newWindow(window); err != nil {
 			return fmt.Errorf("Failed to create window %s: %w", window.Cmd, err)
 		}
 	}
@@ -85,7 +85,7 @@ func attachAndRun(cmd *exec.Cmd) error {
 	return cmd.Run()
 }
 
-func (session Session) createWindow(window ide.Window) error {
+func (session Session) newWindow(window ide.Window) error {
 	args := []string{"new-window", "-d", "-t", session.Name}
 	args = append(args, window.Cmd)
 	args = append(args, window.Args...)
