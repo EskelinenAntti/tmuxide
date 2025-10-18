@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -37,11 +38,29 @@ func ProjectFor(target string, repository Repository) (Project, error) {
 		return Project{}, err
 	}
 
+	windows := []Window{editor}
+
+	if lazygit, err := lazygit(target, repository); err != nil {
+		windows = append(windows, lazygit)
+	}
+
 	return Project{
 		Name:    name,
 		Root:    root,
-		Windows: []Window{editor},
+		Windows: windows,
 	}, nil
+}
+
+func lazygit(target string, repository Repository) (Window, error) {
+	if _, err := exec.LookPath("lazygit"); err != nil {
+		return Window{}, errors.New("Lazygit is not isntalled")
+	}
+
+	if _, err := repository.Root(target); err != nil {
+		return Window{}, errors.New("Lazygit is not isntalled")
+	}
+
+	return Window{Cmd: "lazygit"}, nil
 }
 
 func name(path string) string {

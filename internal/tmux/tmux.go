@@ -24,6 +24,7 @@ func (session Session) New() error {
 
 	args = append(args, window.Cmd)
 	args = append(args, window.Args...)
+	// TODO: window logic
 
 	cmd := exec.Command("tmux", args...)
 	err := cmd.Run()
