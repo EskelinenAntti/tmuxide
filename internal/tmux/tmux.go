@@ -12,14 +12,14 @@ type Session struct {
 	ide.Project
 }
 
-func (project *Project) Exists() bool {
-	cmd := exec.Command("tmux", "has-session", "-t", project.Name)
+func (session *Session) Exists() bool {
+	cmd := exec.Command("tmux", "has-session", "-t", session.Name)
 	return cmd.Run() == nil
 }
 
-func (project *Project) New() error {
-	window := project.Windows[0]
-	args := []string{"new-session", "-ds", project.Name, "-c", project.Root}
+func (session *Session) New() error {
+	window := session.Windows[0]
+	args := []string{"new-session", "-ds", session.Name, "-c", session.Root}
 
 	args = append(args, window.Cmd)
 	args = append(args, window.Args...)
@@ -33,8 +33,8 @@ func (project *Project) New() error {
 	return nil
 }
 
-func (project *Project) Attach() error {
-	cmd := exec.Command("tmux", "attach", "-t", project.Name)
+func (session *Session) Attach() error {
+	cmd := exec.Command("tmux", "attach", "-t", session.Name)
 	err := attachAndRun(cmd)
 	if err != nil {
 		return fmt.Errorf("Failed to attach session: %w", err)
@@ -42,8 +42,8 @@ func (project *Project) Attach() error {
 	return nil
 }
 
-func (project *Project) Switch() error {
-	cmd := exec.Command("tmux", "switch-client", "-t", project.Name)
+func (session *Session) Switch() error {
+	cmd := exec.Command("tmux", "switch-client", "-t", session.Name)
 	err := attachAndRun(cmd)
 	if err != nil {
 		return fmt.Errorf("Failed to switch session: %w", err)
