@@ -18,14 +18,14 @@ func Start(session Session) error {
 		}
 	}
 
-	if isAttachedToSession() {
+	if isAttached() {
 		return session.Switch()
 	}
 
 	return session.Attach()
 }
 
-func isAttachedToSession() bool {
+func isAttached() bool {
 	_, alreadyInSession := os.LookupEnv("TMUX")
 	return alreadyInSession
 }

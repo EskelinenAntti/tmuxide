@@ -49,7 +49,7 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return ide.Start(&session)
+	return ide.Start(session)
 }
 
 func Execute() {
