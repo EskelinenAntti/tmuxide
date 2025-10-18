@@ -39,22 +39,17 @@ func run(cmd *cobra.Command, args []string) error {
 		cmd.PrintErr(err)
 	}
 
-	// TODO: move this to TMUX package
-	if _, err := exec.LookPath("tmux"); err != nil {
-		return errors.New(
-			"Did not find tmux, which is a required dependency for ide command.\n\n" +
-
-				"You can install tmux e.g. via homebrew by running\n" +
-				"brew install tmux\n",
-		)
-	}
-
 	project, err := ide.ProjectFor(target, git.Repository{})
 	if err != nil {
 		return nil
 	}
 
-	return ide.Start(&tmux.Session{Project: project})
+	session, err := tmux.SessionFor(project)
+	if err != nil {
+		return err
+	}
+
+	return ide.Start(&session)
 }
 
 func Execute() {
