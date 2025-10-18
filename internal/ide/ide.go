@@ -26,6 +26,6 @@ func Start(session Session) error {
 }
 
 func isAttached() bool {
-	_, alreadyInSession := os.LookupEnv("TMUX")
-	return alreadyInSession
+	_, isAttached := os.LookupEnv("TMUX")
+	return isAttached
 }
