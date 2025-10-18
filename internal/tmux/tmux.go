@@ -24,7 +24,6 @@ func (session Session) New() error {
 
 	args = append(args, window.Cmd)
 	args = append(args, window.Args...)
-	// TODO: window logic
 
 	cmd := exec.Command("tmux", args...)
 	err := cmd.Run()
@@ -32,6 +31,13 @@ func (session Session) New() error {
 	if err != nil {
 		return fmt.Errorf("Failed to create session: %w", err)
 	}
+
+	for _, window := range session.Windows[1:] {
+		if err := session.createWindow(window); err != nil {
+			return fmt.Errorf("Failed to create window %s: %w", window.Cmd, err)
+		}
+	}
+
 	return nil
 }
 
@@ -76,5 +82,14 @@ func attachAndRun(cmd *exec.Cmd) error {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func (session Session) createWindow(window ide.Window) error {
+	args := []string{"new-window", "-d", "-t", session.Name}
+	args = append(args, window.Cmd)
+	args = append(args, window.Args...)
+
+	cmd := exec.Command("tmux", args...)
 	return cmd.Run()
 }
