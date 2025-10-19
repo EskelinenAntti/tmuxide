@@ -35,6 +35,8 @@ var shellMock = shell.Shell{
 }
 
 func TestProjectForDirectory(t *testing.T) {
+	t.Setenv("EDITOR", "editor")
+
 	var dir = t.TempDir()
 
 	project, err := ProjectFor(dir, shellMock)
@@ -49,6 +51,8 @@ func TestProjectForDirectory(t *testing.T) {
 }
 
 func TestProjectForFile(t *testing.T) {
+	t.Setenv("EDITOR", "editor")
+
 	dir := t.TempDir()
 	file := dir + "/file.txt"
 	os.WriteFile(file, []byte{}, 0644)
@@ -65,6 +69,8 @@ func TestProjectForFile(t *testing.T) {
 }
 
 func TestProjectForRepository(t *testing.T) {
+	t.Setenv("EDITOR", "editor")
+
 	repository := t.TempDir()
 	dir := filepath.Join(repository, "path/to/dir/in/repository")
 
@@ -92,6 +98,8 @@ func TestProjectForRepository(t *testing.T) {
 }
 
 func TestProjectForInvalidFile(t *testing.T) {
+	t.Setenv("EDITOR", "editor")
+
 	dir := t.TempDir()
 	file := dir + "/does-not-exist.txt"
 
