@@ -2,73 +2,48 @@ package tmux
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
-
-	"github.com/eskelinenantti/tmuxide/internal/ide"
 )
 
-type Session struct {
-	ide.Project
+type Cmd struct {
+	Cmd  string
+	Args []string
 }
 
-func (session Session) Exists() bool {
-	cmd := exec.Command("tmux", "has-session", "-t", session.Name)
+type Tmux interface {
+	HasSession(name string) bool
+	New(session string, dir string, cmd Cmd) error
+	NewWindow(session string, dir string, cmd Cmd) error
+	Attach(session string) error
+	Switch(session string) error
+}
+
+type ShellTmux struct{}
+
+func (tmux ShellTmux) HasSession(session string) bool {
+	cmd := exec.Command("tmux", "has-session", "-t", session)
 	return cmd.Run() == nil
 }
 
-func (session Session) New(window ide.Window) error {
-	args := []string{"new-session", "-ds", session.Name, "-c", session.Root}
-
-	args = append(args, window.Cmd)
-	args = append(args, window.Args...)
-
-	cmd := exec.Command("tmux", args...)
-	err := cmd.Run()
-
-	if err != nil {
-		return fmt.Errorf("Failed to create session: %w", err)
-	}
-
-	return nil
+func (ShellTmux) New(session string, dir string, cmd Cmd) error {
+	tmuxCmd := tmuxCommand([]string{"new-session", "-ds", session, "-c", dir}, cmd)
+	return tmuxCmd.Run()
 }
 
-func (session Session) NewWindow(window ide.Window) error {
-	args := []string{"new-window", "-d", "-t", session.Name, "-c", session.Root}
-	args = append(args, window.Cmd)
-	args = append(args, window.Args...)
-
-	cmd := exec.Command("tmux", args...)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("Failed to create window %s: %w", window.Cmd, err)
-	}
-	return nil
+func (ShellTmux) NewWindow(session string, dir string, cmd Cmd) error {
+	tmuxCmd := tmuxCommand([]string{"new-window", "-d", "-t", session, "-c", dir}, cmd)
+	return tmuxCmd.Run()
 }
 
-func (session Session) Attach() error {
-	cmd := exec.Command("tmux", "attach", "-t", session.Name)
-	err := attachAndRun(cmd)
-	if err != nil {
-		return fmt.Errorf("Failed to attach session: %w", err)
-	}
-	return nil
+func (ShellTmux) Attach(session string) error {
+	tmuxCmd := exec.Command("tmux", "attach", "-t", session)
+	return attachAndRun(tmuxCmd)
 }
 
-func (session Session) Switch() error {
-	cmd := exec.Command("tmux", "switch-client", "-t", session.Name)
-	err := attachAndRun(cmd)
-	if err != nil {
-		return fmt.Errorf("Failed to switch session: %w", err)
-	}
-	return nil
-}
-
-func SessionFor(project ide.Project) (Session, error) {
-	if err := EnsureInstalled(); err != nil {
-		return Session{}, err
-	}
-	return Session{Project: project}, nil
+func (ShellTmux) Switch(session string) error {
+	cmd := exec.Command("tmux", "switch-client", "-t", session)
+	return attachAndRun(cmd)
 }
 
 func EnsureInstalled() error {
@@ -83,9 +58,23 @@ func EnsureInstalled() error {
 	return nil
 }
 
+func Command() (ShellTmux, error) {
+	if err := EnsureInstalled(); err != nil {
+		return ShellTmux{}, err
+	}
+	return ShellTmux{}, nil
+}
+
 func attachAndRun(cmd *exec.Cmd) error {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
+}
+
+func tmuxCommand(tmuxArgs []string, cmd Cmd) *exec.Cmd {
+	tmuxArgs = append(tmuxArgs, cmd.Cmd)
+	tmuxArgs = append(tmuxArgs, cmd.Args...)
+
+	return exec.Command("tmux", tmuxArgs...)
 }

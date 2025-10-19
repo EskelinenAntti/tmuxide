@@ -2,37 +2,31 @@ package ide
 
 import (
 	"os"
+
+	"github.com/eskelinenantti/tmuxide/internal/tmux"
 )
 
-type Session interface {
-	Exists() bool
-	New(window Window) error
-	NewWindow(window Window) error
-	Attach() error
-	Switch() error
-}
-
-func Start(session Session, windows []Window) error {
-	if !session.Exists() {
-		if err := create(session, windows); err != nil {
+func Start(project Project, windows []tmux.Cmd, tmux tmux.Tmux) error {
+	if !tmux.HasSession(project.Name) {
+		if err := create(project, windows, tmux); err != nil {
 			return err
 		}
 	}
 
 	if isAttached() {
-		return session.Switch()
+		return tmux.Switch(project.Name)
 	}
 
-	return session.Attach()
+	return tmux.Attach(project.Name)
 }
 
-func create(session Session, windows []Window) error {
-	if err := session.New(windows[0]); err != nil {
+func create(project Project, windows []tmux.Cmd, tmux tmux.Tmux) error {
+	if err := tmux.New(project.Name, project.Root, windows[0]); err != nil {
 		return err
 	}
 
 	for _, window := range windows[1:] {
-		if err := session.NewWindow(window); err != nil {
+		if err := tmux.NewWindow(project.Name, project.Root, window); err != nil {
 			return err
 		}
 	}

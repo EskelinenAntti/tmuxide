@@ -39,7 +39,10 @@ func run(cmd *cobra.Command, args []string) error {
 		cmd.PrintErr(err)
 	}
 
-	repository, _ := git.Repository(target)
+	repository, err := ide.Repository(target, git.ShellGit{})
+	if err != nil {
+		return err
+	}
 
 	project, err := ide.ProjectFor(target, repository)
 	if err != nil {
@@ -51,12 +54,12 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	session, err := tmux.SessionFor(project)
+	tmux, err := tmux.Command()
 	if err != nil {
 		return err
 	}
 
-	return ide.Start(session, windows)
+	return ide.Start(project, windows, tmux)
 }
 
 func Execute() {

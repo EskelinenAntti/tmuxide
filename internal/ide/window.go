@@ -4,44 +4,46 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+
+	"github.com/eskelinenantti/tmuxide/internal/tmux"
 )
 
-func WindowsFor(target string, repository string) ([]Window, error) {
+func WindowsFor(target string, repository string) ([]tmux.Cmd, error) {
 	editor, err := editor(target)
 	if err != nil {
-		return []Window{}, err
+		return []tmux.Cmd{}, err
 	}
 
-	windows := []Window{editor}
+	windows := []tmux.Cmd{editor}
 
-	if lazygit, err := lazygit(repository); err != nil {
+	if lazygit, err := lazygit(repository); err == nil {
 		windows = append(windows, lazygit)
 	}
 
 	return windows, nil
 }
 
-func lazygit(repository string) (Window, error) {
+func lazygit(repository string) (tmux.Cmd, error) {
 	if _, err := exec.LookPath("lazygit"); err != nil {
-		return Window{}, errors.New("Lazygit is not isntalled")
+		return tmux.Cmd{}, errors.New("Lazygit is not installed")
 	}
 
 	if repository == "" {
-		return Window{}, errors.New("Not inside Git repository")
+		return tmux.Cmd{}, errors.New("Not inside Git repository")
 	}
 
-	return Window{Cmd: "lazygit"}, nil
+	return tmux.Cmd{Cmd: "lazygit"}, nil
 }
 
-func editor(target string) (Window, error) {
+func editor(target string) (tmux.Cmd, error) {
 	editorCmd, hasEditor := os.LookupEnv("EDITOR")
 	if !hasEditor {
-		return Window{}, errors.New(
+		return tmux.Cmd{}, errors.New(
 			"No editor was configured. Specify the editor you would like to use by setting the $EDITOR variable.\n\n" +
 				"For example, to use Vim as your editor, add the following line to your ~/.zshrc:\n" +
 				"export EDITOR=vim\n",
 		)
 	}
 
-	return Window{Cmd: editorCmd, Args: []string{target}}, nil
+	return tmux.Cmd{Cmd: editorCmd, Args: []string{target}}, nil
 }

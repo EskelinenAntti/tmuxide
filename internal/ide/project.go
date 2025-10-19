@@ -6,16 +6,29 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-)
 
-type Window struct {
-	Cmd  string
-	Args []string
-}
+	"github.com/eskelinenantti/tmuxide/internal/git"
+)
 
 type Project struct {
 	Name string
 	Root string
+}
+
+func Repository(target string, git git.Command) (string, error) {
+	fileInfo, err := os.Stat(target)
+	if err != nil {
+		return "", err
+	}
+
+	var cwd string
+	if fileInfo.IsDir() {
+		cwd = target
+	} else {
+		cwd = filepath.Dir(target)
+	}
+
+	return git.RevParse(cwd)
 }
 
 func ProjectFor(target string, repository string) (Project, error) {
@@ -34,7 +47,7 @@ func ProjectFor(target string, repository string) (Project, error) {
 
 func name(path string) string {
 	basename := filepath.Base(path)
-	sessionPrefix := strings.ReplaceAll(basename, ".", "-")
+	sessionPrefix := strings.ReplaceAll(basename, ".", "_")
 	return strings.Join([]string{sessionPrefix, hash(path)}, "-")
 }
 
