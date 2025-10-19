@@ -8,6 +8,7 @@ import (
 
 	"github.com/eskelinenantti/tmuxide/internal/git"
 	"github.com/eskelinenantti/tmuxide/internal/ide"
+	"github.com/eskelinenantti/tmuxide/internal/path"
 	"github.com/eskelinenantti/tmuxide/internal/tmux"
 	"github.com/spf13/cobra"
 )
@@ -49,7 +50,7 @@ func run(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
-	windows, err := ide.WindowsFor(target, repository)
+	windows, err := ide.WindowsFor(target, repository, path.ExecPathLooker{})
 	if err != nil {
 		return err
 	}
