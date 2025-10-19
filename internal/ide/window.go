@@ -39,7 +39,7 @@ func lazygit(repository string, path path.Path) (tmux.WindowCommand, error) {
 
 func editor(target string, path path.Path) (tmux.WindowCommand, error) {
 	editorCmd, hasEditor := os.LookupEnv("EDITOR")
-	if !hasEditor {
+	if !hasEditor || editorCmd == "" {
 		return tmux.WindowCommand{}, errors.New(
 			"No editor was configured. Specify the editor you would like to use by setting the $EDITOR variable.\n\n" +
 				"For example, to use Vim as your editor, add the following line to your ~/.zshrc:\n" +

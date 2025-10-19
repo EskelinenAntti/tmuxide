@@ -30,6 +30,9 @@ func ProjectFor(target string, shell shell.Shell) (Project, error) {
 	name := name(target)
 
 	windows, err := windowsFor(target, repository, shell)
+	if err != nil {
+		return Project{}, err
+	}
 
 	return Project{
 		Name:    name,

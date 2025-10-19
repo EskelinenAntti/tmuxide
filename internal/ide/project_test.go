@@ -36,7 +36,6 @@ var shellMock = shell.Shell{
 
 func TestProjectForDirectory(t *testing.T) {
 	t.Setenv("EDITOR", "editor")
-
 	var dir = t.TempDir()
 
 	project, err := ProjectFor(dir, shellMock)
