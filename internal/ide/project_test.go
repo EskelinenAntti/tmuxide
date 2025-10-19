@@ -6,12 +6,38 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/eskelinenantti/tmuxide/internal/shell"
 )
 
-func TestRootDirectory(t *testing.T) {
+type PathMock struct{}
+
+func (PathMock) Contains(program string) bool {
+	return true
+}
+
+type GitMock struct {
+	repository string
+	err        error
+}
+
+func (git GitMock) RevParse(cwd string) (string, error) {
+	return git.repository, git.err
+}
+
+var shellMock = shell.Shell{
+	Git: GitMock{
+		repository: "",
+		err:        errors.New("not inside git repository"),
+	},
+	Tmux: nil,
+	Path: PathMock{},
+}
+
+func TestProjectForDirectory(t *testing.T) {
 	var dir = t.TempDir()
 
-	project, err := ProjectFor(dir, "")
+	project, err := ProjectFor(dir, shellMock)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -22,12 +48,12 @@ func TestRootDirectory(t *testing.T) {
 	}
 }
 
-func TestRootFile(t *testing.T) {
+func TestProjectForFile(t *testing.T) {
 	dir := t.TempDir()
 	file := dir + "/file.txt"
 	os.WriteFile(file, []byte{}, 0644)
 
-	project, err := ProjectFor(file, "")
+	project, err := ProjectFor(file, shellMock)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -38,7 +64,7 @@ func TestRootFile(t *testing.T) {
 	}
 }
 
-func TestRootRepository(t *testing.T) {
+func TestProjectForRepository(t *testing.T) {
 	repository := t.TempDir()
 	dir := filepath.Join(repository, "path/to/dir/in/repository")
 
@@ -46,7 +72,15 @@ func TestRootRepository(t *testing.T) {
 		t.Fatalf("err=%v", err)
 	}
 
-	project, err := ProjectFor(dir, repository)
+	shellMock := shell.Shell{
+		Git: GitMock{
+			repository: repository,
+			err:        nil,
+		},
+		Path: PathMock{},
+	}
+
+	project, err := ProjectFor(dir, shellMock)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -57,11 +91,11 @@ func TestRootRepository(t *testing.T) {
 	}
 }
 
-func TestRootInvalidFile(t *testing.T) {
+func TestProjectForInvalidFile(t *testing.T) {
 	dir := t.TempDir()
 	file := dir + "/does-not-exist.txt"
 
-	_, err := ProjectFor(file, "")
+	_, err := ProjectFor(file, shellMock)
 
 	var pathError *os.PathError
 	if got, want := err, &pathError; !errors.As(got, want) {

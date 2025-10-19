@@ -2,12 +2,13 @@ package path
 
 import "os/exec"
 
-type PathLooker interface {
-	LookPath(path string) (string, error)
+type Path interface {
+	Contains(path string) bool
 }
 
-type ExecPathLooker struct{}
+type ShellPath struct{}
 
-func (ExecPathLooker) LookPath(path string) (string, error) {
-	return exec.LookPath(path)
+func (ShellPath) Contains(path string) bool {
+	_, err := exec.LookPath(path)
+	return err != nil
 }

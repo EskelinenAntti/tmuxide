@@ -8,30 +8,20 @@ import (
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/git"
+	"github.com/eskelinenantti/tmuxide/internal/shell"
+	"github.com/eskelinenantti/tmuxide/internal/tmux"
 )
 
 type Project struct {
-	Name string
-	Root string
+	Name    string
+	Root    string
+	Windows []tmux.WindowCommand
 }
 
-func Repository(target string, git git.Command) (string, error) {
-	fileInfo, err := os.Stat(target)
-	if err != nil {
-		return "", err
-	}
+func ProjectFor(target string, shell shell.Shell) (Project, error) {
 
-	var cwd string
-	if fileInfo.IsDir() {
-		cwd = target
-	} else {
-		cwd = filepath.Dir(target)
-	}
+	repository, _ := repository(target, shell.Git)
 
-	return git.RevParse(cwd)
-}
-
-func ProjectFor(target string, repository string) (Project, error) {
 	root, err := root(target, repository)
 	if err != nil {
 		return Project{}, err
@@ -39,9 +29,12 @@ func ProjectFor(target string, repository string) (Project, error) {
 
 	name := name(target)
 
+	windows, err := windowsFor(target, repository, shell)
+
 	return Project{
-		Name: name,
-		Root: root,
+		Name:    name,
+		Root:    root,
+		Windows: windows,
 	}, nil
 }
 
@@ -71,6 +64,22 @@ func root(target string, repository string) (string, error) {
 	}
 
 	return absolutePath, nil
+}
+
+func repository(target string, git git.Command) (string, error) {
+	fileInfo, err := os.Stat(target)
+	if err != nil {
+		return "", err
+	}
+
+	var cwd string
+	if fileInfo.IsDir() {
+		cwd = target
+	} else {
+		cwd = filepath.Dir(target)
+	}
+
+	return git.RevParse(cwd)
 }
 
 func hash(path string) string {

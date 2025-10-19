@@ -6,15 +6,15 @@ import (
 	"os/exec"
 )
 
-type Cmd struct {
+type WindowCommand struct {
 	Cmd  string
 	Args []string
 }
 
-type Tmux interface {
+type Command interface {
 	HasSession(name string) bool
-	New(session string, dir string, cmd Cmd) error
-	NewWindow(session string, dir string, cmd Cmd) error
+	New(session string, dir string, cmd WindowCommand) error
+	NewWindow(session string, dir string, cmd WindowCommand) error
 	Attach(session string) error
 	Switch(session string) error
 }
@@ -26,12 +26,12 @@ func (tmux ShellTmux) HasSession(session string) bool {
 	return cmd.Run() == nil
 }
 
-func (ShellTmux) New(session string, dir string, cmd Cmd) error {
+func (ShellTmux) New(session string, dir string, cmd WindowCommand) error {
 	tmuxCmd := tmuxCommand([]string{"new-session", "-ds", session, "-c", dir}, cmd)
 	return tmuxCmd.Run()
 }
 
-func (ShellTmux) NewWindow(session string, dir string, cmd Cmd) error {
+func (ShellTmux) NewWindow(session string, dir string, cmd WindowCommand) error {
 	tmuxCmd := tmuxCommand([]string{"new-window", "-d", "-t", session, "-c", dir}, cmd)
 	return tmuxCmd.Run()
 }
@@ -58,7 +58,7 @@ func EnsureInstalled() error {
 	return nil
 }
 
-func Command() (ShellTmux, error) {
+func Get() (ShellTmux, error) {
 	if err := EnsureInstalled(); err != nil {
 		return ShellTmux{}, err
 	}
@@ -72,7 +72,7 @@ func attachAndRun(cmd *exec.Cmd) error {
 	return cmd.Run()
 }
 
-func tmuxCommand(tmuxArgs []string, cmd Cmd) *exec.Cmd {
+func tmuxCommand(tmuxArgs []string, cmd WindowCommand) *exec.Cmd {
 	tmuxArgs = append(tmuxArgs, cmd.Cmd)
 	tmuxArgs = append(tmuxArgs, cmd.Args...)
 

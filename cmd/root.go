@@ -6,10 +6,8 @@ import (
 
 	"path/filepath"
 
-	"github.com/eskelinenantti/tmuxide/internal/git"
 	"github.com/eskelinenantti/tmuxide/internal/ide"
-	"github.com/eskelinenantti/tmuxide/internal/path"
-	"github.com/eskelinenantti/tmuxide/internal/tmux"
+	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/spf13/cobra"
 )
 
@@ -17,12 +15,21 @@ var rootCmd = &cobra.Command{
 	Use:   "tmuxide",
 	Short: "",
 	Long:  ``,
-	RunE:  run,
+	RunE:  runCmd,
 }
 
-func run(cmd *cobra.Command, args []string) error {
+func runCmd(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
+	shell, err := shell.Get()
+	if err != nil {
+		return err
+	}
+
+	return run(args, shell)
+}
+
+func run(args []string, shell shell.Shell) error {
 	var target string
 	var err error
 
@@ -32,35 +39,19 @@ func run(cmd *cobra.Command, args []string) error {
 	case 1:
 		target, err = filepath.Abs(args[0])
 	default:
-		// We should never end up here, but handle the error nicely nevertheless.
 		return errors.New("Invalid number of arguments.")
 	}
 
 	if err != nil {
-		cmd.PrintErr(err)
-	}
-
-	repository, err := ide.Repository(target, git.ShellGit{})
-	if err != nil {
 		return err
 	}
 
-	project, err := ide.ProjectFor(target, repository)
+	project, err := ide.ProjectFor(target, shell)
 	if err != nil {
 		return nil
 	}
 
-	windows, err := ide.WindowsFor(target, repository, path.ExecPathLooker{})
-	if err != nil {
-		return err
-	}
-
-	tmux, err := tmux.Command()
-	if err != nil {
-		return err
-	}
-
-	return ide.Start(project, windows, tmux)
+	return ide.Start(project, shell.Tmux)
 }
 
 func Execute() {

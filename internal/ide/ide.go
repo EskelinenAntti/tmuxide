@@ -6,9 +6,9 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/tmux"
 )
 
-func Start(project Project, windows []tmux.Cmd, tmux tmux.Tmux) error {
+func Start(project Project, tmux tmux.Command) error {
 	if !tmux.HasSession(project.Name) {
-		if err := create(project, windows, tmux); err != nil {
+		if err := create(project, project.Windows, tmux); err != nil {
 			return err
 		}
 	}
@@ -20,7 +20,7 @@ func Start(project Project, windows []tmux.Cmd, tmux tmux.Tmux) error {
 	return tmux.Attach(project.Name)
 }
 
-func create(project Project, windows []tmux.Cmd, tmux tmux.Tmux) error {
+func create(project Project, windows []tmux.WindowCommand, tmux tmux.Command) error {
 	if err := tmux.New(project.Name, project.Root, windows[0]); err != nil {
 		return err
 	}
