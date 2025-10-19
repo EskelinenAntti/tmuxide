@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/eskelinenantti/tmuxide/internal/shell"
+	"github.com/eskelinenantti/tmuxide/internal/tmux"
 )
 
 type PathMock struct{}
@@ -34,8 +37,31 @@ var shellMock = shell.Shell{
 	Path: PathMock{},
 }
 
+var testEditor string = "editor"
+
+func wantWindows(target string) []tmux.WindowCommand {
+	return []tmux.WindowCommand{
+		{
+			Cmd:  testEditor,
+			Args: []string{target},
+		}}
+}
+
+func wantWindowsInRepository(target string) []tmux.WindowCommand {
+	return []tmux.WindowCommand{
+		{
+			Cmd:  testEditor,
+			Args: []string{target},
+		},
+		{
+			Cmd:  "lazygit",
+			Args: nil,
+		},
+	}
+}
+
 func TestProjectForDirectory(t *testing.T) {
-	t.Setenv("EDITOR", "editor")
+	t.Setenv("EDITOR", testEditor)
 	var dir = t.TempDir()
 
 	project, err := ProjectFor(dir, shellMock)
@@ -47,10 +73,19 @@ func TestProjectForDirectory(t *testing.T) {
 	if got, want := project.Root, dir; got != want {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
+
+	if got, want := project.Name, filepath.Base(dir)+"-"; !strings.HasPrefix(got, want) {
+		t.Fatalf("%v did not start with %v", got, want)
+	}
+
+	if got, want := project.Windows, wantWindows(dir); !reflect.DeepEqual(got, want) {
+		t.Fatalf("got=%v, want=%v", got, want)
+	}
+
 }
 
 func TestProjectForFile(t *testing.T) {
-	t.Setenv("EDITOR", "editor")
+	t.Setenv("EDITOR", testEditor)
 
 	dir := t.TempDir()
 	file := dir + "/file.txt"
@@ -65,10 +100,18 @@ func TestProjectForFile(t *testing.T) {
 	if got, want := project.Root, dir; got != want {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
+
+	if got, want := project.Name, "file_txt-"; !strings.HasPrefix(got, want) {
+		t.Fatalf("%v did not start with %v", got, want)
+	}
+
+	if got, want := project.Windows, wantWindows(file); !reflect.DeepEqual(got, want) {
+		t.Fatalf("got=%v, want=%v", got, want)
+	}
 }
 
-func TestProjectForRepository(t *testing.T) {
-	t.Setenv("EDITOR", "editor")
+func TestProjectForDirectoryInRepository(t *testing.T) {
+	t.Setenv("EDITOR", testEditor)
 
 	repository := t.TempDir()
 	dir := filepath.Join(repository, "path/to/dir/in/repository")
@@ -94,10 +137,52 @@ func TestProjectForRepository(t *testing.T) {
 	if got, want := project.Root, repository; got != want {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
+
+	if got, want := project.Name, filepath.Base(dir)+"-"; !strings.HasPrefix(got, want) {
+		t.Fatalf("%v did not start with %v", got, want)
+	}
+
+	if got, want := project.Windows, wantWindowsInRepository(dir); !reflect.DeepEqual(got, want) {
+		t.Fatalf("got=%v, want=%v", got, want)
+	}
+}
+
+func TestProjectForFileInRepository(t *testing.T) {
+	t.Setenv("EDITOR", testEditor)
+
+	repository := t.TempDir()
+	file := repository + "/file.txt"
+	os.WriteFile(file, []byte{}, 0644)
+
+	shellMock := shell.Shell{
+		Git: GitMock{
+			repository: repository,
+			err:        nil,
+		},
+		Path: PathMock{},
+	}
+
+	project, err := ProjectFor(file, shellMock)
+
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+
+	if got, want := project.Root, repository; got != want {
+		t.Fatalf("got=%v, want=%v", got, want)
+	}
+
+	if got, want := project.Name, "file_txt-"; !strings.HasPrefix(got, want) {
+		t.Fatalf("%v did not start with %v", got, want)
+	}
+
+	if got, want := project.Windows, wantWindowsInRepository(file); !reflect.DeepEqual(got, want) {
+		t.Fatalf("got=%v, want=%v", got, want)
+	}
 }
 
 func TestProjectForInvalidFile(t *testing.T) {
-	t.Setenv("EDITOR", "editor")
+	t.Setenv("EDITOR", testEditor)
 
 	dir := t.TempDir()
 	file := dir + "/does-not-exist.txt"
