@@ -10,6 +10,12 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/tmux"
 )
 
+var ErrEditorNotSet = errors.New(
+	"No editor was configured. Specify the editor you would like to use by setting the $EDITOR variable.\n\n" +
+		"For example, to use Vim as your editor, add the following line to your ~/.zshrc:\n" +
+		"export EDITOR=vim\n",
+)
+
 func windowsFor(target string, repository string, shell shell.Shell) ([]tmux.WindowCommand, error) {
 	editor, err := editor(target, shell.Path)
 	if err != nil {
@@ -40,11 +46,7 @@ func lazygit(repository string, path path.Path) (tmux.WindowCommand, error) {
 func editor(target string, path path.Path) (tmux.WindowCommand, error) {
 	editorCmd, hasEditor := os.LookupEnv("EDITOR")
 	if !hasEditor || editorCmd == "" {
-		return tmux.WindowCommand{}, errors.New(
-			"No editor was configured. Specify the editor you would like to use by setting the $EDITOR variable.\n\n" +
-				"For example, to use Vim as your editor, add the following line to your ~/.zshrc:\n" +
-				"export EDITOR=vim\n",
-		)
+		return tmux.WindowCommand{}, ErrEditorNotSet
 	}
 
 	if !path.Contains(editorCmd) {

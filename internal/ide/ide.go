@@ -7,6 +7,7 @@ import (
 )
 
 func Start(project Project, tmux tmux.Command) error {
+
 	if !tmux.HasSession(project.Name) {
 		if err := create(project, project.Windows, tmux); err != nil {
 			return err

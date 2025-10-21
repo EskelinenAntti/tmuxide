@@ -19,7 +19,6 @@ type Project struct {
 }
 
 func ProjectFor(target string, shell shell.Shell) (Project, error) {
-
 	repository, _ := repository(target, shell.Git)
 
 	root, err := root(target, repository)
@@ -27,7 +26,7 @@ func ProjectFor(target string, shell shell.Shell) (Project, error) {
 		return Project{}, err
 	}
 
-	name := name(target)
+	name := Name(target)
 
 	windows, err := windowsFor(target, repository, shell)
 	if err != nil {
@@ -41,7 +40,7 @@ func ProjectFor(target string, shell shell.Shell) (Project, error) {
 	}, nil
 }
 
-func name(path string) string {
+func Name(path string) string {
 	basename := filepath.Base(path)
 	sessionPrefix := strings.ReplaceAll(basename, ".", "_")
 	return strings.Join([]string{sessionPrefix, hash(path)}, "-")

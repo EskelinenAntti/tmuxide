@@ -13,17 +13,9 @@ type Shell struct {
 }
 
 func Get() (Shell, error) {
-	tmux, err := tmux.Get()
-	if err != nil {
-		return Shell{}, err
-	}
-
-	git := git.ShellGit{}
-	path := path.ShellPath{}
-
 	return Shell{
-		Git:  git,
-		Tmux: tmux,
-		Path: path,
+		Git:  git.ShellGit{},
+		Tmux: tmux.ShellTmux{},
+		Path: path.ShellPath{},
 	}, nil
 }

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+
+	"github.com/eskelinenantti/tmuxide/internal/path"
 )
 
 type WindowCommand struct {
@@ -20,6 +22,13 @@ type Command interface {
 }
 
 type ShellTmux struct{}
+
+var ErrTmuxNotInPath = errors.New(
+	"Did not find tmux, which is a required dependency for ide command.\n\n" +
+
+		"You can install tmux e.g. via homebrew by running\n" +
+		"brew install tmux\n",
+)
 
 func (tmux ShellTmux) HasSession(session string) bool {
 	cmd := exec.Command("tmux", "has-session", "-t", session)
@@ -46,23 +55,11 @@ func (ShellTmux) Switch(session string) error {
 	return attachAndRun(cmd)
 }
 
-func EnsureInstalled() error {
-	if _, err := exec.LookPath("tmux"); err != nil {
-		return errors.New(
-			"Did not find tmux, which is a required dependency for ide command.\n\n" +
-
-				"You can install tmux e.g. via homebrew by running\n" +
-				"brew install tmux\n",
-		)
+func EnsureInstalled(path path.Path) error {
+	if !path.Contains("tmux") {
+		return ErrTmuxNotInPath
 	}
 	return nil
-}
-
-func Get() (ShellTmux, error) {
-	if err := EnsureInstalled(); err != nil {
-		return ShellTmux{}, err
-	}
-	return ShellTmux{}, nil
 }
 
 func attachAndRun(cmd *exec.Cmd) error {

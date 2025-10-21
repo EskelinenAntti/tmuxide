@@ -6,8 +6,11 @@ import (
 
 	"path/filepath"
 
+	"github.com/eskelinenantti/tmuxide/internal/git"
 	"github.com/eskelinenantti/tmuxide/internal/ide"
+	"github.com/eskelinenantti/tmuxide/internal/path"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
+	"github.com/eskelinenantti/tmuxide/internal/tmux"
 	"github.com/spf13/cobra"
 )
 
@@ -21,12 +24,11 @@ var rootCmd = &cobra.Command{
 func runCmd(cmd *cobra.Command, args []string) error {
 	cmd.SilenceUsage = true
 
-	shell, err := shell.Get()
-	if err != nil {
-		return err
-	}
-
-	return run(args, shell)
+	return run(args, shell.Shell{
+		Git:  git.ShellGit{},
+		Tmux: tmux.ShellTmux{},
+		Path: path.ShellPath{},
+	})
 }
 
 func run(args []string, shell shell.Shell) error {
@@ -46,9 +48,13 @@ func run(args []string, shell shell.Shell) error {
 		return err
 	}
 
+	if err := tmux.EnsureInstalled(shell.Path); err != nil {
+		return err
+	}
+
 	project, err := ide.ProjectFor(target, shell)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	return ide.Start(project, shell.Tmux)
