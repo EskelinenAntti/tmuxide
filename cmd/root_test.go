@@ -105,6 +105,38 @@ func TestRunWithoutEditor(t *testing.T) {
 	}
 }
 
+func TestRunInsideTmux(t *testing.T) {
+	t.Setenv("EDITOR", testEditor)
+	t.Setenv("TMUX", "test")
+
+	dir := t.TempDir()
+	tmux := &test.TmuxSpy{}
+
+	shell := shell.Shell{
+		Git:  test.GitMock{},
+		Tmux: tmux,
+		Path: test.PathMock{},
+	}
+
+	err := run([]string{dir}, shell)
+
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+
+	session := ide.Name(dir)
+
+	expectedCalls := [][]string{
+		{"HasSession", session},
+		{"New", session, dir, testEditor, dir},
+		{"Switch", session},
+	}
+
+	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+		t.Fatalf("got=%v, want=%v", got, want)
+	}
+}
+
 func TestRunWithoutTmux(t *testing.T) {
 	t.Setenv("EDITOR", testEditor)
 	os.Unsetenv("TMUX")
