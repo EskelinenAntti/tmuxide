@@ -61,7 +61,7 @@ func (t *TmuxSpy) NewWindow(session string, dir string, cmd tmux.WindowCommand) 
 }
 
 func (t *TmuxSpy) Switch(session string) error {
-	args := []string{"Attach", session}
+	args := []string{"Switch", session}
 	t.Calls = append(t.Calls, args)
 	return nil
 }
