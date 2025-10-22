@@ -29,7 +29,8 @@ func (git GitMock) RevParse(cwd string) (string, error) {
 }
 
 type TmuxSpy struct {
-	Calls [][]string
+	Calls           [][]string
+	ExistingSession string
 }
 
 func (t *TmuxSpy) Attach(session string) error {
@@ -41,7 +42,7 @@ func (t *TmuxSpy) Attach(session string) error {
 func (t *TmuxSpy) HasSession(name string) bool {
 	args := []string{"HasSession", name}
 	t.Calls = append(t.Calls, args)
-	return false
+	return t.ExistingSession == name
 }
 
 func (t *TmuxSpy) New(session string, dir string, cmd tmux.WindowCommand) error {
