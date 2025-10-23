@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"errors"
+	"fmt"
 	"os"
+	"slices"
 
 	"path/filepath"
 
@@ -11,37 +12,36 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/path"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/eskelinenantti/tmuxide/internal/tmux"
-	"github.com/spf13/cobra"
 )
 
-var rootCmd = &cobra.Command{
-	Use:   "tmuxide",
-	Short: "",
-	Long:  ``,
-	RunE:  runCmd,
-}
-
-func runCmd(cmd *cobra.Command, args []string) error {
-	cmd.SilenceUsage = true
-
-	return run(args, shell.Shell{
+func Execute() {
+	err := run(os.Args, shell.Shell{
 		Git:  git.ShellGit{},
 		Tmux: tmux.ShellTmux{},
 		Path: path.ShellPath{},
 	})
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
 
 func run(args []string, shell shell.Shell) error {
+
+	if err := help(args); err != nil {
+		return err
+	}
+
 	var target string
 	var err error
 
 	switch len(args) {
-	case 0:
-		target, err = os.Getwd()
 	case 1:
-		target, err = filepath.Abs(args[0])
+		target, err = os.Getwd()
+	case 2:
+		target, err = filepath.Abs(args[1])
 	default:
-		return errors.New("Invalid number of arguments.")
+		return fmt.Errorf("Invalid number of arguments. See %s --help.", args[0])
 	}
 
 	if err != nil {
@@ -60,9 +60,14 @@ func run(args []string, shell shell.Shell) error {
 	return ide.Start(project, shell.Tmux)
 }
 
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
+const helpMsgTemplate string = `Usage: %s [path]
+
+Arguments
+	path (optional) - Path to project root directory or file.`
+
+func help(args []string) error {
+	if slices.Contains(args, "-h") || slices.Contains(args, "--help") {
+		return fmt.Errorf(helpMsgTemplate, args[0])
 	}
+	return nil
 }

@@ -12,7 +12,8 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/tmux"
 )
 
-var testEditor string = "editor"
+const command string = "ide"
+const testEditor string = "editor"
 
 func TestRunWithDirectoryArgument(t *testing.T) {
 	t.Setenv("EDITOR", testEditor)
@@ -27,7 +28,7 @@ func TestRunWithDirectoryArgument(t *testing.T) {
 		Path: test.PathMock{},
 	}
 
-	err := run([]string{dir}, shell)
+	err := run([]string{command, dir}, shell)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -61,7 +62,7 @@ func TestRunWithoutArguments(t *testing.T) {
 		Path: test.PathMock{},
 	}
 
-	err := run([]string{dir}, shell)
+	err := run([]string{command}, shell)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -93,7 +94,7 @@ func TestRunWithoutEditor(t *testing.T) {
 		Path: test.PathMock{},
 	}
 
-	err := run([]string{dir}, shell)
+	err := run([]string{command, dir}, shell)
 
 	if got, want := err, ide.ErrEditorNotSet; !errors.Is(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
@@ -122,7 +123,7 @@ func TestRunWithTmuxSessionExists(t *testing.T) {
 		Path: test.PathMock{},
 	}
 
-	err := run([]string{dir}, shell)
+	err := run([]string{command, dir}, shell)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -151,7 +152,7 @@ func TestRunInsideTmux(t *testing.T) {
 		Path: test.PathMock{},
 	}
 
-	err := run([]string{dir}, shell)
+	err := run([]string{command, dir}, shell)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -183,7 +184,7 @@ func TestRunWithoutTmux(t *testing.T) {
 		Path: test.PathMock{Missing: []string{"tmux"}},
 	}
 
-	err := run([]string{dir}, shell)
+	err := run([]string{command, dir}, shell)
 
 	if got, want := err, tmux.ErrTmuxNotInPath; !errors.Is(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
