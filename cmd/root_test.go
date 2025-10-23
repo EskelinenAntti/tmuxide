@@ -113,7 +113,7 @@ func TestRunWithTmuxSessionExists(t *testing.T) {
 	session := ide.Name(dir)
 
 	tmux := &test.TmuxSpy{
-		ExistingSession: session,
+		Sessions: session,
 	}
 
 	shell := shell.Shell{
