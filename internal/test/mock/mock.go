@@ -1,4 +1,4 @@
-package test
+package mock
 
 import (
 	"errors"
@@ -9,8 +9,8 @@ type Path struct {
 	Missing []string
 }
 
-func (pathMock Path) Contains(program string) bool {
-	return !slices.Contains(pathMock.Missing, program)
+func (path Path) Contains(program string) bool {
+	return !slices.Contains(path.Missing, program)
 }
 
 type Git struct {

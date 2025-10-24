@@ -1,17 +1,13 @@
-package git
+package shell
 
 import (
 	"os/exec"
 	"strings"
 )
 
-type Command interface {
-	RevParse(cwd string) (string, error)
-}
+type Git struct{}
 
-type ShellGit struct{}
-
-func (ShellGit) RevParse(cwd string) (string, error) {
+func (Git) RevParse(cwd string) (string, error) {
 	cmd := exec.Command("git", "-C", cwd, "rev-parse", "--show-toplevel")
 	out, err := cmd.Output()
 	if err != nil {

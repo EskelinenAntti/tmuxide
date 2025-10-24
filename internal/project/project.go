@@ -1,4 +1,4 @@
-package ide
+package project
 
 import (
 	"crypto/sha1"
@@ -6,37 +6,38 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/eskelinenantti/tmuxide/internal/git"
-	"github.com/eskelinenantti/tmuxide/internal/shell"
-	"github.com/eskelinenantti/tmuxide/internal/tmux"
 )
 
 type Project struct {
-	Name    string
-	Root    string
-	Windows []tmux.WindowCommand
+	Name       string
+	TargetPath string
+	WorkingDir string
+	IsGitRepo  bool
 }
 
-func ProjectFor(target string, shell shell.Shell) (Project, error) {
-	repository, _ := repository(target, shell.Git)
+type Git interface {
+	RevParse(cwd string) (string, error)
+}
 
-	root, err := root(target, repository)
-	if err != nil {
-		return Project{}, err
-	}
-
+func New(target string, git Git) (Project, error) {
 	name := Name(target)
 
-	windows, err := windowsFor(target, repository, shell)
-	if err != nil {
-		return Project{}, err
+	var workingDir string
+
+	workingDir, err := repository(target, git)
+	isGitRepo := err == nil
+
+	if !isGitRepo {
+		if workingDir, err = dir(target); err != nil {
+			return Project{}, err
+		}
 	}
 
 	return Project{
-		Name:    name,
-		Root:    root,
-		Windows: windows,
+		Name:       name,
+		TargetPath: target,
+		WorkingDir: workingDir,
+		IsGitRepo:  isGitRepo,
 	}, nil
 }
 
@@ -46,14 +47,10 @@ func Name(path string) string {
 	return strings.Join([]string{sessionPrefix, hash(path)}, "-")
 }
 
-func root(target string, repository string) (string, error) {
+func dir(target string) (string, error) {
 	absolutePath, err := filepath.Abs(target)
 	if err != nil {
 		return "", err
-	}
-
-	if repository != "" {
-		return repository, nil
 	}
 
 	fileInfo, err := os.Stat(target)
@@ -68,7 +65,7 @@ func root(target string, repository string) (string, error) {
 	return absolutePath, nil
 }
 
-func repository(target string, git git.Command) (string, error) {
+func repository(target string, git Git) (string, error) {
 	fileInfo, err := os.Stat(target)
 	if err != nil {
 		return "", err
