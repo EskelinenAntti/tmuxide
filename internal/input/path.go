@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 )
 
-func Path(args Args) (string, error) {
+func Path(args []string) (string, error) {
 	var target string
 	var err error
 
@@ -16,7 +16,7 @@ func Path(args Args) (string, error) {
 	case 2:
 		target, err = filepath.Abs(args[1])
 	default:
-		return "", fmt.Errorf("Invalid number of arguments. See %s --help.", args.Command())
+		return "", fmt.Errorf("Invalid number of arguments. See %s --help.", args[0])
 	}
 
 	return target, err

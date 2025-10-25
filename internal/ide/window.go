@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/eskelinenantti/tmuxide/internal/input"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 )
 
@@ -13,7 +12,7 @@ type ShellPath interface {
 	Contains(path string) bool
 }
 
-type Window input.Args
+type Window []string
 
 var ErrEditorNotSet = errors.New(
 	"No editor was configured. Specify the editor you would like to use by setting the $EDITOR variable.\n\n" +

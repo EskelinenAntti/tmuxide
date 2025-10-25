@@ -3,12 +3,18 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
 	"github.com/eskelinenantti/tmuxide/internal/input"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 )
+
+const helpMsgTemplate string = `Usage: %s [path]
+
+Arguments
+	path (optional) - Path to project root directory or file.`
 
 type shellEnv struct {
 	Git  project.Git
@@ -28,9 +34,9 @@ func main() {
 	}
 }
 
-func run(args input.Args, shell shellEnv) error {
-	if args.ContainHelp() {
-		return fmt.Errorf(helpMsgTemplate, args.Command())
+func run(args []string, shell shellEnv) error {
+	if containHelp(args) {
+		return fmt.Errorf(helpMsgTemplate, args[0])
 	}
 
 	target, err := input.Path(args)
@@ -46,7 +52,6 @@ func run(args input.Args, shell shellEnv) error {
 	return ide.Start(project, shell.Tmux, shell.Path)
 }
 
-const helpMsgTemplate string = `Usage: %s [path]
-
-Arguments
-	path (optional) - Path to project root directory or file.`
+func containHelp(args []string) bool {
+	return slices.Contains(args, "-h") || slices.Contains(args, "--help")
+}
