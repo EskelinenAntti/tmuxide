@@ -2,9 +2,9 @@
 
 Turn your terminal into an IDE by automating tmux session and window management with tmuxide.
 
-> Enough fancy words - show me.
+## Enough fancy words, what does it do?
 
-Fair enough. The traditional way of using tmux can be rather tedious. When creating a session, you need to
+The traditional way of using tmux can be rather tedious. When creating a session, you need to
 - Come up with a name for the session (or run in trouble later), and run `tmux new -s my-project` 
 - Create tmux windows manually, either with key shortcuts or `tmux new-window`
 
@@ -12,9 +12,11 @@ When you want to reattach to the same session again, you need to
 - Remember the name of the session, and remember if there was a session in the first place. Alternatively check it with `tmux ls` (this is the step where you run in trouble if you didn't name your session earlier).
 - Run `tmux attach -t project` or `tmux switch -t project` depending if you are already inside tmux or not.
 
-> That's quite a lot to remember.
+That's quite a lot to remember.
 
-True, and this is where tmuxide comes into play. Only command you'll need is
+### Enter tmuxide
+
+This is where tmuxide comes into play. Only command you'll need is
 
 ```bash
 ide path/to/my/project
@@ -25,7 +27,7 @@ In order to reattach to the same session later on, all you need to do is to run 
 
 ## Installation
 
-You can install it with `homebrew`.
+You can install it with `homebrew`
 
 ```bash
 brew install eskelinenantti/cli/tmuxide
