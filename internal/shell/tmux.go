@@ -4,7 +4,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/eskelinenantti/tmuxide/internal/ide/window"
+	"github.com/eskelinenantti/tmuxide/internal/ide"
 )
 
 type Tmux struct{}
@@ -14,13 +14,13 @@ func (Tmux) HasSession(session string) bool {
 	return cmd.Run() == nil
 }
 
-func (Tmux) New(session string, dir string, window window.Window) error {
+func (Tmux) New(session string, dir string, window ide.Window) error {
 	args := []string{"new-session", "-ds", session, "-c", dir}
 	args = append(args, window...)
 	return exec.Command("tmux", args...).Run()
 }
 
-func (Tmux) NewWindow(session string, dir string, window window.Window) error {
+func (Tmux) NewWindow(session string, dir string, window ide.Window) error {
 	args := []string{"new-window", "-d", "-t", session, "-c", dir}
 	args = append(args, window...)
 	return exec.Command("tmux", args...).Run()

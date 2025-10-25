@@ -1,7 +1,7 @@
 package spy
 
 import (
-	"github.com/eskelinenantti/tmuxide/internal/ide/window"
+	"github.com/eskelinenantti/tmuxide/internal/ide"
 )
 
 type Tmux struct {
@@ -21,14 +21,14 @@ func (t *Tmux) HasSession(name string) bool {
 	return t.Sessions == name
 }
 
-func (t *Tmux) New(session string, dir string, window window.Window) error {
+func (t *Tmux) New(session string, dir string, window ide.Window) error {
 	args := []string{"New", session, dir}
 	args = append(args, window...)
 	t.Calls = append(t.Calls, args)
 	return nil
 }
 
-func (t *Tmux) NewWindow(session string, dir string, window window.Window) error {
+func (t *Tmux) NewWindow(session string, dir string, window ide.Window) error {
 	args := []string{"NewWindow", session, dir}
 	args = append(args, window...)
 	t.Calls = append(t.Calls, args)

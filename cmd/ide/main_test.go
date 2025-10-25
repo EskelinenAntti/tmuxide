@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/eskelinenantti/tmuxide/internal/ide/windows"
+	"github.com/eskelinenantti/tmuxide/internal/ide"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/test/mock"
 	"github.com/eskelinenantti/tmuxide/internal/test/spy"
@@ -233,7 +233,7 @@ func TestRunWithoutEditor(t *testing.T) {
 
 	err := run([]string{command, dir}, shell)
 
-	if got, want := err, windows.ErrEditorNotSet; !errors.Is(got, want) {
+	if got, want := err, ide.ErrEditorNotSet; !errors.Is(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 
@@ -323,7 +323,7 @@ func TestRunWithoutTmux(t *testing.T) {
 
 	err := run([]string{command, dir}, shell)
 
-	if got, want := err, windows.ErrTmuxNotInPath; !errors.Is(got, want) {
+	if got, want := err, ide.ErrTmuxNotInstalled; !errors.Is(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 	var expectedCalls [][]string

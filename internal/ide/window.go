@@ -1,13 +1,19 @@
-package windows
+package ide
 
 import (
 	"errors"
 	"fmt"
 	"os"
 
-	"github.com/eskelinenantti/tmuxide/internal/ide/window"
+	"github.com/eskelinenantti/tmuxide/internal/input"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 )
+
+type ShellPath interface {
+	Contains(path string) bool
+}
+
+type Window input.Args
 
 var ErrEditorNotSet = errors.New(
 	"No editor was configured. Specify the editor you would like to use by setting the $EDITOR variable.\n\n" +
@@ -15,23 +21,23 @@ var ErrEditorNotSet = errors.New(
 		"export EDITOR=vim\n",
 )
 
-var ErrTmuxNotInPath = errors.New(
+var ErrTmuxNotInstalled = errors.New(
 	"Did not find tmux, which is a required dependency for ide command.\n\n" +
 
 		"You can install tmux e.g. via homebrew by running\n" +
 		"brew install tmux\n",
 )
 
-func Get(project project.Project, path window.Path) ([]window.Window, error) {
+func Windows(project project.Project, path ShellPath) ([]Window, error) {
 	if !path.Contains("tmux") {
-		return nil, ErrTmuxNotInPath
+		return nil, ErrTmuxNotInstalled
 	}
 
 	editor, err := editor(project, path)
 	if err != nil {
 		return nil, err
 	}
-	windows := []window.Window{editor}
+	windows := []Window{editor}
 
 	lazygit, err := lazygit(project, path)
 	if err == nil {
@@ -40,29 +46,29 @@ func Get(project project.Project, path window.Path) ([]window.Window, error) {
 	return windows, nil
 }
 
-func lazygit(project project.Project, path window.Path) (window.Window, error) {
+func lazygit(project project.Project, path ShellPath) (Window, error) {
 	if !path.Contains("lazygit") {
-		return window.Window{}, errors.New("Lazygit is not installed")
+		return Window{}, errors.New("Lazygit is not installed")
 	}
 
 	if !project.IsGitRepo {
-		return window.Window{}, errors.New("Not insGit repository")
+		return Window{}, errors.New("Not insGit repository")
 	}
 
-	return window.Window{"lazygit"}, nil
+	return Window{"lazygit"}, nil
 }
 
-func editor(project project.Project, path window.Path) (window.Window, error) {
+func editor(project project.Project, path ShellPath) (Window, error) {
 	editorCmd, hasEditor := os.LookupEnv("EDITOR")
 	if !hasEditor || editorCmd == "" {
-		return window.Window{}, ErrEditorNotSet
+		return Window{}, ErrEditorNotSet
 	}
 
 	if !path.Contains(editorCmd) {
-		return window.Window{}, fmt.Errorf(
+		return Window{}, fmt.Errorf(
 			"Editor %s is not installed", editorCmd,
 		)
 	}
 
-	return window.Window{editorCmd, project.TargetPath}, nil
+	return Window{editorCmd, project.TargetPath}, nil
 }

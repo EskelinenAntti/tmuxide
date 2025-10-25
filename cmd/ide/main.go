@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
-	"github.com/eskelinenantti/tmuxide/internal/ide/window"
 	"github.com/eskelinenantti/tmuxide/internal/input"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
@@ -14,7 +13,7 @@ import (
 type shellEnv struct {
 	Git  project.Git
 	Tmux ide.Tmux
-	Path window.Path
+	Path ide.ShellPath
 }
 
 func main() {
