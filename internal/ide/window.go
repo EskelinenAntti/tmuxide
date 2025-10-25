@@ -8,12 +8,6 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/project"
 )
 
-type ShellPath interface {
-	Contains(path string) bool
-}
-
-type Window []string
-
 var ErrEditorNotSet = errors.New(
 	"No editor was configured. Specify the editor you would like to use by setting the $EDITOR variable.\n\n" +
 		"For example, to use Vim as your editor, add the following line to your ~/.zshrc:\n" +
@@ -26,6 +20,12 @@ var ErrTmuxNotInstalled = errors.New(
 		"You can install tmux e.g. via homebrew by running\n" +
 		"brew install tmux\n",
 )
+
+type Window []string
+
+type ShellPath interface {
+	Contains(path string) bool
+}
 
 func Windows(project project.Project, path ShellPath) ([]Window, error) {
 	if !path.Contains("tmux") {
@@ -45,18 +45,6 @@ func Windows(project project.Project, path ShellPath) ([]Window, error) {
 	return windows, nil
 }
 
-func lazygit(project project.Project, path ShellPath) (Window, error) {
-	if !path.Contains("lazygit") {
-		return Window{}, errors.New("Lazygit is not installed")
-	}
-
-	if !project.IsGitRepo {
-		return Window{}, errors.New("Not insGit repository")
-	}
-
-	return Window{"lazygit"}, nil
-}
-
 func editor(project project.Project, path ShellPath) (Window, error) {
 	editorCmd, hasEditor := os.LookupEnv("EDITOR")
 	if !hasEditor || editorCmd == "" {
@@ -70,4 +58,16 @@ func editor(project project.Project, path ShellPath) (Window, error) {
 	}
 
 	return Window{editorCmd, project.TargetPath}, nil
+}
+
+func lazygit(project project.Project, path ShellPath) (Window, error) {
+	if !path.Contains("lazygit") {
+		return Window{}, errors.New("Lazygit is not installed")
+	}
+
+	if !project.IsGitRepo {
+		return Window{}, errors.New("Not insGit repository")
+	}
+
+	return Window{"lazygit"}, nil
 }
