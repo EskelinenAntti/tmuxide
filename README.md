@@ -23,7 +23,9 @@ ide path/to/my/project
 ```
 and you'll find yourself in beautifully named session with your favourite editor and lazygit already open in their own windows.
 
-In order to reattach to the same session later on, all you need to do is to run the same command again, with path to the same directory or file as an argument. It doesn't matter if you are already in tmux or not, or the path you pass as an argument is in different format or even an absolute path. It'll *just work*. 🪄
+In order to reattach to the same session later on, all you need to do is to run the same command again, with path to the same directory or file as an argument.
+
+It doesn't matter if you are already in tmux or not, or whether you use absolute or relative path. It'll *just work*. 🪄
 
 ## Installation
 
@@ -43,6 +45,6 @@ go install github.com/eskelinenantti/tmuxide/cmd/ide
 - [tmux](https://github.com/tmux/tmux)
 
 ### Recommended to be used with
-- [fzf](https://github.com/junegunn/fzf) fuzzy finder. With fzf you can simply type `ide **<tab>` and fuzzy find your way to where ever you need to go.
-- [lazygit](https://github.com/jesseduffield/lazygit) is a terminal UI for Git. tmuxide recognized whether the opened folder or file is within a git repository, and automatically opens lazygit on a second window.
+- [fzf](https://github.com/junegunn/fzf) fuzzy finder. With fzf you can simply type `ide **<tab>` and fuzzy find your way to your project.
+- [lazygit](https://github.com/jesseduffield/lazygit) is a terminal UI for Git. tmuxide recognizes whether the opened folder or file is within a git repository, and if so, opens lazygit in second window.
 
