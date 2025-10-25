@@ -9,12 +9,12 @@ type Path struct {
 	Missing []string
 }
 
-func (pathMock Path) Contains(program string) bool {
-	return !slices.Contains(pathMock.Missing, program)
-}
-
 type Git struct {
 	Repository string
+}
+
+func (pathMock Path) Contains(program string) bool {
+	return !slices.Contains(pathMock.Missing, program)
 }
 
 func (git Git) RevParse(cwd string) (string, error) {
