@@ -9,12 +9,6 @@ type Tmux struct {
 	Sessions string
 }
 
-func (t *Tmux) Attach(session string) error {
-	args := []string{"Attach", session}
-	t.Calls = append(t.Calls, args)
-	return nil
-}
-
 func (t *Tmux) HasSession(name string) bool {
 	args := []string{"HasSession", name}
 	t.Calls = append(t.Calls, args)
@@ -31,6 +25,12 @@ func (t *Tmux) New(session string, dir string, window ide.Window) error {
 func (t *Tmux) NewWindow(session string, dir string, window ide.Window) error {
 	args := []string{"NewWindow", session, dir}
 	args = append(args, window...)
+	t.Calls = append(t.Calls, args)
+	return nil
+}
+
+func (t *Tmux) Attach(session string) error {
+	args := []string{"Attach", session}
 	t.Calls = append(t.Calls, args)
 	return nil
 }
