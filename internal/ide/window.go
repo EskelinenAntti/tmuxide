@@ -36,13 +36,7 @@ func Windows(project project.Project, path ShellPath) ([]Window, error) {
 	if err != nil {
 		return nil, err
 	}
-	windows := []Window{editor}
-
-	lazygit, err := lazygit(project, path)
-	if err == nil {
-		windows = append(windows, lazygit)
-	}
-	return windows, nil
+	return []Window{editor}, nil
 }
 
 func editor(project project.Project, path ShellPath) (Window, error) {
@@ -58,16 +52,4 @@ func editor(project project.Project, path ShellPath) (Window, error) {
 	}
 
 	return Window{editorCmd, project.TargetPath}, nil
-}
-
-func lazygit(project project.Project, path ShellPath) (Window, error) {
-	if !path.Contains("lazygit") {
-		return Window{}, errors.New("Lazygit is not installed")
-	}
-
-	if !project.IsGitRepo {
-		return Window{}, errors.New("Not insGit repository")
-	}
-
-	return Window{"lazygit"}, nil
 }

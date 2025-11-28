@@ -111,7 +111,6 @@ func TestRunWithFileInRepository(t *testing.T) {
 	expectedCalls := [][]string{
 		{"HasSession", session},
 		{"New", session, repository, testEditor, file},
-		{"NewWindow", session, repository, "lazygit"},
 		{"Attach", session},
 	}
 
@@ -150,7 +149,6 @@ func TestRunWithDirectoryInRepository(t *testing.T) {
 	expectedCalls := [][]string{
 		{"HasSession", session},
 		{"New", session, repository, testEditor, dir},
-		{"NewWindow", session, repository, "lazygit"},
 		{"Attach", session},
 	}
 
