@@ -5,7 +5,7 @@ Turn your terminal into an IDE by automating tmux session and window management 
 ## Enough fancy words, what does it do?
 
 The traditional way of using tmux can be rather tedious. When creating a session, you need to
-- Come up with a name for the session (or run in trouble later), and run `tmux new -s my-project` 
+- Come up with a name for the session (or run in trouble later), and run `tmux new -s my-project`
 - Create tmux windows manually, either with key shortcuts or `tmux new-window`
 
 When you want to reattach to the same session again, you need to
@@ -21,7 +21,7 @@ This is where tmuxide comes into play. Only command you'll need is
 ```bash
 ide path/to/my/project
 ```
-and you'll find yourself in beautifully named session with your favourite editor and lazygit already open in their own windows.
+and you'll find yourself in beautifully named session with your favourite editor already open.
 
 In order to reattach to the same session later on, all you need to do is to run the same command again, with path to the same directory or file as an argument.
 
@@ -46,5 +46,4 @@ go install github.com/eskelinenantti/tmuxide/cmd/ide
 
 ### Recommended to be used with
 - [fzf](https://github.com/junegunn/fzf) fuzzy finder. With fzf you can simply type `ide **<tab>` and fuzzy find your way to your project.
-- [lazygit](https://github.com/jesseduffield/lazygit) is a terminal UI for Git. tmuxide recognizes whether the opened folder or file is within a git repository, and if so, opens lazygit in second window.
 
