@@ -1,4 +1,4 @@
-# tmuxide
+# tmuxide 🪄
 
 Turn your terminal into an IDE by automating tmux session and window management with tmuxide.
 
