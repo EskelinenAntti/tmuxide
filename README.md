@@ -25,7 +25,7 @@ and you'll find yourself in nicely named session with your favourite editor alre
 
 In order to reattach to the same session later on, all you need to do is to run the same command again, with path to the same directory or file as an argument.
 
-It doesn't matter if you are already in tmux or not, or whether you use absolute or relative path. It'll *just work*. 🪄
+It doesn't matter if you are already in tmux or not, or whether you use absolute or relative path. It'll *just work* 🪄
 
 ## Installation
 
