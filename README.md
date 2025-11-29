@@ -21,7 +21,7 @@ This is where tmuxide comes into play. Only command you'll need is
 ```bash
 ide path/to/my/project
 ```
-and you'll find yourself in beautifully named session with your favourite editor already open.
+and you'll find yourself in nicely named session with your favourite editor already open.
 
 In order to reattach to the same session later on, all you need to do is to run the same command again, with path to the same directory or file as an argument.
 
