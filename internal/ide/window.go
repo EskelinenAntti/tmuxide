@@ -47,7 +47,7 @@ func editor(project project.Project, path ShellPath) (Window, error) {
 
 	if !path.Contains(editorCmd) {
 		return Window{}, fmt.Errorf(
-			"Editor %s is not installed", editorCmd,
+			"%s editor is not installed", editorCmd,
 		)
 	}
 
