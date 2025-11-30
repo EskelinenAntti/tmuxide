@@ -20,7 +20,6 @@ type Git interface {
 }
 
 func New(target string, git Git) (Project, error) {
-	name := Name(target)
 
 	var workingDir string
 
@@ -33,6 +32,7 @@ func New(target string, git Git) (Project, error) {
 		}
 	}
 
+	name := Name(workingDir)
 	return Project{
 		Name:       name,
 		TargetPath: target,

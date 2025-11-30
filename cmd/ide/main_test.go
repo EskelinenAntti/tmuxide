@@ -39,7 +39,7 @@ func TestRunWithFile(t *testing.T) {
 		t.Fatalf("err=%v", err)
 	}
 
-	session := project.Name(file)
+	session := project.Name(dir)
 
 	expectedCalls := [][]string{
 		{"HasSession", session},
@@ -106,7 +106,7 @@ func TestRunWithFileInRepository(t *testing.T) {
 		t.Fatalf("err=%v", err)
 	}
 
-	session := project.Name(file)
+	session := project.Name(repository)
 
 	expectedCalls := [][]string{
 		{"HasSession", session},
@@ -144,7 +144,7 @@ func TestRunWithDirectoryInRepository(t *testing.T) {
 		t.Fatalf("err=%v", err)
 	}
 
-	session := project.Name(dir)
+	session := project.Name(repository)
 
 	expectedCalls := [][]string{
 		{"HasSession", session},
