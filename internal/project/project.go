@@ -6,28 +6,28 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/eskelinenantti/tmuxide/internal/input"
 )
 
 type Project struct {
 	Name       string
-	TargetPath string
 	WorkingDir string
-	IsGitRepo  bool
 }
 
 type Git interface {
 	RevParse(cwd string) (string, error)
 }
 
-func New(target string, git Git) (Project, error) {
+func New(args input.Args, git Git) (Project, error) {
 
 	var workingDir string
 
-	workingDir, err := repository(target, git)
+	workingDir, err := repository(args.Path, git)
 	isGitRepo := err == nil
 
 	if !isGitRepo {
-		if workingDir, err = dir(target); err != nil {
+		if workingDir, err = dir(args.Path); err != nil {
 			return Project{}, err
 		}
 	}
@@ -35,9 +35,7 @@ func New(target string, git Git) (Project, error) {
 	name := Name(workingDir)
 	return Project{
 		Name:       name,
-		TargetPath: target,
 		WorkingDir: workingDir,
-		IsGitRepo:  isGitRepo,
 	}, nil
 }
 

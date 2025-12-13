@@ -39,17 +39,17 @@ func run(args []string, shell shellEnv) error {
 		return fmt.Errorf(helpMsgTemplate, args[0])
 	}
 
-	target, err := input.Path(args)
+	parsedArgs, err := input.Parse(args)
 	if err != nil {
 		return err
 	}
 
-	project, err := project.New(target, shell.Git)
+	project, err := project.New(parsedArgs, shell.Git)
 	if err != nil {
 		return err
 	}
 
-	return ide.Start(project, shell.Tmux, shell.Path)
+	return ide.Start(parsedArgs, project, shell.Tmux, shell.Path)
 }
 
 func containHelp(args []string) bool {

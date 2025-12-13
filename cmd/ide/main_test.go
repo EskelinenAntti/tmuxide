@@ -15,10 +15,9 @@ import (
 )
 
 const command string = "ide"
-const testEditor string = "editor"
+const program string = "program"
 
-func TestRunWithFile(t *testing.T) {
-	t.Setenv("EDITOR", testEditor)
+func TestRunProgramWithFile(t *testing.T) {
 	os.Unsetenv("TMUX")
 
 	dir := t.TempDir()
@@ -33,7 +32,7 @@ func TestRunWithFile(t *testing.T) {
 		Path: mock.Path{},
 	}
 
-	err := run([]string{command, file}, shell)
+	err := run([]string{command, program, file}, shell)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -43,7 +42,7 @@ func TestRunWithFile(t *testing.T) {
 
 	expectedCalls := [][]string{
 		{"HasSession", session},
-		{"New", session, dir, testEditor, file},
+		{"New", session, dir, program, file},
 		{"Attach", session},
 	}
 
@@ -52,8 +51,7 @@ func TestRunWithFile(t *testing.T) {
 	}
 }
 
-func TestRunWithDirectory(t *testing.T) {
-	t.Setenv("EDITOR", testEditor)
+func TestRunProgramWithDirectory(t *testing.T) {
 	os.Unsetenv("TMUX")
 
 	dir := t.TempDir()
@@ -65,7 +63,7 @@ func TestRunWithDirectory(t *testing.T) {
 		Path: mock.Path{},
 	}
 
-	err := run([]string{command, dir}, shell)
+	err := run([]string{command, program, dir}, shell)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -75,7 +73,7 @@ func TestRunWithDirectory(t *testing.T) {
 
 	expectedCalls := [][]string{
 		{"HasSession", session},
-		{"New", session, dir, testEditor, dir},
+		{"New", session, dir, program, dir},
 		{"Attach", session},
 	}
 
@@ -84,8 +82,7 @@ func TestRunWithDirectory(t *testing.T) {
 	}
 }
 
-func TestRunWithFileInRepository(t *testing.T) {
-	t.Setenv("EDITOR", testEditor)
+func TestRunProgramWithFileInRepository(t *testing.T) {
 	os.Unsetenv("TMUX")
 
 	repository := t.TempDir()
@@ -100,7 +97,7 @@ func TestRunWithFileInRepository(t *testing.T) {
 		Path: mock.Path{},
 	}
 
-	err := run([]string{command, file}, shell)
+	err := run([]string{command, program, file}, shell)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -110,7 +107,7 @@ func TestRunWithFileInRepository(t *testing.T) {
 
 	expectedCalls := [][]string{
 		{"HasSession", session},
-		{"New", session, repository, testEditor, file},
+		{"New", session, repository, program, file},
 		{"Attach", session},
 	}
 
@@ -119,8 +116,7 @@ func TestRunWithFileInRepository(t *testing.T) {
 	}
 }
 
-func TestRunWithDirectoryInRepository(t *testing.T) {
-	t.Setenv("EDITOR", testEditor)
+func TestRunProgramWithDirectoryInRepository(t *testing.T) {
 	os.Unsetenv("TMUX")
 
 	repository := t.TempDir()
@@ -138,7 +134,7 @@ func TestRunWithDirectoryInRepository(t *testing.T) {
 		Path: mock.Path{},
 	}
 
-	err := run([]string{command, dir}, shell)
+	err := run([]string{command, program, dir}, shell)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -148,7 +144,7 @@ func TestRunWithDirectoryInRepository(t *testing.T) {
 
 	expectedCalls := [][]string{
 		{"HasSession", session},
-		{"New", session, repository, testEditor, dir},
+		{"New", session, repository, program, dir},
 		{"Attach", session},
 	}
 
@@ -158,7 +154,6 @@ func TestRunWithDirectoryInRepository(t *testing.T) {
 }
 
 func TestRunWithoutArguments(t *testing.T) {
-	t.Setenv("EDITOR", testEditor)
 	os.Unsetenv("TMUX")
 
 	dir := t.TempDir()
@@ -182,7 +177,7 @@ func TestRunWithoutArguments(t *testing.T) {
 
 	expectedCalls := [][]string{
 		{"HasSession", session},
-		{"New", session, dir, testEditor, dir},
+		{"New", session, dir},
 		{"Attach", session},
 	}
 
@@ -192,7 +187,6 @@ func TestRunWithoutArguments(t *testing.T) {
 }
 
 func TestRunHelp(t *testing.T) {
-	os.Unsetenv("EDITOR")
 	os.Unsetenv("TMUX")
 
 	tmux := &spy.Tmux{}
@@ -216,8 +210,7 @@ func TestRunHelp(t *testing.T) {
 	}
 }
 
-func TestRunWithoutEditor(t *testing.T) {
-	os.Unsetenv("EDITOR")
+func TestRunWithUnknownProgram(t *testing.T) {
 	os.Unsetenv("TMUX")
 
 	tmux := &spy.Tmux{}
@@ -226,12 +219,12 @@ func TestRunWithoutEditor(t *testing.T) {
 	shell := shellEnv{
 		Git:  mock.Git{},
 		Tmux: tmux,
-		Path: mock.Path{},
+		Path: mock.Path{Missing: []string{program}},
 	}
 
-	err := run([]string{command, dir}, shell)
+	err := run([]string{command, program, dir}, shell)
 
-	if got, want := err, ide.ErrEditorNotSet; !errors.Is(got, want) {
+	if got, want := err, ide.ErrUnknownProgram; !errors.Is(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 
@@ -242,7 +235,6 @@ func TestRunWithoutEditor(t *testing.T) {
 }
 
 func TestRunWithTmuxSessionExists(t *testing.T) {
-	t.Setenv("EDITOR", testEditor)
 	t.Setenv("TMUX", "test")
 
 	dir := t.TempDir()
@@ -258,7 +250,7 @@ func TestRunWithTmuxSessionExists(t *testing.T) {
 		Path: mock.Path{},
 	}
 
-	err := run([]string{command, dir}, shell)
+	err := run([]string{command, program, dir}, shell)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -267,7 +259,7 @@ func TestRunWithTmuxSessionExists(t *testing.T) {
 	expectedCalls := [][]string{
 		{"HasSession", session},
 		{"Kill", session},
-		{"New", session, dir, testEditor, dir},
+		{"New", session, dir, program, dir},
 		{"Switch", session},
 	}
 
@@ -277,7 +269,6 @@ func TestRunWithTmuxSessionExists(t *testing.T) {
 }
 
 func TestRunInsideTmux(t *testing.T) {
-	t.Setenv("EDITOR", testEditor)
 	t.Setenv("TMUX", "test")
 
 	dir := t.TempDir()
@@ -289,7 +280,7 @@ func TestRunInsideTmux(t *testing.T) {
 		Path: mock.Path{},
 	}
 
-	err := run([]string{command, dir}, shell)
+	err := run([]string{command, program, dir}, shell)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -299,7 +290,7 @@ func TestRunInsideTmux(t *testing.T) {
 
 	expectedCalls := [][]string{
 		{"HasSession", session},
-		{"New", session, dir, testEditor, dir},
+		{"New", session, dir, program, dir},
 		{"Switch", session},
 	}
 
@@ -309,7 +300,6 @@ func TestRunInsideTmux(t *testing.T) {
 }
 
 func TestRunWithoutTmux(t *testing.T) {
-	t.Setenv("EDITOR", testEditor)
 	os.Unsetenv("TMUX")
 
 	tmuxSpy := &spy.Tmux{}

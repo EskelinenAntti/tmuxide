@@ -3,6 +3,7 @@ package ide
 import (
 	"os"
 
+	"github.com/eskelinenantti/tmuxide/internal/input"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 )
 
@@ -15,8 +16,8 @@ type Tmux interface {
 	Kill(session string) error
 }
 
-func Start(project project.Project, tmux Tmux, path ShellPath) error {
-	windows, err := Windows(project, path)
+func Start(args input.Args, project project.Project, tmux Tmux, path ShellPath) error {
+	windows, err := Windows(args, path)
 	if err != nil {
 		return err
 	}
@@ -39,11 +40,18 @@ func Start(project project.Project, tmux Tmux, path ShellPath) error {
 }
 
 func create(project project.Project, windows []Window, tmux Tmux) error {
-	if err := tmux.New(project.Name, project.WorkingDir, windows[0]); err != nil {
+	var mainWindow = Window{}
+	var otherWindows = []Window{}
+	if len(windows) > 0 {
+		mainWindow = windows[0]
+		otherWindows = windows[1:]
+	}
+
+	if err := tmux.New(project.Name, project.WorkingDir, mainWindow); err != nil {
 		return err
 	}
 
-	for _, window := range windows[1:] {
+	for _, window := range otherWindows {
 		if err := tmux.NewWindow(project.Name, project.WorkingDir, window); err != nil {
 			return err
 		}

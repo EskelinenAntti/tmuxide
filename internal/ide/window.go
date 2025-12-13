@@ -3,15 +3,8 @@ package ide
 import (
 	"errors"
 	"fmt"
-	"os"
 
-	"github.com/eskelinenantti/tmuxide/internal/project"
-)
-
-var ErrEditorNotSet = errors.New(
-	"No editor was configured. Specify the editor you would like to use by setting the $EDITOR variable.\n\n" +
-		"For example, to use Vim as your editor, add the following line to your ~/.zshrc:\n" +
-		"export EDITOR=vim\n",
+	"github.com/eskelinenantti/tmuxide/internal/input"
 )
 
 var ErrTmuxNotInstalled = errors.New(
@@ -21,35 +14,36 @@ var ErrTmuxNotInstalled = errors.New(
 		"brew install tmux\n",
 )
 
+var ErrUnknownProgram = errors.New("Unknown program")
+
 type Window []string
 
 type ShellPath interface {
 	Contains(path string) bool
 }
 
-func Windows(project project.Project, path ShellPath) ([]Window, error) {
+func Windows(args input.Args, path ShellPath) ([]Window, error) {
 	if !path.Contains("tmux") {
 		return nil, ErrTmuxNotInstalled
 	}
 
-	editor, err := editor(project, path)
+	windows, err := windows(args, path)
 	if err != nil {
 		return nil, err
 	}
-	return []Window{editor}, nil
+	return windows, nil
 }
 
-func editor(project project.Project, path ShellPath) (Window, error) {
-	editorCmd, hasEditor := os.LookupEnv("EDITOR")
-	if !hasEditor || editorCmd == "" {
-		return Window{}, ErrEditorNotSet
+func windows(args input.Args, path ShellPath) ([]Window, error) {
+	if args.Program == "" {
+		return []Window{}, nil
 	}
 
-	if !path.Contains(editorCmd) {
-		return Window{}, fmt.Errorf(
-			"%s editor is not installed", editorCmd,
-		)
+	if !path.Contains(args.Program) {
+		return []Window{}, fmt.Errorf("%w: %s", ErrUnknownProgram, args.Program)
 	}
 
-	return Window{editorCmd, project.TargetPath}, nil
+	return []Window{
+		{args.Program, args.Path},
+	}, nil
 }
