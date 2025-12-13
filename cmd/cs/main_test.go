@@ -14,7 +14,7 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/test/spy"
 )
 
-const command string = "ide"
+const command string = "cs"
 const program string = "program"
 
 func TestRunProgramWithFile(t *testing.T) {
