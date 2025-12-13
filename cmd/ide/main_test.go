@@ -186,6 +186,73 @@ func TestRunWithoutArguments(t *testing.T) {
 	}
 }
 
+func TestRunWithFile(t *testing.T) {
+	os.Unsetenv("TMUX")
+
+	dir := t.TempDir()
+
+	file := dir + "/file.txt"
+	os.WriteFile(file, []byte{}, 0644)
+
+	tmux := &spy.Tmux{}
+
+	shell := shellEnv{
+		Git:  mock.Git{},
+		Tmux: tmux,
+		Path: mock.Path{},
+	}
+
+	err := run([]string{command, file}, shell)
+
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+
+	session := project.Name(dir)
+
+	expectedCalls := [][]string{
+		{"HasSession", session},
+		{"New", session, dir},
+		{"Attach", session},
+	}
+
+	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+		t.Fatalf("got=%v, want=%v", got, want)
+	}
+}
+
+func TestRunWithDirectory(t *testing.T) {
+	os.Unsetenv("TMUX")
+
+	dir := t.TempDir()
+
+	tmux := &spy.Tmux{}
+
+	shell := shellEnv{
+		Git:  mock.Git{},
+		Tmux: tmux,
+		Path: mock.Path{},
+	}
+
+	err := run([]string{command, dir}, shell)
+
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+
+	session := project.Name(dir)
+
+	expectedCalls := [][]string{
+		{"HasSession", session},
+		{"New", session, dir},
+		{"Attach", session},
+	}
+
+	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+		t.Fatalf("got=%v, want=%v", got, want)
+	}
+}
+
 func TestRunHelp(t *testing.T) {
 	os.Unsetenv("TMUX")
 
