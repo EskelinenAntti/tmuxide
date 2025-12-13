@@ -36,6 +36,11 @@ func (Tmux) Switch(session string) error {
 	return attachAndRun(cmd)
 }
 
+func (Tmux) Kill(session string) error {
+	cmd := exec.Command("tmux", "kill-session", "-t", session)
+	return cmd.Run()
+}
+
 func attachAndRun(cmd *exec.Cmd) error {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout

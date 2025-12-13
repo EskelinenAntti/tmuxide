@@ -12,6 +12,7 @@ type Tmux interface {
 	NewWindow(session string, dir string, args Window) error
 	Attach(session string) error
 	Switch(session string) error
+	Kill(session string) error
 }
 
 func Start(project project.Project, tmux Tmux, path ShellPath) error {
@@ -20,10 +21,14 @@ func Start(project project.Project, tmux Tmux, path ShellPath) error {
 		return err
 	}
 
-	if !tmux.HasSession(project.Name) {
-		if err := create(project, windows, tmux); err != nil {
+	if tmux.HasSession(project.Name) {
+		if err := tmux.Kill(project.Name); err != nil {
 			return err
 		}
+	}
+
+	if err := create(project, windows, tmux); err != nil {
+		return err
 	}
 
 	if isAttached() {

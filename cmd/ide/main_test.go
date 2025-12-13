@@ -266,6 +266,8 @@ func TestRunWithTmuxSessionExists(t *testing.T) {
 
 	expectedCalls := [][]string{
 		{"HasSession", session},
+		{"Kill", session},
+		{"New", session, dir, testEditor, dir},
 		{"Switch", session},
 	}
 

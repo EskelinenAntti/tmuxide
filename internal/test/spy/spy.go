@@ -40,3 +40,9 @@ func (t *Tmux) Switch(session string) error {
 	t.Calls = append(t.Calls, args)
 	return nil
 }
+
+func (t *Tmux) Kill(session string) error {
+	args := []string{"Kill", session}
+	t.Calls = append(t.Calls, args)
+	return nil
+}
