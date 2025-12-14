@@ -1,9 +1,9 @@
 package ide
 
 import (
+	"errors"
 	"os"
 
-	"github.com/eskelinenantti/tmuxide/internal/input"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 )
 
@@ -16,10 +16,29 @@ type Tmux interface {
 	Kill(session string) error
 }
 
-func Start(args input.Args, project project.Project, tmux Tmux, path ShellPath) error {
-	windows, err := Windows(args, path)
-	if err != nil {
-		return err
+type Window []string
+
+type ShellPath interface {
+	Contains(path string) bool
+}
+
+var ErrTmuxNotInstalled = errors.New(
+	"Did not find tmux, which is a required dependency for ide command.\n\n" +
+
+		"You can install tmux e.g. via homebrew by running\n" +
+		"brew install tmux\n",
+)
+
+var ErrUnknownProgram = errors.New("Unknown program")
+
+func Start(input project.Input, project project.Project, tmux Tmux, path ShellPath) error {
+	if !path.Contains("tmux") {
+		return ErrTmuxNotInstalled
+	}
+
+	windows := []Window{}
+	if len(input.Command) > 0 {
+		windows = []Window{input.Command}
 	}
 
 	if tmux.HasSession(project.Name) {
