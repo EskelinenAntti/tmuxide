@@ -43,6 +43,10 @@ func windows(args input.Args, path ShellPath) ([]Window, error) {
 		return []Window{}, fmt.Errorf("%w: %s", ErrUnknownProgram, args.Program)
 	}
 
+	if args.Path == "" {
+		return []Window{{args.Program}}, nil
+	}
+
 	return []Window{
 		{args.Program, args.Path},
 	}, nil

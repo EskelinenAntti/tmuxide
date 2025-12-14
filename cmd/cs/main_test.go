@@ -16,6 +16,7 @@ import (
 
 const command string = "cs"
 const program string = "program"
+const workingDirFlag = "-c"
 
 func TestRunProgramWithFile(t *testing.T) {
 	os.Unsetenv("TMUX")
@@ -186,23 +187,25 @@ func TestRunWithoutArguments(t *testing.T) {
 	}
 }
 
-func TestRunWithFile(t *testing.T) {
+func TestRunWithWorkingDirInsideRepository(t *testing.T) {
 	os.Unsetenv("TMUX")
 
-	dir := t.TempDir()
+	repository := t.TempDir()
+	dir := filepath.Join(repository, "path/to/dir/in/repository")
 
-	file := dir + "/file.txt"
-	os.WriteFile(file, []byte{}, 0644)
+	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
+		t.Fatalf("err=%v", err)
+	}
 
 	tmux := &spy.Tmux{}
 
 	shell := shellEnv{
-		Git:  mock.Git{},
+		Git:  mock.Git{Repository: repository},
 		Tmux: tmux,
 		Path: mock.Path{},
 	}
 
-	err := run([]string{command, file}, shell)
+	err := run([]string{command, workingDirFlag, dir}, shell)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -221,11 +224,10 @@ func TestRunWithFile(t *testing.T) {
 	}
 }
 
-func TestRunWithDirectory(t *testing.T) {
+func TestRunProgramWithWorkingDir(t *testing.T) {
 	os.Unsetenv("TMUX")
 
 	dir := t.TempDir()
-
 	tmux := &spy.Tmux{}
 
 	shell := shellEnv{
@@ -234,7 +236,7 @@ func TestRunWithDirectory(t *testing.T) {
 		Path: mock.Path{},
 	}
 
-	err := run([]string{command, dir}, shell)
+	err := run([]string{command, workingDirFlag, dir, program}, shell)
 
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -244,7 +246,7 @@ func TestRunWithDirectory(t *testing.T) {
 
 	expectedCalls := [][]string{
 		{"HasSession", session},
-		{"New", session, dir},
+		{"New", session, dir, program},
 		{"Attach", session},
 	}
 
@@ -378,7 +380,7 @@ func TestRunWithoutTmux(t *testing.T) {
 		Path: mock.Path{Missing: []string{"tmux"}},
 	}
 
-	err := run([]string{command, dir}, shell)
+	err := run([]string{command, program, dir}, shell)
 
 	if got, want := err, ide.ErrTmuxNotInstalled; !errors.Is(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)

@@ -21,6 +21,14 @@ type Git interface {
 
 func New(args input.Args, git Git) (Project, error) {
 
+	if args.WorkingDir != "" {
+		return Project{
+			Name:       Name(args.WorkingDir),
+			WorkingDir: args.WorkingDir,
+		}, nil
+
+	}
+
 	var workingDir string
 
 	workingDir, err := repository(args.Path, git)
