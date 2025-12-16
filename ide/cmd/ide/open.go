@@ -22,29 +22,30 @@ var openCmd = &cobra.Command{
 	}}
 
 func Open(args []string, shell shell.ShellEnv) error {
-	var input = project.Input{}
 
+	var workingDir string
+	var command []string
 	var err error
 	switch len(args) {
 	case 0:
-		input.WorkingDir, err = os.Getwd()
+		workingDir, err = os.Getwd()
 	case 1:
-		input.WorkingDir = args[0]
+		workingDir = args[0]
 	default:
-		input.WorkingDir = args[0]
-		input.Command = args[1:]
+		workingDir = args[0]
+		command = args[1:]
 	}
 
 	if err != nil {
 		return err
 	}
 
-	project, err := project.New(input, shell.Git)
-	if err != nil {
-		return err
+	project := project.Project{
+		Name:       project.Name(workingDir),
+		WorkingDir: workingDir,
 	}
 
-	return ide.Start(input, project, shell.Tmux, shell.Path)
+	return ide.Start(command, project, shell.Tmux, shell.Path)
 
 }
 

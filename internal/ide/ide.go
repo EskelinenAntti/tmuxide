@@ -31,14 +31,14 @@ var ErrTmuxNotInstalled = errors.New(
 
 var ErrUnknownProgram = errors.New("Unknown program")
 
-func Start(input project.Input, project project.Project, tmux Tmux, path ShellPath) error {
+func Start(command []string, project project.Project, tmux Tmux, path ShellPath) error {
 	if !path.Contains("tmux") {
 		return ErrTmuxNotInstalled
 	}
 
 	windows := []Window{}
-	if len(input.Command) > 0 {
-		windows = []Window{input.Command}
+	if len(command) > 0 {
+		windows = []Window{command}
 	}
 
 	if tmux.HasSession(project.Name) {

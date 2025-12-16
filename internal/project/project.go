@@ -14,8 +14,6 @@ type Project struct {
 }
 
 type Input struct {
-	WorkingDir string
-	Command    []string
 	EditorPath string
 }
 
@@ -23,25 +21,10 @@ type Git interface {
 	RevParse(cwd string) (string, error)
 }
 
-func New(input Input, git Git) (Project, error) {
-	if input.WorkingDir != "" {
-		return Project{
-			Name:       Name(input.WorkingDir),
-			WorkingDir: input.WorkingDir,
-		}, nil
-	}
-
-	target := input.EditorPath
-	if input.EditorPath == "" {
-		var err error
-		if target, err = os.Getwd(); err != nil {
-			return Project{}, err
-		}
-	}
-
-	workingDir, err := repository(target, git)
+func New(path string, git Git) (Project, error) {
+	workingDir, err := repository(path, git)
 	if err != nil {
-		if workingDir, err = dir(target); err != nil {
+		if workingDir, err = dir(path); err != nil {
 			return Project{}, err
 		}
 	}

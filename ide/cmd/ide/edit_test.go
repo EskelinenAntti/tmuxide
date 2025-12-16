@@ -41,7 +41,7 @@ func TestEdit(t *testing.T) {
 
 	expectedCalls := [][]string{
 		{"HasSession", session},
-		{"New", session, dir, editor},
+		{"New", session, dir, editor, dir},
 		{"Attach", session},
 	}
 
