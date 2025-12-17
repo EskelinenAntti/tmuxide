@@ -22,14 +22,7 @@ type ShellPath interface {
 	Contains(path string) bool
 }
 
-var ErrTmuxNotInstalled = errors.New(
-	"Did not find tmux, which is a required dependency for ide command.\n\n" +
-
-		"You can install tmux e.g. via homebrew by running\n" +
-		"brew install tmux\n",
-)
-
-var ErrUnknownProgram = errors.New("Unknown program")
+var ErrTmuxNotInstalled = errors.New("tmux not installed")
 
 func Start(command []string, project project.Project, tmux Tmux, path ShellPath) error {
 	if !path.Contains("tmux") {

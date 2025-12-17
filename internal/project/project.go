@@ -2,11 +2,14 @@ package project
 
 import (
 	"crypto/sha1"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 )
+
+var ErrInvalidPath = errors.New("invalid path")
 
 type Project struct {
 	Name       string
@@ -43,21 +46,16 @@ func Name(path string) string {
 }
 
 func dir(target string) (string, error) {
-	absolutePath, err := filepath.Abs(target)
-	if err != nil {
-		return "", err
-	}
-
 	fileInfo, err := os.Stat(target)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("cannot open %s: %w", target, ErrInvalidPath)
 	}
 
 	if !fileInfo.IsDir() {
-		return filepath.Dir(absolutePath), nil
+		return filepath.Dir(target), nil
 	}
 
-	return absolutePath, nil
+	return target, nil
 }
 
 func repository(target string, git Git) (string, error) {
