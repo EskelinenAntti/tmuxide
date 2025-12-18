@@ -23,7 +23,7 @@ func (Tmux) New(session string, dir string, cmd []string) error {
 }
 
 func (Tmux) NewWindow(session string, dir string, window []string) error {
-	args := []string{"new-window", "-d", "-t", session, "-c", dir}
+	args := []string{"new-window", "-t", session, "-c", dir}
 	args = append(args, window...)
 	return run(exec.Command("tmux", args...))
 }
