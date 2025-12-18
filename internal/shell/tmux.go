@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-
-	"github.com/eskelinenantti/tmuxide/internal/ide"
 )
 
 var ErrTmuxCommand = errors.New("command tmux")
@@ -18,13 +16,13 @@ func (Tmux) HasSession(session string) bool {
 	return cmd.Run() == nil
 }
 
-func (Tmux) New(session string, dir string, window ide.Window) error {
+func (Tmux) New(session string, dir string, cmd []string) error {
 	args := []string{"new-session", "-ds", session, "-c", dir}
-	args = append(args, window...)
+	args = append(args, cmd...)
 	return run(exec.Command("tmux", args...))
 }
 
-func (Tmux) NewWindow(session string, dir string, window ide.Window) error {
+func (Tmux) NewWindow(session string, dir string, window []string) error {
 	args := []string{"new-window", "-d", "-t", session, "-c", dir}
 	args = append(args, window...)
 	return run(exec.Command("tmux", args...))

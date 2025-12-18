@@ -9,14 +9,12 @@ import (
 
 type Tmux interface {
 	HasSession(name string) bool
-	New(session string, dir string, args Window) error
-	NewWindow(session string, dir string, args Window) error
+	New(session string, dir string, cmd []string) error
+	NewWindow(session string, dir string, cmd []string) error
 	Attach(session string) error
 	Switch(session string) error
 	Kill(session string) error
 }
-
-type Window []string
 
 type ShellPath interface {
 	Contains(path string) bool
@@ -29,18 +27,14 @@ func Start(command []string, project project.Project, tmux Tmux, path ShellPath)
 		return ErrTmuxNotInstalled
 	}
 
-	windows := []Window{}
-	if len(command) > 0 {
-		windows = []Window{command}
+	var err error
+	if !tmux.HasSession(project.Name) {
+		err = tmux.New(project.Name, project.WorkingDir, command)
+	} else {
+		err = tmux.NewWindow(project.Name, project.WorkingDir, command)
 	}
 
-	if tmux.HasSession(project.Name) {
-		if err := tmux.Kill(project.Name); err != nil {
-			return err
-		}
-	}
-
-	if err := create(project, windows, tmux); err != nil {
+	if err != nil {
 		return err
 	}
 
@@ -49,27 +43,6 @@ func Start(command []string, project project.Project, tmux Tmux, path ShellPath)
 	}
 
 	return tmux.Attach(project.Name)
-}
-
-func create(project project.Project, windows []Window, tmux Tmux) error {
-	var mainWindow = Window{}
-	var otherWindows = []Window{}
-	if len(windows) > 0 {
-		mainWindow = windows[0]
-		otherWindows = windows[1:]
-	}
-
-	if err := tmux.New(project.Name, project.WorkingDir, mainWindow); err != nil {
-		return err
-	}
-
-	for _, window := range otherWindows {
-		if err := tmux.NewWindow(project.Name, project.WorkingDir, window); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func isAttached() bool {

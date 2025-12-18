@@ -115,6 +115,39 @@ func TestOpenDirWithProgram(t *testing.T) {
 	}
 }
 
+func TestOpenWithExistingSession(t *testing.T) {
+	t.Setenv("TMUX", "test")
+
+	dir := t.TempDir()
+	session := project.Name(dir)
+
+	tmux := &spy.Tmux{
+		Sessions: session,
+	}
+
+	shell := shell.ShellEnv{
+		Git:  mock.Git{},
+		Tmux: tmux,
+		Path: mock.Path{},
+	}
+
+	err := Open([]string{dir}, shell)
+
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+
+	expectedCalls := [][]string{
+		{"HasSession", session},
+		{"NewWindow", session, dir},
+		{"Switch", session},
+	}
+
+	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+		t.Fatalf("got=%v, want=%v", got, want)
+	}
+}
+
 func TestOpenWithoutTmux(t *testing.T) {
 	os.Unsetenv("TMUX")
 
