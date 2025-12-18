@@ -41,7 +41,8 @@ func TestEdit(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := [][]string{
-		{"HasSession", session},
+		{"HasSession", session, editor},
+		{"HasSession", session, ""},
 		{"New", session, dir, editor, dir},
 		{"Attach", session},
 	}
@@ -75,7 +76,8 @@ func TestEditFile(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := [][]string{
-		{"HasSession", session},
+		{"HasSession", session, editor},
+		{"HasSession", session, ""},
 		{"New", session, dir, editor, file},
 		{"Attach", session},
 	}
@@ -133,7 +135,8 @@ func TestEditDirectory(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := [][]string{
-		{"HasSession", session},
+		{"HasSession", session, editor},
+		{"HasSession", session, ""},
 		{"New", session, dir, editor, dir},
 		{"Attach", session},
 	}
@@ -168,7 +171,8 @@ func TestEditFileInRepository(t *testing.T) {
 	session := project.Name(repository)
 
 	expectedCalls := [][]string{
-		{"HasSession", session},
+		{"HasSession", session, editor},
+		{"HasSession", session, ""},
 		{"New", session, repository, editor, file},
 		{"Attach", session},
 	}
@@ -186,7 +190,8 @@ func TestEditWithExistingSession(t *testing.T) {
 	session := project.Name(dir)
 
 	tmux := &spy.Tmux{
-		Sessions: session,
+		Session: session,
+		Window:  editor,
 	}
 
 	shell := shell.ShellEnv{
@@ -202,8 +207,8 @@ func TestEditWithExistingSession(t *testing.T) {
 	}
 
 	expectedCalls := [][]string{
-		{"HasSession", session},
-		{"NewWindow", session, dir, editor, dir},
+		{"HasSession", session, editor},
+		{"NewWindow", session, editor, dir, editor, dir},
 		{"Switch", session},
 	}
 
@@ -220,7 +225,7 @@ func TestEditWithUnsetEditor(t *testing.T) {
 	session := project.Name(dir)
 
 	tmux := &spy.Tmux{
-		Sessions: session,
+		Session: session,
 	}
 
 	shell := shell.ShellEnv{
@@ -248,7 +253,7 @@ func TestEditWithEditorNotInstalled(t *testing.T) {
 	session := project.Name(dir)
 
 	tmux := &spy.Tmux{
-		Sessions: session,
+		Session: session,
 	}
 
 	shell := shell.ShellEnv{

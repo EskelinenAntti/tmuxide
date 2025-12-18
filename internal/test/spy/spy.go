@@ -1,14 +1,15 @@
 package spy
 
 type Tmux struct {
-	Calls    [][]string
-	Sessions string
+	Calls   [][]string
+	Session string
+	Window  string
 }
 
-func (t *Tmux) HasSession(name string) bool {
-	args := []string{"HasSession", name}
+func (t *Tmux) HasSession(session string, window string) bool {
+	args := []string{"HasSession", session, window}
 	t.Calls = append(t.Calls, args)
-	return t.Sessions == name
+	return t.Session == session && t.Window == window
 }
 
 func (t *Tmux) New(session string, dir string, cmd []string) error {
@@ -18,8 +19,8 @@ func (t *Tmux) New(session string, dir string, cmd []string) error {
 	return nil
 }
 
-func (t *Tmux) NewWindow(session string, dir string, cmd []string) error {
-	args := []string{"NewWindow", session, dir}
+func (t *Tmux) NewWindow(session string, window string, dir string, cmd []string) error {
+	args := []string{"NewWindow", session, window, dir}
 	args = append(args, cmd...)
 	t.Calls = append(t.Calls, args)
 	return nil

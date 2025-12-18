@@ -11,7 +11,12 @@ var ErrTmuxCommand = errors.New("command tmux")
 
 type Tmux struct{}
 
-func (Tmux) HasSession(session string) bool {
+func (Tmux) HasSession(session string, window string) bool {
+	cmd := exec.Command("tmux", "has-session", "-t", fmt.Sprintf("%s:%s", session, window))
+	return cmd.Run() == nil
+}
+
+func (Tmux) HasWindow(session string, window string) bool {
 	cmd := exec.Command("tmux", "has-session", "-t", session)
 	return cmd.Run() == nil
 }
@@ -22,9 +27,16 @@ func (Tmux) New(session string, dir string, cmd []string) error {
 	return run(exec.Command("tmux", args...))
 }
 
-func (Tmux) NewWindow(session string, dir string, window []string) error {
-	args := []string{"new-window", "-t", session, "-c", dir}
-	args = append(args, window...)
+func (Tmux) NewWindow(session string, window string, workingDir string, cmd []string) error {
+	args := []string{"new-window", "-k", "-c", workingDir}
+
+	if len(cmd) == 0 {
+		args = append(args, "-t", fmt.Sprintf("%s", session))
+	} else {
+		args = append(args, "-n", cmd[0], "-t", fmt.Sprintf("%s:%s", session, window))
+	}
+
+	args = append(args, cmd...)
 	return run(exec.Command("tmux", args...))
 }
 

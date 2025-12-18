@@ -37,7 +37,7 @@ func TestOpen(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := [][]string{
-		{"HasSession", session},
+		{"HasSession", session, ""},
 		{"New", session, dir},
 		{"Attach", session},
 	}
@@ -74,7 +74,7 @@ func TestOpenDirInsideRepository(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := [][]string{
-		{"HasSession", session},
+		{"HasSession", session, ""},
 		{"New", session, dir},
 		{"Attach", session},
 	}
@@ -105,7 +105,8 @@ func TestOpenDirWithProgram(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := [][]string{
-		{"HasSession", session},
+		{"HasSession", session, program},
+		{"HasSession", session, ""},
 		{"New", session, dir, program},
 		{"Attach", session},
 	}
@@ -122,7 +123,7 @@ func TestOpenWithExistingSession(t *testing.T) {
 	session := project.Name(dir)
 
 	tmux := &spy.Tmux{
-		Sessions: session,
+		Session: session,
 	}
 
 	shell := shell.ShellEnv{
@@ -138,8 +139,8 @@ func TestOpenWithExistingSession(t *testing.T) {
 	}
 
 	expectedCalls := [][]string{
-		{"HasSession", session},
-		{"NewWindow", session, dir},
+		{"HasSession", session, ""},
+		{"NewWindow", session, "", dir},
 		{"Switch", session},
 	}
 

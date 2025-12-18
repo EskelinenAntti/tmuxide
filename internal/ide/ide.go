@@ -8,9 +8,9 @@ import (
 )
 
 type Tmux interface {
-	HasSession(name string) bool
+	HasSession(session string, window string) bool
 	New(session string, dir string, cmd []string) error
-	NewWindow(session string, dir string, cmd []string) error
+	NewWindow(session string, window string, dir string, cmd []string) error
 	Attach(session string) error
 	Switch(session string) error
 	Kill(session string) error
@@ -28,10 +28,20 @@ func Start(command []string, project project.Project, tmux Tmux, path ShellPath)
 	}
 
 	var err error
-	if !tmux.HasSession(project.Name) {
-		err = tmux.New(project.Name, project.WorkingDir, command)
+	if len(command) == 0 {
+		if tmux.HasSession(project.Name, "") {
+			err = tmux.NewWindow(project.Name, "", project.WorkingDir, command)
+		} else {
+			err = tmux.New(project.Name, project.WorkingDir, command)
+		}
 	} else {
-		err = tmux.NewWindow(project.Name, project.WorkingDir, command)
+		if tmux.HasSession(project.Name, command[0]) {
+			err = tmux.NewWindow(project.Name, command[0], project.WorkingDir, command)
+		} else if tmux.HasSession(project.Name, "") {
+			err = tmux.NewWindow(project.Name, "", project.WorkingDir, command)
+		} else {
+			err = tmux.New(project.Name, project.WorkingDir, command)
+		}
 	}
 
 	if err != nil {
