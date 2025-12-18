@@ -191,6 +191,42 @@ func TestEditWithExistingSession(t *testing.T) {
 
 	tmux := &spy.Tmux{
 		Session: session,
+		Window:  "",
+	}
+
+	shell := shell.ShellEnv{
+		Git:  mock.Git{},
+		Tmux: tmux,
+		Path: mock.Path{},
+	}
+
+	err := Edit([]string{dir}, shell)
+
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+
+	expectedCalls := [][]string{
+		{"HasSession", session, editor},
+		{"HasSession", session, ""},
+		{"NewWindow", session, "", dir, editor, dir},
+		{"Switch", session},
+	}
+
+	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+		t.Fatalf("got=%v, want=%v", got, want)
+	}
+}
+
+func TestEditWithExistingWindow(t *testing.T) {
+	t.Setenv("TMUX", "test")
+	t.Setenv("EDITOR", editor)
+
+	dir := t.TempDir()
+	session := project.Name(dir)
+
+	tmux := &spy.Tmux{
+		Session: session,
 		Window:  editor,
 	}
 
