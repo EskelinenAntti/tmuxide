@@ -19,8 +19,8 @@ func (t *Tmux) New(session string, dir string, cmd []string) error {
 	return nil
 }
 
-func (t *Tmux) NewWindow(session string, window string, dir string, cmd []string) error {
-	args := []string{"NewWindow", session, window, dir}
+func (t *Tmux) NewWindow(session string, window string, dir string, name string, cmd []string) error {
+	args := []string{"NewWindow", session, window, dir, name}
 	args = append(args, cmd...)
 	t.Calls = append(t.Calls, args)
 	return nil

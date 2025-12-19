@@ -209,7 +209,7 @@ func TestEditWithExistingSession(t *testing.T) {
 	expectedCalls := [][]string{
 		{"HasSession", session, editor},
 		{"HasSession", session, ""},
-		{"NewWindow", session, "", dir, editor, dir},
+		{"NewWindow", session, "", dir, editor, editor, dir},
 		{"Switch", session},
 	}
 
@@ -244,7 +244,7 @@ func TestEditWithExistingWindow(t *testing.T) {
 
 	expectedCalls := [][]string{
 		{"HasSession", session, editor},
-		{"NewWindow", session, editor, dir, editor, dir},
+		{"NewWindow", session, editor, dir, editor, editor, dir},
 		{"Switch", session},
 	}
 

@@ -27,13 +27,11 @@ func (Tmux) New(session string, dir string, cmd []string) error {
 	return run(exec.Command("tmux", args...))
 }
 
-func (Tmux) NewWindow(session string, window string, workingDir string, cmd []string) error {
-	args := []string{"new-window", "-k", "-c", workingDir}
+func (Tmux) NewWindow(session string, window string, workingDir string, name string, cmd []string) error {
+	args := []string{"new-window", "-k", "-c", workingDir, "-t", fmt.Sprintf("%s:%s", session, window)}
 
-	if len(cmd) == 0 {
-		args = append(args, "-t", fmt.Sprintf("%s", session))
-	} else {
-		args = append(args, "-n", cmd[0], "-t", fmt.Sprintf("%s:%s", session, window))
+	if name != "" {
+		args = append(args, "-n", name)
 	}
 
 	args = append(args, cmd...)

@@ -140,7 +140,7 @@ func TestOpenWithExistingSession(t *testing.T) {
 
 	expectedCalls := [][]string{
 		{"HasSession", session, ""},
-		{"NewWindow", session, "", dir},
+		{"NewWindow", session, "", dir, ""},
 		{"Switch", session},
 	}
 
