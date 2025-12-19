@@ -33,7 +33,12 @@ func ForPath(path string, git Git) (Project, error) {
 		}
 	}
 
-	name := Name(workingDir)
+	absolutePath, err := filepath.Abs(workingDir)
+	if err != nil {
+		return Project{}, err
+	}
+
+	name := Name(absolutePath)
 	return Project{
 		Name:       name,
 		WorkingDir: workingDir,
@@ -50,14 +55,14 @@ func ForDir(directory string) (Project, error) {
 		return Project{}, ErrNotADirectory
 	}
 
-	absolutePath, err := filepath.Abs(directory)
+	absoluteDir, err := filepath.Abs(directory)
 	if err != nil {
 		return Project{}, err
 	}
 
 	return Project{
-		Name:       Name(absolutePath),
-		WorkingDir: absolutePath,
+		Name:       Name(absoluteDir),
+		WorkingDir: absoluteDir,
 	}, nil
 }
 
