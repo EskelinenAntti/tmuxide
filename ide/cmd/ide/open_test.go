@@ -170,3 +170,30 @@ func TestOpenWithoutTmux(t *testing.T) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
+
+func TestOpenFile(t *testing.T) {
+	os.Unsetenv("TMUX")
+
+	dir := t.TempDir()
+	file := dir + "/file.txt"
+	os.WriteFile(file, []byte{}, 0644)
+
+	tmux := &spy.Tmux{}
+
+	shell := shell.ShellEnv{
+		Git:  mock.Git{},
+		Tmux: tmux,
+		Path: mock.Path{},
+	}
+
+	err := Open([]string{file}, shell)
+
+	if got, want := err, project.ErrNotADirectory; !errors.Is(got, want) {
+		t.Fatalf("got=%v, want=%v", got, want)
+	}
+
+	var expectedCalls [][]string
+	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+		t.Fatalf("got=%v, want=%v", got, want)
+	}
+}

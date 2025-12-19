@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,8 +17,8 @@ var ErrEditorNotInstalled = errors.New("editor not installed")
 var ErrEditorEnvNotSet = errors.New("editor not configured")
 
 var editCmd = &cobra.Command{
-	Use:   "edit",
-	Short: "Open editor within a new tmux session",
+	Use:   "edit [path]",
+	Short: "Open editor with a tmux session",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Edit(args, shell.ShellEnv{
@@ -54,9 +55,9 @@ func Edit(args []string, shell shell.ShellEnv) error {
 
 	command := append(editorCmd, editorPath)
 
-	project, err := project.New(editorPath, shell.Git)
+	project, err := project.ForPath(editorPath, shell.Git)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not edit %s: %w", editorPath, err)
 	}
 
 	return ide.Start(command, project, shell.Tmux, shell.Path)

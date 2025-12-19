@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
@@ -11,7 +12,7 @@ import (
 
 var openCmd = &cobra.Command{
 	Use:   "open",
-	Short: "Open new session within a folder",
+	Short: "Open folder with a tmux session",
 	Args:  cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Open(args, shell.ShellEnv{
@@ -22,7 +23,6 @@ var openCmd = &cobra.Command{
 	}}
 
 func Open(args []string, shell shell.ShellEnv) error {
-
 	var workingDir string
 	var command []string
 	var err error
@@ -40,9 +40,9 @@ func Open(args []string, shell shell.ShellEnv) error {
 		return err
 	}
 
-	project := project.Project{
-		Name:       project.Name(workingDir),
-		WorkingDir: workingDir,
+	project, err := project.ForDir(workingDir)
+	if err != nil {
+		return fmt.Errorf("could not open %s: %w", workingDir, err)
 	}
 
 	return ide.Start(command, project, shell.Tmux, shell.Path)

@@ -10,6 +10,7 @@ import (
 )
 
 var ErrInvalidPath = errors.New("invalid path")
+var ErrNotADirectory = errors.New("not a directory")
 
 type Project struct {
 	Name       string
@@ -24,7 +25,7 @@ type Git interface {
 	RevParse(cwd string) (string, error)
 }
 
-func New(path string, git Git) (Project, error) {
+func ForPath(path string, git Git) (Project, error) {
 	workingDir, err := repository(path, git)
 	if err != nil {
 		if workingDir, err = dir(path); err != nil {
@@ -39,6 +40,27 @@ func New(path string, git Git) (Project, error) {
 	}, nil
 }
 
+func ForDir(directory string) (Project, error) {
+	fileInfo, err := os.Stat(directory)
+	if err != nil {
+		return Project{}, ErrInvalidPath
+	}
+
+	if !fileInfo.IsDir() {
+		return Project{}, ErrNotADirectory
+	}
+
+	absolutePath, err := filepath.Abs(directory)
+	if err != nil {
+		return Project{}, err
+	}
+
+	return Project{
+		Name:       Name(absolutePath),
+		WorkingDir: absolutePath,
+	}, nil
+}
+
 func Name(path string) string {
 	basename := filepath.Base(path)
 	sessionPrefix := strings.ReplaceAll(basename, ".", "_")
@@ -48,7 +70,7 @@ func Name(path string) string {
 func dir(target string) (string, error) {
 	fileInfo, err := os.Stat(target)
 	if err != nil {
-		return "", fmt.Errorf("cannot open %s: %w", target, ErrInvalidPath)
+		return "", ErrInvalidPath
 	}
 
 	if !fileInfo.IsDir() {
