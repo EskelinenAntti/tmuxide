@@ -5,17 +5,24 @@ import (
 	"os"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
+	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/spf13/cobra"
 )
+
+type ShellEnv struct {
+	Git  project.Git
+	Tmux shell.Runner
+	Path ide.ShellPath
+}
 
 var rootCmd = &cobra.Command{
 	Use:   "ide",
 	Short: "Turn tmux and your favourite editor into an ide",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return Open(args, shell.ShellEnv{
+		return Open(args, ShellEnv{
 			Git:  shell.Git{},
-			Tmux: shell.Tmux{},
+			Tmux: shell.SubCmdRunner{Command: "tmux"},
 			Path: shell.Path{},
 		})
 	}}

@@ -1,69 +1,92 @@
 package shell
 
 import (
-	"errors"
 	"fmt"
-	"os"
-	"os/exec"
+	"strings"
 )
 
-var ErrTmuxCommand = errors.New("command tmux")
-
-type Tmux struct{}
-
-func (Tmux) HasSession(session string, window string) bool {
-	cmd := exec.Command("tmux", "has-session", "-t", fmt.Sprintf("%s:%s", session, window))
-	return cmd.Run() == nil
+type Parser interface {
+	Parse() []string
 }
 
-func (Tmux) HasWindow(session string, window string) bool {
-	cmd := exec.Command("tmux", "has-session", "-t", session)
-	return cmd.Run() == nil
+type Runner interface {
+	Run(name string, args Parser) error
+	Attach(name string, args Parser) error
 }
 
-func (Tmux) New(session string, dir string, cmd []string) error {
-	args := []string{"new-session", "-ds", session, "-c", dir}
-	args = append(args, cmd...)
-	return run(exec.Command("tmux", args...))
+type Tmux struct {
+	Runner
 }
 
-func (Tmux) NewWindow(session string, window string, workingDir string, name string, cmd []string) error {
-	args := []string{"new-window", "-k", "-c", workingDir, "-t", fmt.Sprintf("%s:%s", session, window)}
+func (t Tmux) HasSession(targetSession string, targetWindow string) bool {
+	return t.Run("has-session", Args{TargetSession: targetSession, TargetWindow: targetWindow}) == nil
+}
 
-	if name != "" {
-		args = append(args, "-n", name)
+func (t Tmux) New(session string, dir string, cmd []string) error {
+	return t.Run("new-session", Args{SessionName: session, Detach: true, WorkingDir: dir, Command: cmd})
+}
+
+func (t Tmux) NewWindow(session string, window string, workingDir string, name string, cmd []string) error {
+	return t.Run("new-window", Args{Kill: true, WindowName: name, WorkingDir: workingDir, TargetSession: session, TargetWindow: window, Command: cmd})
+}
+
+func (t Tmux) Attach(session string) error {
+	return t.Runner.Attach("attach", Args{TargetSession: session})
+}
+
+func (t Tmux) Switch(session string) error {
+	return t.Runner.Attach("switch-client", Args{TargetSession: session})
+}
+
+func (t Tmux) Kill(session string) error {
+	return t.Run("kill-session", Args{TargetSession: session})
+}
+
+type Args struct {
+	TargetSession string
+	TargetWindow  string
+	Detach        bool
+	SessionName   string
+	WindowName    string
+	WorkingDir    string
+	Command       []string
+	Kill          bool
+}
+
+func (a Args) Parse() []string {
+	args := []string{}
+
+	if a.TargetSession != "" || a.TargetWindow != "" {
+		args = append(args, "-t", fmt.Sprintf("%s:%s", a.TargetSession, a.TargetWindow))
 	}
 
-	args = append(args, cmd...)
-	return run(exec.Command("tmux", args...))
-}
-
-func (Tmux) Attach(session string) error {
-	tmuxCmd := exec.Command("tmux", "attach", "-t", session)
-	return attach(tmuxCmd)
-}
-
-func (Tmux) Switch(session string) error {
-	cmd := exec.Command("tmux", "switch-client", "-t", session)
-	return attach(cmd)
-}
-
-func (Tmux) Kill(session string) error {
-	cmd := exec.Command("tmux", "kill-session", "-t", session)
-	return run(cmd)
-}
-
-func attach(cmd *exec.Cmd) error {
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return run(cmd)
-}
-
-func run(cmd *exec.Cmd) error {
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("%w %v: %w", ErrTmuxCommand, cmd.Args, err)
+	if a.WorkingDir != "" {
+		args = append(args, "-c", a.WorkingDir)
 	}
-	return nil
+
+	if a.Detach {
+		args = append(args, "-d")
+	}
+
+	if a.Kill {
+		args = append(args, "-k")
+	}
+
+	if a.SessionName != "" {
+		args = append(args, "-s", a.SessionName)
+	}
+
+	if a.WindowName != "" {
+		args = append(args, "-n", a.WindowName)
+	}
+
+	if len(a.Command) > 0 {
+		args = append(args, a.Command...)
+	}
+
+	return args
+}
+
+func (a Args) String() string {
+	return strings.Join(a.Parse(), " ")
 }

@@ -15,14 +15,14 @@ var openCmd = &cobra.Command{
 	Short: "Open folder with a tmux session",
 	Args:  cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return Open(args, shell.ShellEnv{
+		return Open(args, ShellEnv{
 			Git:  shell.Git{},
-			Tmux: shell.Tmux{},
+			Tmux: shell.SubCmdRunner{Command: "tmux"},
 			Path: shell.Path{},
 		})
 	}}
 
-func Open(args []string, shell shell.ShellEnv) error {
+func Open(args []string, shell ShellEnv) error {
 	var workingDir string
 	var command []string
 	var err error

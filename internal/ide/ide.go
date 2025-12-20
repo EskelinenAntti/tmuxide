@@ -5,16 +5,8 @@ import (
 	"os"
 
 	"github.com/eskelinenantti/tmuxide/internal/project"
+	"github.com/eskelinenantti/tmuxide/internal/shell"
 )
-
-type Tmux interface {
-	HasSession(session string, window string) bool
-	New(session string, dir string, cmd []string) error
-	NewWindow(session string, window string, workingDir string, name string, cmd []string) error
-	Attach(session string) error
-	Switch(session string) error
-	Kill(session string) error
-}
 
 type ShellPath interface {
 	Contains(path string) bool
@@ -22,7 +14,7 @@ type ShellPath interface {
 
 var ErrTmuxNotInstalled = errors.New("tmux not installed")
 
-func Start(command []string, project project.Project, tmux Tmux, path ShellPath) error {
+func Start(command []string, project project.Project, tmuxRunner shell.Runner, path ShellPath) error {
 	if !path.Contains("tmux") {
 		return ErrTmuxNotInstalled
 	}
@@ -32,6 +24,7 @@ func Start(command []string, project project.Project, tmux Tmux, path ShellPath)
 		windowName = command[0]
 	}
 
+	tmux := shell.Tmux{Runner: tmuxRunner}
 	var err error
 	if len(command) == 0 {
 		if tmux.HasSession(project.Name, "") {

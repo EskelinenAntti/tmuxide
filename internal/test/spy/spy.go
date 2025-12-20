@@ -1,45 +1,34 @@
 package spy
 
+import (
+	"errors"
+	"github.com/eskelinenantti/tmuxide/internal/shell"
+	"slices"
+)
+
+type Call struct {
+	Name string
+	Args shell.Parser
+}
+
 type Tmux struct {
-	Calls   [][]string
-	Session string
-	Window  string
+	Calls  []Call
+	Errors []string
 }
 
-func (t *Tmux) HasSession(session string, window string) bool {
-	args := []string{"HasSession", session, window}
-	t.Calls = append(t.Calls, args)
-	return t.Session == session && t.Window == window
-}
+func (t *Tmux) Run(name string, args shell.Parser) error {
+	call := Call{Name: name, Args: args}
+	t.Calls = append(t.Calls, call)
 
-func (t *Tmux) New(session string, dir string, cmd []string) error {
-	args := []string{"New", session, dir}
-	args = append(args, cmd...)
-	t.Calls = append(t.Calls, args)
+	for i, error := range t.Errors {
+		if name == error {
+			t.Errors = slices.Delete(t.Errors, i, i+1)
+			return errors.New("error")
+		}
+	}
 	return nil
 }
 
-func (t *Tmux) NewWindow(session string, window string, dir string, name string, cmd []string) error {
-	args := []string{"NewWindow", session, window, dir, name}
-	args = append(args, cmd...)
-	t.Calls = append(t.Calls, args)
-	return nil
-}
-
-func (t *Tmux) Attach(session string) error {
-	args := []string{"Attach", session}
-	t.Calls = append(t.Calls, args)
-	return nil
-}
-
-func (t *Tmux) Switch(session string) error {
-	args := []string{"Switch", session}
-	t.Calls = append(t.Calls, args)
-	return nil
-}
-
-func (t *Tmux) Kill(session string) error {
-	args := []string{"Kill", session}
-	t.Calls = append(t.Calls, args)
-	return nil
+func (t *Tmux) Attach(name string, args shell.Parser) error {
+	return t.Run(name, args)
 }
