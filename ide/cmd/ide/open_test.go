@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
@@ -12,6 +11,7 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/eskelinenantti/tmuxide/internal/test/mock"
 	"github.com/eskelinenantti/tmuxide/internal/test/spy"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestOpen(t *testing.T) {
@@ -33,7 +33,7 @@ func TestOpen(t *testing.T) {
 	err := Open([]string{}, shellEnv)
 
 	if err != nil {
-		t.Fatalf("err=%v", err)
+		t.Errorf("err=%v", err)
 	}
 
 	session := project.Name(dir)
@@ -44,8 +44,8 @@ func TestOpen(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
 
@@ -56,7 +56,7 @@ func TestOpenDirInsideRepository(t *testing.T) {
 	dir := filepath.Join(repository, "path/to/dir/in/repository")
 
 	if err := os.MkdirAll(dir, os.ModePerm); err != nil {
-		t.Fatalf("err=%v", err)
+		t.Errorf("err=%v", err)
 	}
 
 	tmuxSpy := &spy.Tmux{
@@ -72,7 +72,7 @@ func TestOpenDirInsideRepository(t *testing.T) {
 	err := Open([]string{dir}, shellEnv)
 
 	if err != nil {
-		t.Fatalf("err=%v", err)
+		t.Errorf("err=%v", err)
 	}
 
 	session := project.Name(dir)
@@ -83,8 +83,8 @@ func TestOpenDirInsideRepository(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
 
@@ -105,7 +105,7 @@ func TestOpenDirWithProgram(t *testing.T) {
 	err := Open([]string{dir, program}, shellEnv)
 
 	if err != nil {
-		t.Fatalf("err=%v", err)
+		t.Errorf("err=%v", err)
 	}
 
 	session := project.Name(dir)
@@ -117,8 +117,8 @@ func TestOpenDirWithProgram(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
 
@@ -141,7 +141,7 @@ func TestOpenWithExistingSession(t *testing.T) {
 	err := Open([]string{dir}, shellEnv)
 
 	if err != nil {
-		t.Fatalf("err=%v", err)
+		t.Errorf("err=%v", err)
 	}
 
 	expectedCalls := []spy.Call{
@@ -150,8 +150,8 @@ func TestOpenWithExistingSession(t *testing.T) {
 		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
 
@@ -169,11 +169,11 @@ func TestOpenWithoutTmux(t *testing.T) {
 	err := Open([]string{}, shellEnv)
 
 	if got, want := err, ide.ErrTmuxNotInstalled; !errors.Is(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+		t.Errorf("got=%v, want=%v", got, want)
 	}
 	var expectedCalls []spy.Call
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
 
@@ -195,11 +195,11 @@ func TestOpenFile(t *testing.T) {
 	err := Open([]string{file}, shellEnv)
 
 	if got, want := err, project.ErrNotADirectory; !errors.Is(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+		t.Errorf("got=%v, want=%v", got, want)
 	}
 
 	var expectedCalls []spy.Call
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
