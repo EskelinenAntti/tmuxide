@@ -3,13 +3,13 @@ package cmd
 import (
 	"errors"
 	"os"
-	"reflect"
 	"testing"
 
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/eskelinenantti/tmuxide/internal/test/mock"
 	"github.com/eskelinenantti/tmuxide/internal/test/spy"
+	"github.com/google/go-cmp/cmp"
 )
 
 const program string = "program"
@@ -48,8 +48,8 @@ func TestEdit(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
 
@@ -86,8 +86,8 @@ func TestEditFile(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
 
@@ -109,11 +109,11 @@ func TestEditNonExistingFile(t *testing.T) {
 	err := Edit([]string{file}, shellEnv)
 
 	if got, want := err, project.ErrInvalidPath; !errors.Is(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+		t.Errorf("got=%v, want=%v", got, want)
 	}
 	var expectedCalls []spy.Call
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
 
@@ -147,8 +147,8 @@ func TestEditDirectory(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
 
@@ -185,8 +185,8 @@ func TestEditFileInRepository(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
 
@@ -220,8 +220,8 @@ func TestEditFromAnotherSession(t *testing.T) {
 		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
 
@@ -252,8 +252,8 @@ func TestEditWithExistingWindow(t *testing.T) {
 		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
 
@@ -274,11 +274,11 @@ func TestEditWithUnsetEditor(t *testing.T) {
 	err := Edit([]string{dir}, shellEnv)
 
 	if got, want := err, ErrEditorEnvNotSet; !errors.Is(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+		t.Errorf("got=%v, want=%v", got, want)
 	}
 	var expectedCalls []spy.Call
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
 
@@ -299,10 +299,10 @@ func TestEditWithEditorNotInstalled(t *testing.T) {
 	err := Edit([]string{dir}, shellEnv)
 
 	if got, want := err, ErrEditorNotInstalled; !errors.Is(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+		t.Errorf("got=%v, want=%v", got, want)
 	}
 	var expectedCalls []spy.Call
-	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
-		t.Fatalf("got=%v, want=%v", got, want)
+	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
 	}
 }
