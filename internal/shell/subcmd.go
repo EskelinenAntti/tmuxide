@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
 
 var ErrSubCmd = errors.New("command failed")
@@ -13,7 +15,7 @@ type SubCmdRunner struct {
 	Command string
 }
 
-func (c SubCmdRunner) Attach(name string, args Parser) error {
+func (c SubCmdRunner) Attach(name string, args tmux.Parser) error {
 	cmd := c.createCmd(name, args)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -21,7 +23,7 @@ func (c SubCmdRunner) Attach(name string, args Parser) error {
 	return c.runCmd(cmd)
 }
 
-func (c SubCmdRunner) Run(name string, args Parser) error {
+func (c SubCmdRunner) Run(name string, args tmux.Parser) error {
 	cmd := c.createCmd(name, args)
 	return c.runCmd(cmd)
 }
@@ -34,7 +36,7 @@ func (c SubCmdRunner) runCmd(cmd *exec.Cmd) error {
 	return nil
 }
 
-func (c SubCmdRunner) createCmd(name string, args Parser) *exec.Cmd {
+func (c SubCmdRunner) createCmd(name string, args tmux.Parser) *exec.Cmd {
 	cmd := exec.Command("tmux", name)
 	cmd.Args = append(cmd.Args, args.Parse()...)
 	return cmd

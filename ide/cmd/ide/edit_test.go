@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/eskelinenantti/tmuxide/internal/project"
-	"github.com/eskelinenantti/tmuxide/internal/shell"
+	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/eskelinenantti/tmuxide/internal/test/mock"
 	"github.com/eskelinenantti/tmuxide/internal/test/spy"
 )
@@ -24,13 +24,13 @@ func TestEdit(t *testing.T) {
 	os.WriteFile(file, []byte{}, 0644)
 	t.Chdir(dir)
 
-	tmux := &spy.Tmux{
+	tmuxSpy := &spy.Tmux{
 		Errors: []string{"has-session", "has-session"},
 	}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{},
 	}
 
@@ -42,13 +42,13 @@ func TestEdit(t *testing.T) {
 
 	session := project.Name(dir)
 	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: shell.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: shell.Args{TargetSession: session, TargetWindow: ""}},
-		{Name: "new-session", Args: shell.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, dir}}},
-		{Name: "attach", Args: shell.Args{TargetSession: session}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: ""}},
+		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, dir}}},
+		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
@@ -61,13 +61,13 @@ func TestEditFile(t *testing.T) {
 	file := dir + "/file.txt"
 	os.WriteFile(file, []byte{}, 0644)
 
-	tmux := &spy.Tmux{
+	tmuxSpy := &spy.Tmux{
 		Errors: []string{"has-session", "has-session"},
 	}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{},
 	}
 
@@ -80,13 +80,13 @@ func TestEditFile(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: shell.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: shell.Args{TargetSession: session, TargetWindow: ""}},
-		{Name: "new-session", Args: shell.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, file}}},
-		{Name: "attach", Args: shell.Args{TargetSession: session}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: ""}},
+		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, file}}},
+		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
@@ -98,11 +98,11 @@ func TestEditNonExistingFile(t *testing.T) {
 	dir := t.TempDir()
 	file := dir + "/file.txt"
 
-	tmux := &spy.Tmux{}
+	tmuxSpy := &spy.Tmux{}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{},
 	}
 
@@ -112,7 +112,7 @@ func TestEditNonExistingFile(t *testing.T) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 	var expectedCalls []spy.Call
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
@@ -122,13 +122,13 @@ func TestEditDirectory(t *testing.T) {
 	t.Setenv("EDITOR", editor)
 
 	dir := t.TempDir()
-	tmux := &spy.Tmux{
+	tmuxSpy := &spy.Tmux{
 		Errors: []string{"has-session", "has-session"},
 	}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{},
 	}
 
@@ -141,13 +141,13 @@ func TestEditDirectory(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: shell.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: shell.Args{TargetSession: session, TargetWindow: ""}},
-		{Name: "new-session", Args: shell.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, dir}}},
-		{Name: "attach", Args: shell.Args{TargetSession: session}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: ""}},
+		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, dir}}},
+		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
@@ -160,13 +160,13 @@ func TestEditFileInRepository(t *testing.T) {
 	file := repository + "/file.txt"
 	os.WriteFile(file, []byte{}, 0644)
 
-	tmux := &spy.Tmux{
+	tmuxSpy := &spy.Tmux{
 		Errors: []string{"has-session", "has-session"},
 	}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{Repository: repository},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{},
 	}
 
@@ -179,13 +179,13 @@ func TestEditFileInRepository(t *testing.T) {
 	session := project.Name(repository)
 
 	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: shell.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: shell.Args{TargetSession: session, TargetWindow: ""}},
-		{Name: "new-session", Args: shell.Args{SessionName: session, Detach: true, WorkingDir: repository, Command: []string{editor, file}}},
-		{Name: "attach", Args: shell.Args{TargetSession: session}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: ""}},
+		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: repository, Command: []string{editor, file}}},
+		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
@@ -197,13 +197,13 @@ func TestEditFromAnotherSession(t *testing.T) {
 	dir := t.TempDir()
 	session := project.Name(dir)
 
-	tmux := &spy.Tmux{
+	tmuxSpy := &spy.Tmux{
 		Errors: []string{"has-session", "has-session"},
 	}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{},
 	}
 
@@ -214,13 +214,13 @@ func TestEditFromAnotherSession(t *testing.T) {
 	}
 
 	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: shell.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: shell.Args{TargetSession: session, TargetWindow: ""}},
-		{Name: "new-session", Args: shell.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, dir}}},
-		{Name: "switch-client", Args: shell.Args{TargetSession: session}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: ""}},
+		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, dir}}},
+		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
@@ -232,11 +232,11 @@ func TestEditWithExistingWindow(t *testing.T) {
 	dir := t.TempDir()
 	session := project.Name(dir)
 
-	tmux := &spy.Tmux{}
+	tmuxSpy := &spy.Tmux{}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{},
 	}
 
@@ -247,12 +247,12 @@ func TestEditWithExistingWindow(t *testing.T) {
 	}
 
 	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: shell.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "new-window", Args: shell.Args{TargetSession: session, TargetWindow: editor, WindowName: editor, Kill: true, WorkingDir: dir, Command: []string{editor, dir}}},
-		{Name: "switch-client", Args: shell.Args{TargetSession: session}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
+		{Name: "new-window", Args: tmux.Args{TargetSession: session, TargetWindow: editor, WindowName: editor, Kill: true, WorkingDir: dir, Command: []string{editor, dir}}},
+		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
@@ -263,11 +263,11 @@ func TestEditWithUnsetEditor(t *testing.T) {
 
 	dir := t.TempDir()
 
-	tmux := &spy.Tmux{}
+	tmuxSpy := &spy.Tmux{}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{},
 	}
 
@@ -277,7 +277,7 @@ func TestEditWithUnsetEditor(t *testing.T) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 	var expectedCalls []spy.Call
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
@@ -288,11 +288,11 @@ func TestEditWithEditorNotInstalled(t *testing.T) {
 
 	dir := t.TempDir()
 
-	tmux := &spy.Tmux{}
+	tmuxSpy := &spy.Tmux{}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{Missing: []string{editor}},
 	}
 
@@ -302,7 +302,7 @@ func TestEditWithEditorNotInstalled(t *testing.T) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 	var expectedCalls []spy.Call
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }

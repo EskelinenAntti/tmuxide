@@ -7,25 +7,20 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/ide"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
+	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/spf13/cobra"
 )
 
 type ShellEnv struct {
 	Git  project.Git
-	Tmux shell.Runner
+	Tmux tmux.Runner
 	Path ide.ShellPath
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "ide",
 	Short: "Turn tmux and your favourite editor into an ide",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return Open(args, ShellEnv{
-			Git:  shell.Git{},
-			Tmux: shell.SubCmdRunner{Command: "tmux"},
-			Path: shell.Path{},
-		})
-	}}
+}
 
 var helpNoEditorConfigured = `
 No editor was configured. Specify the editor you would like to use by setting the $EDITOR variable.

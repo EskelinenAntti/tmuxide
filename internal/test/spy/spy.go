@@ -2,13 +2,14 @@ package spy
 
 import (
 	"errors"
-	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"slices"
+
+	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
 
 type Call struct {
 	Name string
-	Args shell.Parser
+	Args tmux.Parser
 }
 
 type Tmux struct {
@@ -16,7 +17,7 @@ type Tmux struct {
 	Errors []string
 }
 
-func (t *Tmux) Run(name string, args shell.Parser) error {
+func (t *Tmux) Run(name string, args tmux.Parser) error {
 	call := Call{Name: name, Args: args}
 	t.Calls = append(t.Calls, call)
 
@@ -29,6 +30,6 @@ func (t *Tmux) Run(name string, args shell.Parser) error {
 	return nil
 }
 
-func (t *Tmux) Attach(name string, args shell.Parser) error {
+func (t *Tmux) Attach(name string, args tmux.Parser) error {
 	return t.Run(name, args)
 }

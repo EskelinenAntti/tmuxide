@@ -9,7 +9,7 @@ import (
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
 	"github.com/eskelinenantti/tmuxide/internal/project"
-	"github.com/eskelinenantti/tmuxide/internal/shell"
+	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/eskelinenantti/tmuxide/internal/test/mock"
 	"github.com/eskelinenantti/tmuxide/internal/test/spy"
 )
@@ -20,13 +20,13 @@ func TestOpen(t *testing.T) {
 	dir := t.TempDir()
 	t.Chdir(dir)
 
-	tmux := &spy.Tmux{
+	tmuxSpy := &spy.Tmux{
 		Errors: []string{"has-session"},
 	}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{},
 	}
 
@@ -39,12 +39,12 @@ func TestOpen(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: shell.Args{TargetSession: session}},
-		{Name: "new-session", Args: shell.Args{SessionName: session, Detach: true, WorkingDir: dir}},
-		{Name: "attach", Args: shell.Args{TargetSession: session}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
+		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir}},
+		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
@@ -59,13 +59,13 @@ func TestOpenDirInsideRepository(t *testing.T) {
 		t.Fatalf("err=%v", err)
 	}
 
-	tmux := &spy.Tmux{
+	tmuxSpy := &spy.Tmux{
 		Errors: []string{"has-session"},
 	}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{Repository: repository},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{},
 	}
 
@@ -78,12 +78,12 @@ func TestOpenDirInsideRepository(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: shell.Args{TargetSession: session}},
-		{Name: "new-session", Args: shell.Args{SessionName: session, Detach: true, WorkingDir: dir}},
-		{Name: "attach", Args: shell.Args{TargetSession: session}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
+		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir}},
+		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
@@ -92,13 +92,13 @@ func TestOpenDirWithProgram(t *testing.T) {
 	os.Unsetenv("TMUX")
 
 	dir := t.TempDir()
-	tmux := &spy.Tmux{
+	tmuxSpy := &spy.Tmux{
 		Errors: []string{"has-session", "has-session"},
 	}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{},
 	}
 
@@ -111,13 +111,13 @@ func TestOpenDirWithProgram(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: shell.Args{TargetSession: session, TargetWindow: program}},
-		{Name: "has-session", Args: shell.Args{TargetSession: session}},
-		{Name: "new-session", Args: shell.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{program}}},
-		{Name: "attach", Args: shell.Args{TargetSession: session}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: program}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
+		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{program}}},
+		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
@@ -128,13 +128,13 @@ func TestOpenWithExistingSession(t *testing.T) {
 	dir := t.TempDir()
 	session := project.Name(dir)
 
-	tmux := &spy.Tmux{
+	tmuxSpy := &spy.Tmux{
 		Errors: []string{"has-session"},
 	}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{},
 	}
 
@@ -145,12 +145,12 @@ func TestOpenWithExistingSession(t *testing.T) {
 	}
 
 	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: shell.Args{TargetSession: session}},
-		{Name: "new-session", Args: shell.Args{SessionName: session, Detach: true, WorkingDir: dir}},
-		{Name: "switch-client", Args: shell.Args{TargetSession: session}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
+		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir}},
+		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
@@ -184,11 +184,11 @@ func TestOpenFile(t *testing.T) {
 	file := dir + "/file.txt"
 	os.WriteFile(file, []byte{}, 0644)
 
-	tmux := &spy.Tmux{}
+	tmuxSpy := &spy.Tmux{}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{},
-		Tmux: tmux,
+		Tmux: tmuxSpy,
 		Path: mock.Path{},
 	}
 
@@ -199,7 +199,7 @@ func TestOpenFile(t *testing.T) {
 	}
 
 	var expectedCalls []spy.Call
-	if got, want := tmux.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
+	if got, want := tmuxSpy.Calls, expectedCalls; !reflect.DeepEqual(got, want) {
 		t.Fatalf("got=%v, want=%v", got, want)
 	}
 }
