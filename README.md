@@ -16,16 +16,28 @@ That's quite a lot to remember.
 
 ### Enter tmuxide
 
-This is where tmuxide comes into play. Only command you'll need is
+This is where tmuxide comes into play. All you need to do is
 
 ```bash
-ide path/to/my/project
+ide edit path/to/my/project
 ```
-and you'll find yourself in nicely named session with your favourite editor already open.
+and you'll find yourself in nicely named session with the given file or folder open in your favourite editor.
 
-In order to reattach to the same session later on, all you need to do is to run the same command again, with path to the same directory or file as an argument.
+It doesn't matter if you are already in tmux or not, or whether you are already in that session or in some other session. It'll *just work* 🪄
 
-It doesn't matter if you are already in tmux or not, or whether you use absolute or relative path. It'll *just work* 🪄
+#### Advanced usage
+
+Another useful command you can do is
+
+```bash
+ide open path/to/my/project
+```
+
+This creates a new session or attaches to a session in the given directory, and opens it. You can also specify a command with the path, e.g.
+
+```bash
+ide open path/to/my/project lazygit
+```
 
 ## Installation
 
