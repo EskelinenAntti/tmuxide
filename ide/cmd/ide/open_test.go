@@ -44,8 +44,8 @@ func TestOpen(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
 
@@ -83,8 +83,8 @@ func TestOpenDirInsideRepository(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
 
@@ -117,8 +117,8 @@ func TestOpenDirWithProgram(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
 
@@ -150,8 +150,8 @@ func TestOpenWithExistingSession(t *testing.T) {
 		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
 
@@ -168,12 +168,12 @@ func TestOpenWithoutTmux(t *testing.T) {
 
 	err := Open([]string{}, shellEnv)
 
-	if got, want := err, ide.ErrTmuxNotInstalled; !errors.Is(got, want) {
-		t.Errorf("got=%v, want=%v", got, want)
+	if !errors.Is(err, ide.ErrTmuxNotInstalled) {
+		t.Errorf("got=%v, want=%v", err, ide.ErrTmuxNotInstalled)
 	}
 	var expectedCalls []spy.Call
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
 
@@ -194,12 +194,12 @@ func TestOpenFile(t *testing.T) {
 
 	err := Open([]string{file}, shellEnv)
 
-	if got, want := err, project.ErrNotADirectory; !errors.Is(got, want) {
-		t.Errorf("got=%v, want=%v", got, want)
+	if !errors.Is(err, project.ErrNotADirectory) {
+		t.Errorf("got=%v, want=%v", err, project.ErrNotADirectory)
 	}
 
 	var expectedCalls []spy.Call
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }

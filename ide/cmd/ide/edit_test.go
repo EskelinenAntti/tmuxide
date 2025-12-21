@@ -37,7 +37,7 @@ func TestEdit(t *testing.T) {
 	err := Edit([]string{}, shellEnv)
 
 	if err != nil {
-		t.Fatalf("err=%v", err)
+		t.Errorf("err=%v", err)
 	}
 
 	session := project.Name(dir)
@@ -48,8 +48,8 @@ func TestEdit(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
 
@@ -74,7 +74,7 @@ func TestEditFile(t *testing.T) {
 	err := Edit([]string{file}, shellEnv)
 
 	if err != nil {
-		t.Fatalf("err=%v", err)
+		t.Errorf("err=%v", err)
 	}
 
 	session := project.Name(dir)
@@ -86,8 +86,8 @@ func TestEditFile(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
 
@@ -108,12 +108,12 @@ func TestEditNonExistingFile(t *testing.T) {
 
 	err := Edit([]string{file}, shellEnv)
 
-	if got, want := err, project.ErrInvalidPath; !errors.Is(got, want) {
-		t.Errorf("got=%v, want=%v", got, want)
+	if !errors.Is(err, project.ErrInvalidPath) {
+		t.Errorf("got=%v, want=%v", err, project.ErrInvalidPath)
 	}
 	var expectedCalls []spy.Call
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
 
@@ -135,7 +135,7 @@ func TestEditDirectory(t *testing.T) {
 	err := Edit([]string{dir}, shellEnv)
 
 	if err != nil {
-		t.Fatalf("err=%v", err)
+		t.Errorf("err=%v", err)
 	}
 
 	session := project.Name(dir)
@@ -147,8 +147,8 @@ func TestEditDirectory(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
 
@@ -173,7 +173,7 @@ func TestEditFileInRepository(t *testing.T) {
 	err := Edit([]string{file}, shellEnv)
 
 	if err != nil {
-		t.Fatalf("err=%v", err)
+		t.Errorf("err=%v", err)
 	}
 
 	session := project.Name(repository)
@@ -185,8 +185,8 @@ func TestEditFileInRepository(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
 
@@ -210,7 +210,7 @@ func TestEditFromAnotherSession(t *testing.T) {
 	err := Edit([]string{dir}, shellEnv)
 
 	if err != nil {
-		t.Fatalf("err=%v", err)
+		t.Errorf("err=%v", err)
 	}
 
 	expectedCalls := []spy.Call{
@@ -220,8 +220,8 @@ func TestEditFromAnotherSession(t *testing.T) {
 		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
 
@@ -243,7 +243,7 @@ func TestEditWithExistingWindow(t *testing.T) {
 	err := Edit([]string{dir}, shellEnv)
 
 	if err != nil {
-		t.Fatalf("err=%v", err)
+		t.Errorf("err=%v", err)
 	}
 
 	expectedCalls := []spy.Call{
@@ -252,8 +252,8 @@ func TestEditWithExistingWindow(t *testing.T) {
 		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
 
@@ -273,12 +273,12 @@ func TestEditWithUnsetEditor(t *testing.T) {
 
 	err := Edit([]string{dir}, shellEnv)
 
-	if got, want := err, ErrEditorEnvNotSet; !errors.Is(got, want) {
-		t.Errorf("got=%v, want=%v", got, want)
+	if !errors.Is(err, ErrEditorEnvNotSet) {
+		t.Errorf("got=%v, want=%v", err, ErrEditorEnvNotSet)
 	}
 	var expectedCalls []spy.Call
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
 
@@ -297,12 +297,11 @@ func TestEditWithEditorNotInstalled(t *testing.T) {
 	}
 
 	err := Edit([]string{dir}, shellEnv)
-
-	if got, want := err, ErrEditorNotInstalled; !errors.Is(got, want) {
-		t.Errorf("got=%v, want=%v", got, want)
+	if !errors.Is(err, ErrEditorNotInstalled) {
+		t.Errorf("got=%v, want=%v", err, ErrEditorNotInstalled)
 	}
 	var expectedCalls []spy.Call
-	if got, want := tmuxSpy.Calls, expectedCalls; !cmp.Equal(got, want) {
-		t.Error(cmp.Diff(got, want))
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
 	}
 }
