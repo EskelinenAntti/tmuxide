@@ -43,10 +43,10 @@ The command will open existing tmux session for given folder if it exists, or as
 ide open path/to/my/project lazygit
 ```
 > [!TIP]
-> Technically, `ide edit` is a shorthand of
+> Technically, `ide edit path/to/my/project/file` is a shorthand of
 >
 > ```bash
-> ide open path/to/my/project/ $EDITOR path/to/my/project/or/file/inside/the/project
+> ide open path/to/my/project/ $EDITOR path/to/my/project/file
 > ```
 
 ## Installation
