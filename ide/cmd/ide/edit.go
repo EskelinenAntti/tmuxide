@@ -18,7 +18,7 @@ var ErrEditorEnvNotSet = errors.New("editor not configured")
 
 var editCmd = &cobra.Command{
 	Use:   "edit [path]",
-	Short: "Open editor with a tmux session",
+	Short: "Edit a file inside tmux session created for the project root.",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Edit(args, ShellEnv{
