@@ -4,6 +4,8 @@ Turn your terminal into an IDE by automating tmux session and window management 
 
 ## Enough fancy words, what does it do?
 
+https://github.com/user-attachments/assets/8a74ceba-ddda-40c3-b467-9b21ac6c5892
+
 The traditional way of using tmux can be rather tedious. When creating a session, you need to
 - Come up with a name for the session (or run in trouble later), and run `tmux new -s my-project`
 - Create tmux windows manually, either with key shortcuts or `tmux new-window`
@@ -25,7 +27,7 @@ and you'll find yourself in nicely named session with the given file or folder o
 
 It doesn't matter if you are already in tmux or not, or whether you are already in that session or in some other session. It'll *just work* 🪄
 
-#### Advanced usage
+#### Opening a directory in its session
 
 Another useful command you can do is
 
@@ -33,7 +35,7 @@ Another useful command you can do is
 ide open path/to/my/project
 ```
 
-This opens or creates a tmux session in given directory without opening an editor. You can also specify a command with the path, e.g.
+This opens or creates a tmux session in given directory without opening an editor. You can also specify any command together with the path, e.g.
 
 ```bash
 ide open path/to/my/project lazygit
