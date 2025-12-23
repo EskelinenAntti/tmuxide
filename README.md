@@ -33,7 +33,7 @@ Another useful command you can do is
 ide open path/to/my/project
 ```
 
-This creates a new session or attaches to a session in the given directory, and opens it. You can also specify a command with the path, e.g.
+This opens or creates a tmux session in given directory without opening an editor. You can also specify a command with the path, e.g.
 
 ```bash
 ide open path/to/my/project lazygit
