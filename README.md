@@ -58,4 +58,5 @@ go install github.com/eskelinenantti/tmuxide/cmd/ide
 
 ### Recommended to be used with
 - [fzf](https://github.com/junegunn/fzf) fuzzy finder. With fzf you can simply type `ide **<tab>` and fuzzy find your way to your project.
+- [tmux-configuration](https://github.com/EskelinenAntti/tmux-configuration): A lightweight tmux config.
 
