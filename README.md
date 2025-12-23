@@ -29,7 +29,7 @@ and you'll find yourself in nicely named session with the given file or folder o
 
 It doesn't matter if you are already in tmux or not, or whether you are already in that session or in some other session. It'll *just work* 🪄
 
-#### Opening a directory in its session
+#### Open or create a session for a directory
 
 Another useful command you can do is
 
@@ -37,11 +37,17 @@ Another useful command you can do is
 ide open path/to/my/project
 ```
 
-This opens or creates a tmux session in given directory without opening an editor. You can also specify any command together with the path, e.g.
+The command will open existing tmux session for given folder if it exists, or as expected, create a new session if didn't exist. You can also specify any command together with the directory, e.g.
 
 ```bash
 ide open path/to/my/project lazygit
 ```
+> [!TIP]
+> Technically, `ide edit` is a shorthand of
+>
+> ```bash
+> ide open path/to/my/project/ $EDITOR path/to/my/project/or/file/inside/the/project
+> ```
 
 ## Installation
 
