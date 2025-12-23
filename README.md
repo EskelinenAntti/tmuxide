@@ -4,10 +4,6 @@ Turn your terminal into an IDE by automating tmux session and window management 
 
 ## Enough fancy words, what does it do?
 
-https://github.com/user-attachments/assets/8a74ceba-ddda-40c3-b467-9b21ac6c5892
-
-*tmuxide and friends (tmux, neovim, fzf and zsh) in action. You can find example configrations for these tools from the bottom of this page.*
-
 The traditional way of using tmux can be rather tedious. When creating a session, you need to
 - Come up with a name for the session (or run in trouble later), and run `tmux new -s my-project`
 - Create tmux windows manually, either with key shortcuts or `tmux new-window`
@@ -19,6 +15,10 @@ When you want to reattach to the same session again, you need to
 That's quite a lot to remember.
 
 ### Enter tmuxide
+
+https://github.com/user-attachments/assets/8a74ceba-ddda-40c3-b467-9b21ac6c5892
+
+*tmuxide and friends (tmux, neovim, fzf and zsh) in action. You can find example configrations for these tools from the bottom of this page.*
 
 This is where tmuxide comes into play. All you need to do is
 
