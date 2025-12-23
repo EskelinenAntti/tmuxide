@@ -27,11 +27,10 @@ func Start(command []string, project project.Project, tmuxRunner tmux.Runner, pa
 	tmux := tmux.Tmux{Runner: tmuxRunner}
 	var err error
 	if len(command) == 0 {
-		if tmux.HasSession(project.Name, "") {
-			err = tmux.NewWindow(project.Name, "", project.WorkingDir, windowName, command)
-		} else {
+		if !tmux.HasSession(project.Name, "") {
 			err = tmux.New(project.Name, project.WorkingDir, command)
 		}
+		// When no command was provided and session exists, simply attach to the existing session.
 	} else {
 		if tmux.HasSession(project.Name, command[0]) {
 			err = tmux.NewWindow(project.Name, command[0], project.WorkingDir, windowName, command)

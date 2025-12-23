@@ -128,9 +128,7 @@ func TestOpenWithExistingSession(t *testing.T) {
 	dir := t.TempDir()
 	session := project.Name(dir)
 
-	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session"},
-	}
+	tmuxSpy := &spy.Tmux{}
 
 	shellEnv := ShellEnv{
 		Git:  mock.Git{},
@@ -146,7 +144,6 @@ func TestOpenWithExistingSession(t *testing.T) {
 
 	expectedCalls := []spy.Call{
 		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
-		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir}},
 		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
 	}
 
