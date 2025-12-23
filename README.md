@@ -37,7 +37,7 @@ Another useful command you can do is
 ide open path/to/my/project
 ```
 
-The command will open existing tmux session for given folder if it exists, or as expected, create a new session if didn't exist. You can also specify any command together with the directory, e.g.
+The command will open existing tmux session for given folder if it exists, or as expected, create a new session if it didn't exist. You can also specify any command together with the directory, e.g.
 
 ```bash
 ide open path/to/my/project lazygit
