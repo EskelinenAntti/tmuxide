@@ -11,7 +11,7 @@ import (
 )
 
 var openCmd = &cobra.Command{
-	Use:   "open [directory]",
+	Use:   "open [directory] [command]",
 	Short: "Open or create a tmux session for given directory.",
 	Args:  cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
