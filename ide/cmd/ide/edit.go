@@ -16,9 +16,20 @@ import (
 var ErrEditorNotInstalled = errors.New("editor not installed")
 var ErrEditorEnvNotSet = errors.New("editor not configured")
 
+var helpEdit = `Open editor inside a tmux session.
+
+The working directory and name of the session are deduced from the given path with the following heuristics:
+
+1. If path is inside a Git repository, the working directory is the repository root.
+2. If the path points to a file outside of repository, the working directory is the surrounding directory.
+3. If the path points to a directory outside of repository, the working directory is the directory itself.
+
+If a session for the working directory already exists, the editor will open in that session. Otherwise, a new session is created.`
+
 var editCmd = &cobra.Command{
 	Use:   "edit [path]",
-	Short: "Edit a file inside tmux session created for the project root.",
+	Short: "Open editor inside a tmux session.",
+	Long:  helpEdit,
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Edit(args, ShellEnv{

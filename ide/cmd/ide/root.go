@@ -19,7 +19,7 @@ type ShellEnv struct {
 
 var rootCmd = &cobra.Command{
 	Use:   "ide",
-	Short: "Tool for automating the creation of tmux sessions for your projects.",
+	Short: "Turn tmux and your favourite editor into an IDE with tmuxide.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Open(args, ShellEnv{
 			Git:  shell.Git{},
