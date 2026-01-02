@@ -1,53 +1,31 @@
 # tmuxide 🪄
 
-Turn your terminal into an IDE by automating tmux session and window management with tmuxide.
+Run `ide open path/to/dir` and you'll find yourself in a nicely named tmux session created for that particular directory. 
 
-## Enough fancy words, what does it do?
+It doesn't matter if you run it inside or outside tmux, or if the session didn't yet exist. It'll *just work* 🪄
 
-The traditional way of using tmux can be rather tedious. When creating a session, you need to
-- Come up with a name for the session (or run in trouble later), and run `tmux new -s my-project`
-- Create tmux windows manually, either with key shortcuts or `tmux new-window`
+### Open session with command
 
-When you want to reattach to the same session again, you need to
-- Remember the name of the session, and remember if there was a session in the first place. Alternatively check it with `tmux ls` (this is the step where you run into trouble if you didn't name your session earlier).
-- Run `tmux attach -t project` or `tmux switch -t project` depending if you are already inside tmux or not.
-
-That's quite a lot to remember.
-
-### Enter tmuxide
-
-https://github.com/user-attachments/assets/8a74ceba-ddda-40c3-b467-9b21ac6c5892
-
-*tmuxide and friends (tmux, neovim, fzf and zsh) in action. You can find example configrations for these tools from the bottom of this page.*
-
-This is where tmuxide comes into play. All you need to do is
+After the dir, you can also pass in any command with its arguments, and it'll get run in the opened session:
 
 ```bash
-ide edit path/to/my/project
+ide open path/to/dir lazygit
 ```
-and you'll find yourself in nicely named session with the given file or folder open in your favourite editor.
 
-It doesn't matter if you are already in tmux or not, or whether you are already in that session or in some other session. It'll *just work* 🪄
+## Edit files
 
-#### Open or create a session for a directory
+In order to edit files, you can pass in an editor command, such as `ide open path/to/dir nvim some/file.txt`.
 
-Another useful command you can do is
+However, if you simply need the session to be created for the repository root of the opened file, you can use the `ide edit` shortcut command instead.
 
 ```bash
-ide open path/to/my/project
+#        The file given as argument is opened in editor configured by the $EDITOR variable
+#       / 
+ide edit path/to/dir/some/file.txt
+#                  \
+#                   The session is automatically created for the repository root of the given file,
+#                   or for the surrounding directory if file isn't inside a git repository. 
 ```
-
-The command will open existing tmux session for given folder if it exists, or as expected, create a new session if it didn't exist. You can also specify any command together with the directory, e.g.
-
-```bash
-ide open path/to/my/project lazygit
-```
-> [!TIP]
-> Technically, `ide edit path/to/my/project/file` is a shorthand of
->
-> ```bash
-> ide open path/to/my/project/ $EDITOR path/to/my/project/file
-> ```
 
 ## Installation
 
@@ -60,14 +38,14 @@ brew install eskelinenantti/cli/tmuxide
 Alternatively, if you prefer to use `go`, you can run
 
 ```bash
-go install github.com/eskelinenantti/tmuxide/cmd/ide
+go install github.com/eskelinenantti/tmuxide/cmd/ide@latest
 ```
 
 ### Requirements
 - [tmux](https://github.com/tmux/tmux)
 
 ### Recommended to be used with
-- [fzf](https://github.com/junegunn/fzf) fuzzy finder. With fzf you can simply type `ide **<tab>` and fuzzy find your way to your project.
+- [fzf](https://github.com/junegunn/fzf) fuzzy finder. With fzf you can simply type `ide open **<tab>` and fuzzy find your way to your project.
 - Any terminal based editor.
 
 ### Example configurations for related tools
