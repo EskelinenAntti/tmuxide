@@ -14,9 +14,7 @@ ide open path/to/dir lazygit
 
 ## Edit files
 
-In order to edit files, you can pass in an editor command, such as `ide open path/to/dir nvim some/file.txt`.
-
-However, if you simply need the session to be created for the repository root of the opened file, you can use the `ide edit` shortcut command instead.
+tmuxide comes with handy shortcut command for editing files within tmux sessions:
 
 ```bash
 #        The file given as argument is opened in editor configured by the $EDITOR variable
@@ -26,6 +24,8 @@ ide edit path/to/dir/some/file.txt
 #                   The session is automatically created for the repository root of the given file,
 #                   or for the surrounding directory if file isn't inside a git repository. 
 ```
+
+This is essentially the same as running `ide open path/to/dir $EDITOR some/file.txt`.
 
 ## Installation
 
