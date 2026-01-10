@@ -19,27 +19,12 @@ func Start(command []string, project project.Project, tmuxRunner tmux.Runner, pa
 		return ErrTmuxNotInstalled
 	}
 
-	windowName := ""
-	if len(command) > 0 {
-		windowName = command[0]
-	}
-
 	tmux := tmux.Tmux{Runner: tmuxRunner}
 	var err error
 	if len(command) == 0 {
-		if tmux.HasSession(project.Name, "") {
-			// When no command was provided and session exists, don't create any new windows or sessions
-		} else {
-			err = tmux.New(project.Name, project.WorkingDir, command)
-		}
+		err = startWithoutCommand(tmux, project)
 	} else {
-		if tmux.HasSession(project.Name, command[0]) {
-			err = tmux.NewWindow(project.Name, command[0], project.WorkingDir, windowName, command)
-		} else if tmux.HasSession(project.Name, "") {
-			err = tmux.NewWindow(project.Name, "", project.WorkingDir, windowName, command)
-		} else {
-			err = tmux.New(project.Name, project.WorkingDir, command)
-		}
+		err = startWithCommand(tmux, project, command)
 	}
 
 	if err != nil {
@@ -51,6 +36,27 @@ func Start(command []string, project project.Project, tmuxRunner tmux.Runner, pa
 	}
 
 	return tmux.Attach(project.Name)
+}
+
+func startWithCommand(tmux tmux.Tmux, project project.Project, command []string) error {
+	windowName := command[0]
+
+	if tmux.HasSession(project.Name, windowName) {
+		return tmux.NewWindow(project.Name, windowName, project.WorkingDir, windowName, command)
+	} else if tmux.HasSession(project.Name, "") {
+		return tmux.NewWindow(project.Name, "", project.WorkingDir, windowName, command)
+	} else {
+		return tmux.New(project.Name, project.WorkingDir, command)
+	}
+}
+
+func startWithoutCommand(tmux tmux.Tmux, project project.Project) error {
+	if tmux.HasSession(project.Name, "") {
+		// When no command was provided and session exists, don't create any new windows or sessions
+		return nil
+	} else {
+		return tmux.New(project.Name, project.WorkingDir, nil)
+	}
 }
 
 func isAttached() bool {
