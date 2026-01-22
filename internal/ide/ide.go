@@ -44,7 +44,7 @@ func List(tmuxRunner tmux.Runner) error {
 
 	err := tmux.ChooseSession()
 	if err != nil {
-		return err
+		return ErrNoSessionsFound
 	}
 
 	if isAttached() {
