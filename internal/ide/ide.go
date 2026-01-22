@@ -38,6 +38,29 @@ func Start(command []string, project project.Project, tmuxRunner tmux.Runner, pa
 	return tmux.Attach(project.Name)
 }
 
+func List(tmuxRunner tmux.Runner) error {
+	tmux := tmux.Tmux{Runner: tmuxRunner}
+
+	err := tmux.ChooseSession()
+	if err != nil {
+		return err
+	}
+
+	if isAttached() {
+		return err
+	}
+
+	return tmux.Attach("")
+}
+
+func Attach(tmuxRunner tmux.Runner) error {
+	tmux := tmux.Tmux{Runner: tmuxRunner}
+	if isAttached() {
+		return nil
+	}
+	return tmux.Attach("")
+}
+
 func startWithCommand(tmux tmux.Tmux, project project.Project, command []string) error {
 	windowName := command[0]
 
