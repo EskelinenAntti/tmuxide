@@ -13,6 +13,7 @@ type ShellPath interface {
 }
 
 var ErrTmuxNotInstalled = errors.New("tmux not installed")
+var ErrNoSessionsFound = errors.New("no session found")
 
 func Start(command []string, project project.Project, tmuxRunner tmux.Runner, path ShellPath) error {
 	if !path.Contains("tmux") {
@@ -59,6 +60,14 @@ func Attach(tmuxRunner tmux.Runner) error {
 		return nil
 	}
 	return tmux.Attach("")
+}
+
+func Quit(tmuxRunner tmux.Runner) error {
+	tmux := tmux.Tmux{Runner: tmuxRunner}
+	if !isAttached() {
+		return nil
+	}
+	return tmux.KillSession()
 }
 
 func startWithCommand(tmux tmux.Tmux, project project.Project, command []string) error {

@@ -46,6 +46,10 @@ func (t Tmux) ChooseSession() error {
 	return t.Run("choose-session", Args{})
 }
 
+func (t Tmux) KillSession() error {
+	return t.Run("kill-session", Args{})
+}
+
 type Args struct {
 	TargetSession string
 	TargetWindow  string
