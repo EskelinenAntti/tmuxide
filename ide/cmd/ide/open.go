@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
 	"github.com/eskelinenantti/tmuxide/internal/project"
@@ -28,22 +27,12 @@ var openCmd = &cobra.Command{
 	}}
 
 func Open(args []string, shell ShellEnv) error {
-	var workingDir string
-	var command []string
-	var err error
-	switch len(args) {
-	case 0:
-		workingDir, err = os.Getwd()
-	case 1:
-		workingDir = args[0]
-	default:
-		workingDir = args[0]
-		command = args[1:]
+	if len(args) == 0 {
+		return ide.List(shell.Tmux, shell.Path)
 	}
 
-	if err != nil {
-		return err
-	}
+	workingDir := args[0]
+	command := args[1:]
 
 	project, err := project.ForDir(workingDir)
 	if err != nil {
@@ -51,7 +40,6 @@ func Open(args []string, shell ShellEnv) error {
 	}
 
 	return ide.Start(command, project, shell.Tmux, shell.Path)
-
 }
 
 func init() {

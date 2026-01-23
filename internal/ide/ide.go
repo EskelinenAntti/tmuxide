@@ -16,12 +16,11 @@ var ErrTmuxNotInstalled = errors.New("tmux not installed")
 var ErrNoSessionsFound = errors.New("no sessions found")
 
 func Start(command []string, project project.Project, tmuxRunner tmux.Runner, path ShellPath) error {
-	if !path.Contains("tmux") {
-		return ErrTmuxNotInstalled
+	tmux, err := initTmux(path, tmuxRunner)
+	if err != nil {
+		return err
 	}
 
-	tmux := tmux.Tmux{Runner: tmuxRunner}
-	var err error
 	if len(command) == 0 {
 		err = startWithoutCommand(tmux, project)
 	} else {
@@ -39,10 +38,13 @@ func Start(command []string, project project.Project, tmuxRunner tmux.Runner, pa
 	return tmux.Attach(project.Name)
 }
 
-func List(tmuxRunner tmux.Runner) error {
-	tmux := tmux.Tmux{Runner: tmuxRunner}
+func List(tmuxRunner tmux.Runner, path ShellPath) error {
+	tmux, err := initTmux(path, tmuxRunner)
+	if err != nil {
+		return err
+	}
 
-	err := tmux.ChooseSession()
+	err = tmux.ChooseSession()
 	if err != nil {
 		return ErrNoSessionsFound
 	}
@@ -54,20 +56,20 @@ func List(tmuxRunner tmux.Runner) error {
 	return tmux.Attach("")
 }
 
-func Attach(tmuxRunner tmux.Runner) error {
-	tmux := tmux.Tmux{Runner: tmuxRunner}
-	if isAttached() {
-		return nil
-	}
-	return tmux.Attach("")
-}
-
 func Quit(tmuxRunner tmux.Runner) error {
 	tmux := tmux.Tmux{Runner: tmuxRunner}
 	if !isAttached() {
 		return nil
 	}
 	return tmux.KillSession()
+}
+
+func initTmux(path ShellPath, tmuxRunner tmux.Runner) (tmux.Tmux, error) {
+	if !path.Contains("tmux") {
+		return tmux.Tmux{}, ErrTmuxNotInstalled
+	}
+
+	return tmux.Tmux{Runner: tmuxRunner}, nil
 }
 
 func startWithCommand(tmux tmux.Tmux, project project.Project, command []string) error {
