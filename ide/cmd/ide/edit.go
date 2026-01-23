@@ -30,7 +30,7 @@ var editCmd = &cobra.Command{
 	Use:   "edit [path]",
 	Short: "Open editor inside a tmux session.",
 	Long:  helpEdit,
-	Args:  cobra.MaximumNArgs(1),
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Edit(args, ShellEnv{
 			Git:  shell.Git{},
@@ -51,14 +51,7 @@ func Edit(args []string, shell ShellEnv) error {
 		return ErrEditorNotInstalled
 	}
 
-	var editorPath string
-	var err error
-	switch len(args) {
-	case 0:
-		editorPath, err = os.Getwd()
-	case 1:
-		editorPath, err = filepath.Abs(args[0])
-	}
+	editorPath, err := filepath.Abs(args[0])
 
 	if err != nil {
 		return err
