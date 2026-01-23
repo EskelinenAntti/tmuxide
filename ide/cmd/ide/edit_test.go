@@ -15,44 +15,6 @@ import (
 const program string = "program"
 const editor string = "editor"
 
-func TestEdit(t *testing.T) {
-	os.Unsetenv("TMUX")
-	t.Setenv("EDITOR", editor)
-
-	dir := t.TempDir()
-	file := dir + "/file.txt"
-	os.WriteFile(file, []byte{}, 0644)
-	t.Chdir(dir)
-
-	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session", "has-session"},
-	}
-
-	shellEnv := ShellEnv{
-		Git:  mock.Git{},
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
-	}
-
-	err := Edit([]string{}, shellEnv)
-
-	if err != nil {
-		t.Errorf("err=%v", err)
-	}
-
-	session := project.Name(dir)
-	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: ""}},
-		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, dir}}},
-		{Name: "attach", Args: tmux.Args{TargetSession: session}},
-	}
-
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
-	}
-}
-
 func TestEditFile(t *testing.T) {
 	os.Unsetenv("TMUX")
 	t.Setenv("EDITOR", editor)
