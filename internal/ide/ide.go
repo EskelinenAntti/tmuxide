@@ -8,12 +8,12 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
 
+var ErrTmuxNotInstalled = errors.New("tmux not installed")
+var ErrNoSessionsFound = errors.New("no active sessions")
+
 type ShellPath interface {
 	Contains(path string) bool
 }
-
-var ErrTmuxNotInstalled = errors.New("tmux not installed")
-var ErrNoSessionsFound = errors.New("no active sessions")
 
 func Start(command []string, project project.Project, tmuxRunner tmux.Runner, path ShellPath) error {
 	tmux, err := initTmux(path, tmuxRunner)
