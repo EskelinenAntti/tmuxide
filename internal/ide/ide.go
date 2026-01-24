@@ -13,7 +13,7 @@ type ShellPath interface {
 }
 
 var ErrTmuxNotInstalled = errors.New("tmux not installed")
-var ErrNoSessionsFound = errors.New("no sessions found")
+var ErrNoSessionsFound = errors.New("no active sessions")
 
 func Start(command []string, project project.Project, tmuxRunner tmux.Runner, path ShellPath) error {
 	tmux, err := initTmux(path, tmuxRunner)
