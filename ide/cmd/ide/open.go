@@ -6,6 +6,7 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/ide"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
+	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/spf13/cobra"
 )
 
@@ -20,15 +21,20 @@ var openCmd = &cobra.Command{
 	Args:  cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Open(args, ShellEnv{
-			Git:  shell.Git{},
-			Tmux: shell.SubCmdRunner{Command: "tmux"},
-			Path: shell.Path{},
+			Git:        shell.Git{},
+			TmuxRunner: shell.SubCmdRunner{Command: "tmux"},
+			Path:       shell.Path{},
 		})
 	}}
 
 func Open(args []string, shell ShellEnv) error {
+	tmux, err := tmux.InitTmux(shell.Path, shell.TmuxRunner)
+	if err != nil {
+		return err
+	}
+
 	if len(args) == 0 {
-		return ide.List(shell.Tmux, shell.Path)
+		return ide.List(tmux)
 	}
 
 	workingDir := args[0]
@@ -39,7 +45,7 @@ func Open(args []string, shell ShellEnv) error {
 		return fmt.Errorf("could not open %s: %w", workingDir, err)
 	}
 
-	return ide.Start(command, project, shell.Tmux, shell.Path)
+	return ide.Start(command, project, tmux)
 }
 
 func init() {

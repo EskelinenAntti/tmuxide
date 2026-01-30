@@ -28,9 +28,9 @@ func TestEditFile(t *testing.T) {
 	}
 
 	shellEnv := ShellEnv{
-		Git:  mock.Git{},
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		Git:        mock.Git{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 
 	err := Edit([]string{file}, shellEnv)
@@ -63,9 +63,9 @@ func TestEditNonExistingFile(t *testing.T) {
 	tmuxSpy := &spy.Tmux{}
 
 	shellEnv := ShellEnv{
-		Git:  mock.Git{},
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		Git:        mock.Git{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 
 	err := Edit([]string{file}, shellEnv)
@@ -89,9 +89,9 @@ func TestEditDirectory(t *testing.T) {
 	}
 
 	shellEnv := ShellEnv{
-		Git:  mock.Git{},
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		Git:        mock.Git{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 
 	err := Edit([]string{dir}, shellEnv)
@@ -127,9 +127,9 @@ func TestEditFileInRepository(t *testing.T) {
 	}
 
 	shellEnv := ShellEnv{
-		Git:  mock.Git{Repository: repository},
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		Git:        mock.Git{Repository: repository},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 
 	err := Edit([]string{file}, shellEnv)
@@ -164,9 +164,9 @@ func TestEditFromAnotherSession(t *testing.T) {
 	}
 
 	shellEnv := ShellEnv{
-		Git:  mock.Git{},
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		Git:        mock.Git{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 
 	err := Edit([]string{dir}, shellEnv)
@@ -197,9 +197,9 @@ func TestEditWithExistingWindow(t *testing.T) {
 	tmuxSpy := &spy.Tmux{}
 
 	shellEnv := ShellEnv{
-		Git:  mock.Git{},
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		Git:        mock.Git{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 
 	err := Edit([]string{dir}, shellEnv)
@@ -228,9 +228,9 @@ func TestEditWithUnsetEditor(t *testing.T) {
 	tmuxSpy := &spy.Tmux{}
 
 	shellEnv := ShellEnv{
-		Git:  mock.Git{},
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		Git:        mock.Git{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 
 	err := Edit([]string{dir}, shellEnv)
@@ -253,9 +253,9 @@ func TestEditWithEditorNotInstalled(t *testing.T) {
 	tmuxSpy := &spy.Tmux{}
 
 	shellEnv := ShellEnv{
-		Git:  mock.Git{},
-		Tmux: tmuxSpy,
-		Path: mock.Path{Missing: []string{editor}},
+		Git:        mock.Git{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{Missing: []string{editor}},
 	}
 
 	err := Edit([]string{dir}, shellEnv)

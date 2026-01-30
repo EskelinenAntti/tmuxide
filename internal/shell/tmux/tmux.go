@@ -1,9 +1,12 @@
 package tmux
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
+
+var ErrTmuxNotInstalled = errors.New("tmux not installed")
 
 type Parser interface {
 	Parse() []string
@@ -97,4 +100,16 @@ func (a Args) Parse() []string {
 
 func (a Args) String() string {
 	return strings.Join(a.Parse(), " ")
+}
+
+type ShellPath interface {
+	Contains(path string) bool
+}
+
+func InitTmux(path ShellPath, tmuxRunner Runner) (Tmux, error) {
+	if !path.Contains("tmux") {
+		return Tmux{}, ErrTmuxNotInstalled
+	}
+
+	return Tmux{Runner: tmuxRunner}, nil
 }

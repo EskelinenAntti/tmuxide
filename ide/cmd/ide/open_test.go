@@ -18,8 +18,8 @@ func TestOpen(t *testing.T) {
 	os.Unsetenv("TMUX")
 	tmuxSpy := &spy.Tmux{}
 	shellEnv := ShellEnv{
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 	err := Open([]string{}, shellEnv)
 	if err != nil {
@@ -40,8 +40,8 @@ func TestOpenWhenAttached(t *testing.T) {
 	t.Setenv("TMUX", "test")
 	tmuxSpy := &spy.Tmux{}
 	shellEnv := ShellEnv{
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 	err := Open([]string{}, shellEnv)
 	if err != nil {
@@ -63,8 +63,8 @@ func TestOpenWhenNoSessionsFound(t *testing.T) {
 		Errors: []string{"choose-session"},
 	}
 	shellEnv := ShellEnv{
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 
 	err := Open([]string{}, shellEnv)
@@ -96,9 +96,9 @@ func TestOpenDirInsideRepository(t *testing.T) {
 	}
 
 	shellEnv := ShellEnv{
-		Git:  mock.Git{Repository: repository},
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		Git:        mock.Git{Repository: repository},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 
 	err := Open([]string{dir}, shellEnv)
@@ -129,9 +129,9 @@ func TestOpenDirWithProgram(t *testing.T) {
 	}
 
 	shellEnv := ShellEnv{
-		Git:  mock.Git{},
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		Git:        mock.Git{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 
 	err := Open([]string{dir, program}, shellEnv)
@@ -163,9 +163,9 @@ func TestOpenWithExistingSession(t *testing.T) {
 	tmuxSpy := &spy.Tmux{}
 
 	shellEnv := ShellEnv{
-		Git:  mock.Git{},
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		Git:        mock.Git{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 
 	err := Open([]string{dir}, shellEnv)
@@ -190,15 +190,15 @@ func TestOpenWithoutTmux(t *testing.T) {
 	tmuxSpy := &spy.Tmux{}
 
 	shellEnv := ShellEnv{
-		Git:  mock.Git{},
-		Tmux: tmuxSpy,
-		Path: mock.Path{Missing: []string{"tmux"}},
+		Git:        mock.Git{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{Missing: []string{"tmux"}},
 	}
 
 	err := Open([]string{}, shellEnv)
 
-	if !errors.Is(err, ide.ErrTmuxNotInstalled) {
-		t.Errorf("got=%v, want=%v", err, ide.ErrTmuxNotInstalled)
+	if !errors.Is(err, tmux.ErrTmuxNotInstalled) {
+		t.Errorf("got=%v, want=%v", err, tmux.ErrTmuxNotInstalled)
 	}
 	var expectedCalls []spy.Call
 	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
@@ -216,9 +216,9 @@ func TestOpenFile(t *testing.T) {
 	tmuxSpy := &spy.Tmux{}
 
 	shellEnv := ShellEnv{
-		Git:  mock.Git{},
-		Tmux: tmuxSpy,
-		Path: mock.Path{},
+		Git:        mock.Git{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
 	}
 
 	err := Open([]string{file}, shellEnv)

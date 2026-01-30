@@ -10,6 +10,7 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/ide"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
+	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/spf13/cobra"
 )
 
@@ -33,14 +34,19 @@ var editCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Edit(args, ShellEnv{
-			Git:  shell.Git{},
-			Tmux: shell.SubCmdRunner{Command: "tmux"},
-			Path: shell.Path{},
+			Git:        shell.Git{},
+			TmuxRunner: shell.SubCmdRunner{Command: "tmux"},
+			Path:       shell.Path{},
 		})
 	},
 }
 
 func Edit(args []string, shell ShellEnv) error {
+	tmux, err := tmux.InitTmux(shell.Path, shell.TmuxRunner)
+	if err != nil {
+		return err
+	}
+
 	editorCmd := strings.Fields(os.Getenv("EDITOR"))
 
 	if len(editorCmd) == 0 {
@@ -64,7 +70,7 @@ func Edit(args []string, shell ShellEnv) error {
 		return fmt.Errorf("could not edit %s: %w", editorPath, err)
 	}
 
-	return ide.Start(command, project, shell.Tmux, shell.Path)
+	return ide.Start(command, project, tmux)
 }
 
 func init() {

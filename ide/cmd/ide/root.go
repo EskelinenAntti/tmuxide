@@ -4,7 +4,6 @@ import (
 	"errors"
 	"os"
 
-	"github.com/eskelinenantti/tmuxide/internal/ide"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
@@ -12,9 +11,9 @@ import (
 )
 
 type ShellEnv struct {
-	Git  project.Git
-	Tmux tmux.Runner
-	Path ide.ShellPath
+	Git        project.Git
+	TmuxRunner tmux.Runner
+	Path       tmux.ShellPath
 }
 
 var rootCmd = &cobra.Command{
@@ -22,9 +21,9 @@ var rootCmd = &cobra.Command{
 	Short: "Turn tmux and your favourite editor into an IDE with tmuxide.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Open(args, ShellEnv{
-			Git:  shell.Git{},
-			Tmux: shell.SubCmdRunner{Command: "tmux"},
-			Path: shell.Path{},
+			Git:        shell.Git{},
+			TmuxRunner: shell.SubCmdRunner{Command: "tmux"},
+			Path:       shell.Path{},
 		})
 	}}
 
@@ -53,7 +52,7 @@ func Execute() {
 		rootCmd.PrintErrln(helpNoEditorConfigured)
 	}
 
-	if errors.Is(err, ide.ErrTmuxNotInstalled) {
+	if errors.Is(err, tmux.ErrTmuxNotInstalled) {
 		rootCmd.PrintErrln(helpTmuxNotInstalled)
 	}
 
