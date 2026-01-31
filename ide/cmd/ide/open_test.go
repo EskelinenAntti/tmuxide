@@ -31,8 +31,8 @@ func TestOpen(t *testing.T) {
 		{Name: "attach", Args: tmux.Args{}},
 	}
 
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -52,8 +52,8 @@ func TestOpenWhenAttached(t *testing.T) {
 		{Name: "choose-session", Args: tmux.Args{}},
 	}
 
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -76,8 +76,8 @@ func TestOpenWhenNoSessionsFound(t *testing.T) {
 		{Name: "choose-session", Args: tmux.Args{}},
 	}
 
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -92,7 +92,7 @@ func TestOpenDirInsideRepository(t *testing.T) {
 	}
 
 	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session"},
+		Errors: []string{"has-session", "has-session"},
 	}
 
 	shellEnv := ShellEnv{
@@ -110,13 +110,14 @@ func TestOpenDirInsideRepository(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := []spy.Call{
+		{Name: "has-session", Args: tmux.Args{TargetSession: dir}},
 		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
 		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir}},
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -125,7 +126,7 @@ func TestOpenDirWithProgram(t *testing.T) {
 
 	dir := t.TempDir()
 	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session", "has-session"},
+		Errors: []string{"has-session", "has-session", "has-session"},
 	}
 
 	shellEnv := ShellEnv{
@@ -143,14 +144,15 @@ func TestOpenDirWithProgram(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := []spy.Call{
+		{Name: "has-session", Args: tmux.Args{TargetSession: dir}},
 		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: program}},
 		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
 		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{program}}},
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -160,7 +162,9 @@ func TestOpenWithExistingSession(t *testing.T) {
 	dir := t.TempDir()
 	session := project.Name(dir)
 
-	tmuxSpy := &spy.Tmux{}
+	tmuxSpy := &spy.Tmux{
+		Errors: []string{"has-session"},
+	}
 
 	shellEnv := ShellEnv{
 		Git:        mock.Git{},
@@ -175,12 +179,13 @@ func TestOpenWithExistingSession(t *testing.T) {
 	}
 
 	expectedCalls := []spy.Call{
+		{Name: "has-session", Args: tmux.Args{TargetSession: dir}},
 		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
 		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -201,8 +206,8 @@ func TestOpenWithoutTmux(t *testing.T) {
 		t.Errorf("got=%v, want=%v", err, tmux.ErrTmuxNotInstalled)
 	}
 	var expectedCalls []spy.Call
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -213,7 +218,9 @@ func TestOpenFile(t *testing.T) {
 	file := dir + "/file.txt"
 	os.WriteFile(file, []byte{}, 0644)
 
-	tmuxSpy := &spy.Tmux{}
+	tmuxSpy := &spy.Tmux{
+		Errors: []string{"has-session"},
+	}
 
 	shellEnv := ShellEnv{
 		Git:        mock.Git{},
@@ -227,8 +234,11 @@ func TestOpenFile(t *testing.T) {
 		t.Errorf("got=%v, want=%v", err, project.ErrNotADirectory)
 	}
 
-	var expectedCalls []spy.Call
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	expectedCalls := []spy.Call{
+		{Name: "has-session", Args: tmux.Args{TargetSession: file}},
+	}
+
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }

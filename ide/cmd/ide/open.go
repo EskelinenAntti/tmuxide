@@ -40,7 +40,7 @@ func Open(args []string, shell ShellEnv) error {
 	workingDir := args[0]
 	command := args[1:]
 
-	project, err := project.ForDir(workingDir)
+	project, err := project.ForDir(workingDir, tmux)
 	if err != nil {
 		return fmt.Errorf("could not open %s: %w", workingDir, err)
 	}

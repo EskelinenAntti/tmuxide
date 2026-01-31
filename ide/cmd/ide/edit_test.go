@@ -24,7 +24,7 @@ func TestEditFile(t *testing.T) {
 	os.WriteFile(file, []byte{}, 0644)
 
 	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session", "has-session"},
+		Errors: []string{"has-session", "has-session", "has-session"},
 	}
 
 	shellEnv := ShellEnv{
@@ -42,14 +42,15 @@ func TestEditFile(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := []spy.Call{
+		{Name: "has-session", Args: tmux.Args{TargetSession: file}},
 		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: ""}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
 		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, file}}},
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -65,7 +66,7 @@ func TestEditRelativeFile(t *testing.T) {
 	t.Chdir(dir)
 
 	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session", "has-session"},
+		Errors: []string{"has-session", "has-session", "has-session"},
 	}
 
 	shellEnv := ShellEnv{
@@ -83,14 +84,15 @@ func TestEditRelativeFile(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := []spy.Call{
+		{Name: "has-session", Args: tmux.Args{TargetSession: fileName}},
 		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: ""}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
 		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: ".", Command: []string{editor, fileName}}},
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -101,7 +103,9 @@ func TestEditNonExistingFile(t *testing.T) {
 	dir := t.TempDir()
 	file := dir + "/file.txt"
 
-	tmuxSpy := &spy.Tmux{}
+	tmuxSpy := &spy.Tmux{
+		Errors: []string{"has-session"},
+	}
 
 	shellEnv := ShellEnv{
 		Git:        mock.Git{},
@@ -114,9 +118,13 @@ func TestEditNonExistingFile(t *testing.T) {
 	if !errors.Is(err, project.ErrInvalidPath) {
 		t.Errorf("got=%v, want=%v", err, project.ErrInvalidPath)
 	}
-	var expectedCalls []spy.Call
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+
+	expectedCalls := []spy.Call{
+		{Name: "has-session", Args: tmux.Args{TargetSession: file}},
+	}
+
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -126,7 +134,7 @@ func TestEditDirectory(t *testing.T) {
 
 	dir := t.TempDir()
 	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session", "has-session"},
+		Errors: []string{"has-session", "has-session", "has-session"},
 	}
 
 	shellEnv := ShellEnv{
@@ -144,14 +152,15 @@ func TestEditDirectory(t *testing.T) {
 	session := project.Name(dir)
 
 	expectedCalls := []spy.Call{
+		{Name: "has-session", Args: tmux.Args{TargetSession: dir}},
 		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: ""}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
 		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, dir}}},
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -164,7 +173,7 @@ func TestEditFileInRepository(t *testing.T) {
 	os.WriteFile(file, []byte{}, 0644)
 
 	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session", "has-session"},
+		Errors: []string{"has-session", "has-session", "has-session"},
 	}
 
 	shellEnv := ShellEnv{
@@ -182,14 +191,15 @@ func TestEditFileInRepository(t *testing.T) {
 	session := project.Name(repository)
 
 	expectedCalls := []spy.Call{
+		{Name: "has-session", Args: tmux.Args{TargetSession: file}},
 		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: ""}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
 		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: repository, Command: []string{editor, file}}},
 		{Name: "attach", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -201,7 +211,7 @@ func TestEditFromAnotherSession(t *testing.T) {
 	session := project.Name(dir)
 
 	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session", "has-session"},
+		Errors: []string{"has-session", "has-session", "has-session"},
 	}
 
 	shellEnv := ShellEnv{
@@ -217,14 +227,15 @@ func TestEditFromAnotherSession(t *testing.T) {
 	}
 
 	expectedCalls := []spy.Call{
+		{Name: "has-session", Args: tmux.Args{TargetSession: dir}},
 		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: ""}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
 		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, dir}}},
 		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -235,7 +246,9 @@ func TestEditWithExistingWindow(t *testing.T) {
 	dir := t.TempDir()
 	session := project.Name(dir)
 
-	tmuxSpy := &spy.Tmux{}
+	tmuxSpy := &spy.Tmux{
+		Errors: []string{"has-session"},
+	}
 
 	shellEnv := ShellEnv{
 		Git:        mock.Git{},
@@ -250,13 +263,14 @@ func TestEditWithExistingWindow(t *testing.T) {
 	}
 
 	expectedCalls := []spy.Call{
+		{Name: "has-session", Args: tmux.Args{TargetSession: dir}},
 		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
 		{Name: "new-window", Args: tmux.Args{TargetSession: session, TargetWindow: editor, WindowName: editor, Kill: true, WorkingDir: dir, Command: []string{editor, dir}}},
 		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
 	}
 
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -266,7 +280,9 @@ func TestEditWithUnsetEditor(t *testing.T) {
 
 	dir := t.TempDir()
 
-	tmuxSpy := &spy.Tmux{}
+	tmuxSpy := &spy.Tmux{
+		Errors: []string{"has-session"},
+	}
 
 	shellEnv := ShellEnv{
 		Git:        mock.Git{},
@@ -280,8 +296,8 @@ func TestEditWithUnsetEditor(t *testing.T) {
 		t.Errorf("got=%v, want=%v", err, ErrEditorEnvNotSet)
 	}
 	var expectedCalls []spy.Call
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
 
@@ -304,7 +320,7 @@ func TestEditWithEditorNotInstalled(t *testing.T) {
 		t.Errorf("got=%v, want=%v", err, ErrEditorNotInstalled)
 	}
 	var expectedCalls []spy.Call
-	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
-		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
+		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }

@@ -57,7 +57,7 @@ func Edit(args []string, shell ShellEnv) error {
 	}
 
 	editorPath := args[0]
-	project, err := project.ForPath(editorPath, shell.Git)
+	project, err := project.ForPath(editorPath, shell.Git, tmux)
 	if err != nil {
 		return fmt.Errorf("could not edit %s: %w", editorPath, err)
 	}
