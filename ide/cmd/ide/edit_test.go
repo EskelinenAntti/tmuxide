@@ -53,6 +53,47 @@ func TestEditFile(t *testing.T) {
 	}
 }
 
+func TestEditRelativeFile(t *testing.T) {
+	os.Unsetenv("TMUX")
+	t.Setenv("EDITOR", editor)
+
+	dir := t.TempDir()
+	fileName := "file.txt"
+	file := dir + "/" + fileName
+	os.WriteFile(file, []byte{}, 0644)
+
+	t.Chdir(dir)
+
+	tmuxSpy := &spy.Tmux{
+		Errors: []string{"has-session", "has-session"},
+	}
+
+	shellEnv := ShellEnv{
+		Git:        mock.Git{},
+		TmuxRunner: tmuxSpy,
+		Path:       mock.Path{},
+	}
+
+	err := Edit([]string{fileName}, shellEnv)
+
+	if err != nil {
+		t.Errorf("err=%v", err)
+	}
+
+	session := project.Name(dir)
+
+	expectedCalls := []spy.Call{
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
+		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: ""}},
+		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: ".", Command: []string{editor, fileName}}},
+		{Name: "attach", Args: tmux.Args{TargetSession: session}},
+	}
+
+	if !cmp.Equal(tmuxSpy.Calls, expectedCalls) {
+		t.Error(cmp.Diff(tmuxSpy.Calls, expectedCalls))
+	}
+}
+
 func TestEditNonExistingFile(t *testing.T) {
 	os.Unsetenv("TMUX")
 	t.Setenv("EDITOR", editor)
