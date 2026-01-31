@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
@@ -57,19 +56,13 @@ func Edit(args []string, shell ShellEnv) error {
 		return ErrEditorNotInstalled
 	}
 
-	editorPath, err := filepath.Abs(args[0])
-
-	if err != nil {
-		return err
-	}
-
-	command := append(editorCmd, editorPath)
-
+	editorPath := args[0]
 	project, err := project.ForPath(editorPath, shell.Git)
 	if err != nil {
 		return fmt.Errorf("could not edit %s: %w", editorPath, err)
 	}
 
+	command := append(editorCmd, editorPath)
 	return ide.Start(command, project, tmux)
 }
 
