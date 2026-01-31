@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
@@ -30,7 +32,7 @@ var editCmd = &cobra.Command{
 	Use:   "edit [path]",
 	Short: "Open editor inside a tmux session.",
 	Long:  helpEdit,
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Edit(args, ShellEnv{
 			Git:        shell.Git{},
@@ -56,7 +58,13 @@ func Edit(args []string, shell ShellEnv) error {
 		return ErrEditorNotInstalled
 	}
 
-	editorPath := args[0]
+	var editorPath string
+	if len(args) > 0 {
+		editorPath = args[0]
+	} else if editorPath, err = promptPath(); editorPath == "" || err != nil {
+		return err
+	}
+
 	project, err := project.ForPath(editorPath, shell.Git, tmux)
 	if err != nil {
 		return fmt.Errorf("could not edit %s: %w", editorPath, err)
@@ -68,4 +76,50 @@ func Edit(args []string, shell ShellEnv) error {
 
 func init() {
 	rootCmd.AddCommand(editCmd)
+}
+
+func promptPath() (string, error) {
+	var input bytes.Buffer
+
+	// 1. tmux sessions (ignore error if tmux not running)
+	tmuxCmd := exec.Command("tmux", "list-sessions", "-F", "#S")
+	if out, err := tmuxCmd.Output(); err == nil {
+		input.Write(out)
+	}
+
+	// 2. fd search
+	fdCmd := exec.Command(
+		"fd",
+		"--follow",
+		"--hidden",
+		"--exclude", "{.git,node_modules,target,build,Library}",
+		".",
+		os.Getenv("HOME"),
+	)
+
+	fdOut, err := fdCmd.Output()
+	if err != nil {
+		return "", err
+	}
+	input.Write(fdOut)
+
+	// 3. fzf
+	fzfCmd := exec.Command(
+		"fzf",
+		"--reverse",
+		"--height", "30%",
+	)
+
+	fzfCmd.Stdin = &input
+	fzfCmd.Stderr = os.Stderr
+
+	var out bytes.Buffer
+	fzfCmd.Stdout = &out
+
+	if err := fzfCmd.Run(); err != nil {
+		return "", nil
+	}
+
+	selection := strings.TrimSpace(out.String())
+	return selection, nil
 }
