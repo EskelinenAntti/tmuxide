@@ -1,13 +1,13 @@
 package cmd
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
+	"github.com/eskelinenantti/tmuxide/internal/picker"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
@@ -63,7 +63,7 @@ func Edit(args []string, shell ShellEnv) error {
 
 	var editArg string
 	if len(args) == 0 {
-		editArg, err = promptPath(tmux, fd.Fd{Runner: shell.FdRunner}, fzf.Fzf{Runner: shell.FzfRunner})
+		editArg, err = picker.Prompt(tmux, fd.Fd{Runner: shell.FdRunner}, fzf.Fzf{Runner: shell.FzfRunner})
 	} else {
 		editArg = args[0]
 	}
@@ -88,26 +88,4 @@ func Edit(args []string, shell ShellEnv) error {
 
 func init() {
 	rootCmd.AddCommand(editCmd)
-}
-
-func promptPath(tmux tmux.Tmux, fd fd.Fd, fzf fzf.Fzf) (string, error) {
-	var input bytes.Buffer
-
-	if out, err := tmux.ListSessions(); err == nil {
-		input.Write(out)
-	}
-
-	out, err := fd.Execute()
-	if err != nil {
-		return "", fmt.Errorf("failed to run fd %w: %s", err, string(out))
-	}
-	input.Write(out)
-
-	out, err = fzf.Execute(&input)
-	if err != nil {
-		// Hide the error as most likely user just cancelled the operation
-		return "", nil
-	}
-	selection := strings.TrimSpace(string(out))
-	return selection, nil
 }

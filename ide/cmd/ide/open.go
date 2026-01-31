@@ -4,8 +4,11 @@ import (
 	"fmt"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
+	"github.com/eskelinenantti/tmuxide/internal/picker"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
+	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
+	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/spf13/cobra"
 )
@@ -23,6 +26,8 @@ var openCmd = &cobra.Command{
 		return Open(args, ShellEnv{
 			Git:        shell.Git{},
 			TmuxRunner: shell.CmdRunner{Command: "tmux"},
+			FdRunner:   shell.CmdRunner{Command: "fd"},
+			FzfRunner:  shell.CmdRunner{Command: "fzf"},
 			Path:       shell.Path{},
 		})
 	}}
@@ -33,12 +38,18 @@ func Open(args []string, shell ShellEnv) error {
 		return err
 	}
 
+	var workingDir string
+	var command []string
 	if len(args) == 0 {
-		return ide.List(tmux)
+		workingDir, err = picker.Prompt(tmux, fd.Fd{Runner: shell.FdRunner}, fzf.Fzf{Runner: shell.FzfRunner})
+	} else {
+		workingDir = args[0]
+		command = args[1:]
 	}
 
-	workingDir := args[0]
-	command := args[1:]
+	if err != nil || workingDir == "" {
+		return err
+	}
 
 	project, err := project.ForDir(workingDir, tmux)
 	if err != nil {

@@ -29,26 +29,6 @@ func Start(command []string, project project.Project, tmux tmux.Tmux) error {
 	return tmux.Attach(project.Name)
 }
 
-func List(tmux tmux.Tmux) error {
-	err := tmux.ChooseSession()
-	if err != nil {
-		return ErrNoSessionsFound
-	}
-
-	if isAttached() {
-		return err
-	}
-
-	return tmux.Attach("")
-}
-
-func Quit(tmux tmux.Tmux) error {
-	if !isAttached() {
-		return nil
-	}
-	return tmux.KillSession()
-}
-
 func startWithCommand(tmux tmux.Tmux, project project.Project, command []string) error {
 	windowName := command[0]
 
