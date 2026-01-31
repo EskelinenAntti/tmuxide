@@ -33,3 +33,7 @@ func (t *Tmux) Run(name string, args tmux.Parser) error {
 func (t *Tmux) Attach(name string, args tmux.Parser) error {
 	return t.Run(name, args)
 }
+
+func (t *Tmux) Output(name string, args tmux.Parser) ([]byte, error) {
+	return t.Output(name, args)
+}

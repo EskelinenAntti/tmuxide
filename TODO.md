@@ -1,0 +1,7 @@
+- [ ] Move generic interfaces from tmux package to subcmd
+- [ ] Rename subcmd
+- [ ] Fix bug with edit command when selecting a session: It should just attach to the session nvim window, but not edit the file
+- [ ] Combine runners into single generic runner for easier mocking
+- [ ] Move code away from command file
+- [ ] Fix existing tests
+- [ ] Cover new commands

@@ -3,6 +3,7 @@ package shell
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 
@@ -11,24 +12,36 @@ import (
 
 var ErrSubCmd = errors.New("command failed")
 
-type SubCmdRunner struct {
+type CmdRunner struct {
 	Command string
 }
 
-func (c SubCmdRunner) Attach(name string, args tmux.Parser) error {
-	cmd := c.createCmd(name, args)
+func (c CmdRunner) Attach(subCommand string, args tmux.Parser) error {
+	cmd := c.createCmd(subCommand, args)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	return c.runCmd(cmd)
+	return c.run(cmd)
 }
 
-func (c SubCmdRunner) Run(name string, args tmux.Parser) error {
-	cmd := c.createCmd(name, args)
-	return c.runCmd(cmd)
+func (c CmdRunner) Run(subCommand string, args tmux.Parser) error {
+	cmd := c.createCmd(subCommand, args)
+	return c.run(cmd)
 }
 
-func (c SubCmdRunner) runCmd(cmd *exec.Cmd) error {
+func (c CmdRunner) Output(subCommand string, args tmux.Parser) ([]byte, error) {
+	cmd := c.createCmd(subCommand, args)
+	return cmd.CombinedOutput()
+}
+
+func (c CmdRunner) Pipe(subCmd string, args tmux.Parser, input io.Reader) ([]byte, error) {
+	cmd := c.createCmd(subCmd, args)
+	cmd.Stdin = input
+	cmd.Stderr = os.Stderr
+	return cmd.Output()
+}
+
+func (c CmdRunner) run(cmd *exec.Cmd) error {
 	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("%s %w %v: %w", c.Command, ErrSubCmd, cmd.Args, err)
@@ -36,8 +49,11 @@ func (c SubCmdRunner) runCmd(cmd *exec.Cmd) error {
 	return nil
 }
 
-func (c SubCmdRunner) createCmd(name string, args tmux.Parser) *exec.Cmd {
-	cmd := exec.Command("tmux", name)
+func (c CmdRunner) createCmd(subCommand string, args tmux.Parser) *exec.Cmd {
+	cmd := exec.Command(c.Command)
+	if subCommand != "" {
+		cmd.Args = append(cmd.Args, subCommand)
+	}
 	cmd.Args = append(cmd.Args, args.Parse()...)
 	return cmd
 }

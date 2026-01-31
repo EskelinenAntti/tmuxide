@@ -3,6 +3,7 @@ package tmux
 import (
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -15,6 +16,8 @@ type Parser interface {
 type Runner interface {
 	Run(name string, args Parser) error
 	Attach(name string, args Parser) error
+	Output(name string, args Parser) ([]byte, error)
+	Pipe(name string, args Parser, input io.Reader) ([]byte, error)
 }
 
 type Tmux struct {
@@ -53,6 +56,10 @@ func (t Tmux) KillSession() error {
 	return t.Run("kill-session", Args{})
 }
 
+func (t Tmux) ListSessions() ([]byte, error) {
+	return t.Output("list-sessions", Args{Format: "#S"})
+}
+
 type Args struct {
 	TargetSession string
 	TargetWindow  string
@@ -62,6 +69,7 @@ type Args struct {
 	WorkingDir    string
 	Command       []string
 	Kill          bool
+	Format        string
 }
 
 func (a Args) Parse() []string {
@@ -89,6 +97,10 @@ func (a Args) Parse() []string {
 
 	if a.WindowName != "" {
 		args = append(args, "-n", a.WindowName)
+	}
+
+	if a.Format != "" {
+		args = append(args, "-F", a.Format)
 	}
 
 	if len(a.Command) > 0 {

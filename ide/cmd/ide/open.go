@@ -22,7 +22,7 @@ var openCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Open(args, ShellEnv{
 			Git:        shell.Git{},
-			TmuxRunner: shell.SubCmdRunner{Command: "tmux"},
+			TmuxRunner: shell.CmdRunner{Command: "tmux"},
 			Path:       shell.Path{},
 		})
 	}}

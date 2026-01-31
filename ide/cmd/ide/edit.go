@@ -5,12 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
+	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
+	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/spf13/cobra"
 )
@@ -36,7 +37,9 @@ var editCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Edit(args, ShellEnv{
 			Git:        shell.Git{},
-			TmuxRunner: shell.SubCmdRunner{Command: "tmux"},
+			TmuxRunner: shell.CmdRunner{Command: "tmux"},
+			FzfRunner:  shell.CmdRunner{Command: "fzf"},
+			FdRunner:   shell.CmdRunner{Command: "fd"},
 			Path:       shell.Path{},
 		})
 	},
@@ -61,7 +64,7 @@ func Edit(args []string, shell ShellEnv) error {
 	var editorPath string
 	if len(args) > 0 {
 		editorPath = args[0]
-	} else if editorPath, err = promptPath(); editorPath == "" || err != nil {
+	} else if editorPath, err = promptPath(tmux, fd.Fd{Runner: shell.FdRunner}, fzf.Fzf{Runner: shell.FzfRunner}); editorPath == "" || err != nil {
 		return err
 	}
 
@@ -78,48 +81,24 @@ func init() {
 	rootCmd.AddCommand(editCmd)
 }
 
-func promptPath() (string, error) {
+func promptPath(tmux tmux.Tmux, fd fd.Fd, fzf fzf.Fzf) (string, error) {
 	var input bytes.Buffer
 
-	// 1. tmux sessions (ignore error if tmux not running)
-	tmuxCmd := exec.Command("tmux", "list-sessions", "-F", "#S")
-	if out, err := tmuxCmd.Output(); err == nil {
+	if out, err := tmux.ListSessions(); err == nil {
 		input.Write(out)
 	}
 
-	// 2. fd search
-	fdCmd := exec.Command(
-		"fd",
-		"--follow",
-		"--hidden",
-		"--exclude", "{.git,node_modules,target,build,Library}",
-		".",
-		os.Getenv("HOME"),
-	)
-
-	fdOut, err := fdCmd.Output()
+	out, err := fd.Execute()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to run fd %w: %s", err, string(out))
 	}
-	input.Write(fdOut)
+	input.Write(out)
 
-	// 3. fzf
-	fzfCmd := exec.Command(
-		"fzf",
-		"--reverse",
-		"--height", "30%",
-	)
-
-	fzfCmd.Stdin = &input
-	fzfCmd.Stderr = os.Stderr
-
-	var out bytes.Buffer
-	fzfCmd.Stdout = &out
-
-	if err := fzfCmd.Run(); err != nil {
+	out, err = fzf.Execute(&input)
+	if err != nil {
+		// Hide the error as most likely user just cancelled the operation
 		return "", nil
 	}
-
-	selection := strings.TrimSpace(out.String())
+	selection := strings.TrimSpace(string(out))
 	return selection, nil
 }
