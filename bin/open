@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -e
+
+TARGET="$(
+  (
+    tmux list-sessions -F "#S"
+    fd --follow --hidden --exclude 
+    fd --type directory --follow --hidden --exclude "{.git,node_modules,target,build,Library}" . ~
+  ) | fzf --reverse --height 30%
+)"
+
+if [[ -z "$TARGET" ]]; then
+    exit 0
+fi
+
+ide open "$TARGET"
