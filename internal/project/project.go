@@ -16,7 +16,6 @@ var ErrNotADirectory = errors.New("not a directory")
 
 type Project struct {
 	Name       string
-	IsExisting bool
 	WorkingDir string
 }
 
@@ -31,8 +30,7 @@ type Git interface {
 func ForPath(path string, git Git, tmux tmux.Tmux) (Project, error) {
 	if tmux.HasSession(path, "") {
 		return Project{
-			Name:       path,
-			IsExisting: true,
+			Name: path,
 		}, nil
 	}
 
@@ -58,8 +56,7 @@ func ForPath(path string, git Git, tmux tmux.Tmux) (Project, error) {
 func ForDir(directory string, tmux tmux.Tmux) (Project, error) {
 	if tmux.HasSession(directory, "") {
 		return Project{
-			Name:       directory,
-			IsExisting: true,
+			Name: directory,
 		}, nil
 	}
 
