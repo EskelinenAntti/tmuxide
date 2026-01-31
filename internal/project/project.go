@@ -33,7 +33,6 @@ func ForPath(path string, git Git, tmux tmux.Tmux) (Project, error) {
 			Name: path,
 		}, nil
 	}
-
 	workingDir, err := repository(path, git)
 	if err != nil {
 		if workingDir, err = dir(path); err != nil {

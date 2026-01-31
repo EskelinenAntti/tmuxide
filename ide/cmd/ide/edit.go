@@ -61,19 +61,28 @@ func Edit(args []string, shell ShellEnv) error {
 		return ErrEditorNotInstalled
 	}
 
-	var editorPath string
-	if len(args) > 0 {
-		editorPath = args[0]
-	} else if editorPath, err = promptPath(tmux, fd.Fd{Runner: shell.FdRunner}, fzf.Fzf{Runner: shell.FzfRunner}); editorPath == "" || err != nil {
+	var editArg string
+	if len(args) == 0 {
+		editArg, err = promptPath(tmux, fd.Fd{Runner: shell.FdRunner}, fzf.Fzf{Runner: shell.FzfRunner})
+	} else {
+		editArg = args[0]
+	}
+
+	if editArg == "" || err != nil {
 		return err
 	}
 
-	project, err := project.ForPath(editorPath, shell.Git, tmux)
+	project, err := project.ForPath(editArg, shell.Git, tmux)
+
 	if err != nil {
-		return fmt.Errorf("could not edit %s: %w", editorPath, err)
+		return fmt.Errorf("could not edit %s: %w", editArg, err)
 	}
 
-	command := append(editorCmd, editorPath)
+	var command []string
+	if editArg != project.Name {
+		command = append(editorCmd, editArg)
+	}
+
 	return ide.Start(command, project, tmux)
 }
 
