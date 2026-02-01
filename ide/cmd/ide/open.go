@@ -7,8 +7,6 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/picker"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
-	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
-	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/spf13/cobra"
 )
@@ -25,15 +23,15 @@ var openCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Open(args, ShellEnv{
 			Git:        shell.Git{},
-			TmuxRunner: shell.CmdRunner{Command: "tmux"},
-			FdRunner:   shell.CmdRunner{Command: "fd"},
-			FzfRunner:  shell.CmdRunner{Command: "fzf"},
+			TmuxRunner: shell.CmdRunner{},
+			FdRunner:   shell.CmdRunner{},
+			FzfRunner:  shell.CmdRunner{},
 			Path:       shell.Path{},
 		})
 	}}
 
-func Open(args []string, shell ShellEnv) error {
-	tmux, err := tmux.InitTmux(shell.Path, shell.TmuxRunner)
+func Open(args []string, shellEnv ShellEnv) error {
+	tmux, err := tmux.InitTmux(shellEnv.Path, shellEnv.TmuxRunner)
 	if err != nil {
 		return err
 	}
@@ -41,7 +39,7 @@ func Open(args []string, shell ShellEnv) error {
 	var workingDir string
 	var command []string
 	if len(args) == 0 {
-		workingDir, err = picker.Prompt(tmux, fd.Fd{Runner: shell.FdRunner}, fzf.Fzf{Runner: shell.FzfRunner})
+		workingDir, err = picker.Prompt(tmux, shell.FdCmd{Runner: shellEnv.FdRunner}, shell.FzfCmd{Runner: shellEnv.FzfRunner})
 	} else {
 		workingDir = args[0]
 		command = args[1:]

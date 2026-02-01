@@ -10,8 +10,6 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/picker"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
-	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
-	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/spf13/cobra"
 )
@@ -37,16 +35,16 @@ var editCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Edit(args, ShellEnv{
 			Git:        shell.Git{},
-			TmuxRunner: shell.CmdRunner{Command: "tmux"},
-			FzfRunner:  shell.CmdRunner{Command: "fzf"},
-			FdRunner:   shell.CmdRunner{Command: "fd"},
+			TmuxRunner: shell.CmdRunner{},
+			FzfRunner:  shell.CmdRunner{},
+			FdRunner:   shell.CmdRunner{},
 			Path:       shell.Path{},
 		})
 	},
 }
 
-func Edit(args []string, shell ShellEnv) error {
-	tmux, err := tmux.InitTmux(shell.Path, shell.TmuxRunner)
+func Edit(args []string, shellEnv ShellEnv) error {
+	tmux, err := tmux.InitTmux(shellEnv.Path, shellEnv.TmuxRunner)
 	if err != nil {
 		return err
 	}
@@ -57,13 +55,13 @@ func Edit(args []string, shell ShellEnv) error {
 		return ErrEditorEnvNotSet
 	}
 
-	if !shell.Path.Contains(editorCmd[0]) {
+	if !shellEnv.Path.Contains(editorCmd[0]) {
 		return ErrEditorNotInstalled
 	}
 
 	var editArg string
 	if len(args) == 0 {
-		editArg, err = picker.Prompt(tmux, fd.Fd{Runner: shell.FdRunner}, fzf.Fzf{Runner: shell.FzfRunner})
+		editArg, err = picker.Prompt(tmux, shell.FdCmd{Runner: shellEnv.FdRunner}, shell.FzfCmd{Runner: shellEnv.FzfRunner})
 	} else {
 		editArg = args[0]
 	}
@@ -72,7 +70,7 @@ func Edit(args []string, shell ShellEnv) error {
 		return err
 	}
 
-	project, err := project.ForPath(editArg, shell.Git, tmux)
+	project, err := project.ForPath(editArg, shellEnv.Git, tmux)
 
 	if err != nil {
 		return fmt.Errorf("could not edit %s: %w", editArg, err)

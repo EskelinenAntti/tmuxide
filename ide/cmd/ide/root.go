@@ -12,8 +12,8 @@ import (
 
 type ShellEnv struct {
 	Git        project.Git
-	TmuxRunner shell.Runner
 	Path       shell.ShellPath
+	TmuxRunner shell.Runner
 	FdRunner   shell.Runner
 	FzfRunner  shell.Runner
 }
@@ -24,10 +24,10 @@ var rootCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Open(args, ShellEnv{
 			Git:        shell.Git{},
-			TmuxRunner: shell.CmdRunner{Command: "tmux"},
+			TmuxRunner: shell.CmdRunner{},
 			Path:       shell.Path{},
-			FdRunner:   shell.CmdRunner{Command: "fd"},
-			FzfRunner:  shell.CmdRunner{Command: "fzf"},
+			FdRunner:   shell.CmdRunner{},
+			FzfRunner:  shell.CmdRunner{},
 		})
 	}}
 
