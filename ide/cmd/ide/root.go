@@ -4,18 +4,14 @@ import (
 	"errors"
 	"os"
 
-	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/spf13/cobra"
 )
 
 type ShellEnv struct {
-	Git        project.Git
-	Path       shell.ShellPath
-	TmuxRunner shell.Runner
-	FdRunner   shell.Runner
-	FzfRunner  shell.Runner
+	Path      shell.ShellPath
+	CmdRunner shell.Runner
 }
 
 var rootCmd = &cobra.Command{
@@ -23,11 +19,8 @@ var rootCmd = &cobra.Command{
 	Short: "Turn tmux and your favourite editor into an IDE with tmuxide.",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Open(args, ShellEnv{
-			Git:        shell.Git{},
-			TmuxRunner: shell.CmdRunner{},
-			Path:       shell.Path{},
-			FdRunner:   shell.CmdRunner{},
-			FzfRunner:  shell.CmdRunner{},
+			CmdRunner: shell.CmdRunner{},
+			Path:      shell.Path{},
 		})
 	}}
 

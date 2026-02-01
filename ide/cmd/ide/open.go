@@ -22,16 +22,13 @@ var openCmd = &cobra.Command{
 	Args:  cobra.ArbitraryArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return Open(args, ShellEnv{
-			Git:        shell.Git{},
-			TmuxRunner: shell.CmdRunner{},
-			FdRunner:   shell.CmdRunner{},
-			FzfRunner:  shell.CmdRunner{},
-			Path:       shell.Path{},
+			CmdRunner: shell.CmdRunner{},
+			Path:      shell.Path{},
 		})
 	}}
 
 func Open(args []string, shellEnv ShellEnv) error {
-	tmux, err := tmux.InitTmux(shellEnv.Path, shellEnv.TmuxRunner)
+	tmux, err := tmux.InitTmux(shellEnv.Path, shellEnv.CmdRunner)
 	if err != nil {
 		return err
 	}
@@ -39,7 +36,7 @@ func Open(args []string, shellEnv ShellEnv) error {
 	var workingDir string
 	var command []string
 	if len(args) == 0 {
-		workingDir, err = picker.Prompt(tmux, shell.FdCmd{Runner: shellEnv.FdRunner}, shell.FzfCmd{Runner: shellEnv.FzfRunner})
+		workingDir, err = picker.Prompt(tmux, shell.FdCmd{Runner: shellEnv.CmdRunner}, shell.FzfCmd{Runner: shellEnv.CmdRunner})
 	} else {
 		workingDir = args[0]
 		command = args[1:]

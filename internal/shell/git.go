@@ -1,17 +1,19 @@
 package shell
 
 import (
+	"bytes"
 	"os/exec"
 	"strings"
 )
 
-type Git struct{}
+type GitCmd struct {
+	Runner
+}
 
-func (Git) RevParse(cwd string) (string, error) {
+func (g GitCmd) RevParse(cwd string) (string, error) {
 	cmd := exec.Command("git", "-C", cwd, "rev-parse", "--show-toplevel")
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(string(out)), nil
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := g.Run(*cmd)
+	return strings.TrimSpace(out.String()), err
 }
