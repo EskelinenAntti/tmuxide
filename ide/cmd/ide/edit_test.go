@@ -1,25 +1,42 @@
 package cmd
 
+import (
+	"errors"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/eskelinenantti/tmuxide/internal/project"
+	"github.com/eskelinenantti/tmuxide/internal/test/mock"
+	"github.com/eskelinenantti/tmuxide/internal/test/spy"
+	"github.com/google/go-cmp/cmp"
+)
+
 const program string = "program"
 const editor string = "editor"
 
-/*
 func TestEditFile(t *testing.T) {
 	os.Unsetenv("TMUX")
 	t.Setenv("EDITOR", editor)
 
 	dir := t.TempDir()
-	file := dir + "/file.txt"
+	file := filepath.Join(dir, "file.txt")
 	os.WriteFile(file, []byte{}, 0644)
 
-	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session", "has-session", "has-session"},
+	session := project.Name(dir)
+
+	spyRunner := &spy.SpyRunner{
+		Mocks: []spy.Mock{
+			{Args: []string{"git", "-C", dir, "rev-parse", "--show-toplevel"}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", file + ":"}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", session + ":" + editor}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", session + ":"}, OnRun: mock.SimulateError},
+		},
 	}
 
 	shellEnv := ShellEnv{
-		Git:        mock.Git{},
-		TmuxRunner: tmuxSpy,
-		Path:       mock.Path{},
+		CmdRunner: spyRunner,
+		Path:      mock.Path{},
 	}
 
 	err := Edit([]string{file}, shellEnv)
@@ -28,18 +45,17 @@ func TestEditFile(t *testing.T) {
 		t.Errorf("err=%v", err)
 	}
 
-	session := project.Name(dir)
-
-	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: tmux.Args{TargetSession: file}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
-		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, file}}},
-		{Name: "attach", Args: tmux.Args{TargetSession: session}},
+	expectedCalls := [][]string{
+		{"tmux", "has-session", "-t", file + ":"},
+		{"git", "-C", dir, "rev-parse", "--show-toplevel"},
+		{"tmux", "has-session", "-t", session + ":" + editor},
+		{"tmux", "has-session", "-t", session + ":"},
+		{"tmux", "new-session", "-c", dir, "-d", "-s", session, editor, file},
+		{"tmux", "attach", "-t", session + ":"},
 	}
 
-	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
-		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
+	if !cmp.Equal(expectedCalls, spyRunner.Calls) {
+		t.Error(cmp.Diff(expectedCalls, spyRunner.Calls))
 	}
 }
 
@@ -49,19 +65,25 @@ func TestEditRelativeFile(t *testing.T) {
 
 	dir := t.TempDir()
 	fileName := "file.txt"
-	file := dir + "/" + fileName
+	file := filepath.Join(dir, fileName)
 	os.WriteFile(file, []byte{}, 0644)
 
 	t.Chdir(dir)
 
-	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session", "has-session", "has-session"},
+	session := project.Name(dir)
+
+	spyRunner := &spy.SpyRunner{
+		Mocks: []spy.Mock{
+			{Args: []string{"git", "-C", ".", "rev-parse", "--show-toplevel"}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", fileName + ":"}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", session + ":" + editor}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", session + ":"}, OnRun: mock.SimulateError},
+		},
 	}
 
 	shellEnv := ShellEnv{
-		Git:        mock.Git{},
-		TmuxRunner: tmuxSpy,
-		Path:       mock.Path{},
+		CmdRunner: spyRunner,
+		Path:      mock.Path{},
 	}
 
 	err := Edit([]string{fileName}, shellEnv)
@@ -70,18 +92,17 @@ func TestEditRelativeFile(t *testing.T) {
 		t.Errorf("err=%v", err)
 	}
 
-	session := project.Name(dir)
-
-	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: tmux.Args{TargetSession: fileName}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
-		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: ".", Command: []string{editor, fileName}}},
-		{Name: "attach", Args: tmux.Args{TargetSession: session}},
+	expectedCalls := [][]string{
+		{"tmux", "has-session", "-t", fileName + ":"},
+		{"git", "-C", ".", "rev-parse", "--show-toplevel"},
+		{"tmux", "has-session", "-t", session + ":" + editor},
+		{"tmux", "has-session", "-t", session + ":"},
+		{"tmux", "new-session", "-c", ".", "-d", "-s", session, editor, fileName},
+		{"tmux", "attach", "-t", session + ":"},
 	}
 
-	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
-		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
+	if !cmp.Equal(expectedCalls, spyRunner.Calls) {
+		t.Error(cmp.Diff(expectedCalls, spyRunner.Calls))
 	}
 }
 
@@ -90,16 +111,17 @@ func TestEditNonExistingFile(t *testing.T) {
 	t.Setenv("EDITOR", editor)
 
 	dir := t.TempDir()
-	file := dir + "/file.txt"
+	file := filepath.Join(dir, "file.txt")
 
-	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session"},
+	spyRunner := &spy.SpyRunner{
+		Mocks: []spy.Mock{
+			{Args: []string{"tmux", "has-session", "-t", file + ":"}, OnRun: mock.SimulateError},
+		},
 	}
 
 	shellEnv := ShellEnv{
-		Git:        mock.Git{},
-		TmuxRunner: tmuxSpy,
-		Path:       mock.Path{},
+		CmdRunner: spyRunner,
+		Path:      mock.Path{},
 	}
 
 	err := Edit([]string{file}, shellEnv)
@@ -108,12 +130,12 @@ func TestEditNonExistingFile(t *testing.T) {
 		t.Errorf("got=%v, want=%v", err, project.ErrInvalidPath)
 	}
 
-	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: tmux.Args{TargetSession: file}},
+	expectedCalls := [][]string{
+		{"tmux", "has-session", "-t", file + ":"},
 	}
 
-	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
-		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
+	if !cmp.Equal(expectedCalls, spyRunner.Calls) {
+		t.Error(cmp.Diff(expectedCalls, spyRunner.Calls))
 	}
 }
 
@@ -122,14 +144,20 @@ func TestEditDirectory(t *testing.T) {
 	t.Setenv("EDITOR", editor)
 
 	dir := t.TempDir()
-	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session", "has-session", "has-session"},
+	session := project.Name(dir)
+
+	spyRunner := &spy.SpyRunner{
+		Mocks: []spy.Mock{
+			{Args: []string{"git", "-C", dir, "rev-parse", "--show-toplevel"}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", dir + ":"}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", session + ":" + editor}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", session + ":"}, OnRun: mock.SimulateError},
+		},
 	}
 
 	shellEnv := ShellEnv{
-		Git:        mock.Git{},
-		TmuxRunner: tmuxSpy,
-		Path:       mock.Path{},
+		CmdRunner: spyRunner,
+		Path:      mock.Path{},
 	}
 
 	err := Edit([]string{dir}, shellEnv)
@@ -138,18 +166,17 @@ func TestEditDirectory(t *testing.T) {
 		t.Errorf("err=%v", err)
 	}
 
-	session := project.Name(dir)
-
-	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: tmux.Args{TargetSession: dir}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
-		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, dir}}},
-		{Name: "attach", Args: tmux.Args{TargetSession: session}},
+	expectedCalls := [][]string{
+		{"tmux", "has-session", "-t", dir + ":"},
+		{"git", "-C", dir, "rev-parse", "--show-toplevel"},
+		{"tmux", "has-session", "-t", session + ":" + editor},
+		{"tmux", "has-session", "-t", session + ":"},
+		{"tmux", "new-session", "-c", dir, "-d", "-s", session, editor, dir},
+		{"tmux", "attach", "-t", session + ":"},
 	}
 
-	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
-		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
+	if !cmp.Equal(expectedCalls, spyRunner.Calls) {
+		t.Error(cmp.Diff(expectedCalls, spyRunner.Calls))
 	}
 }
 
@@ -158,17 +185,23 @@ func TestEditFileInRepository(t *testing.T) {
 	t.Setenv("EDITOR", editor)
 
 	repository := t.TempDir()
-	file := repository + "/file.txt"
+	file := filepath.Join(repository, "file.txt")
 	os.WriteFile(file, []byte{}, 0644)
 
-	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session", "has-session", "has-session"},
+	session := project.Name(repository)
+
+	spyRunner := &spy.SpyRunner{
+		Mocks: []spy.Mock{
+			{Args: []string{"git", "-C", repository, "rev-parse", "--show-toplevel"}, OnRun: mock.WriteToStdout(repository)},
+			{Args: []string{"tmux", "has-session", "-t", file + ":"}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", session + ":" + editor}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", session + ":"}, OnRun: mock.SimulateError},
+		},
 	}
 
 	shellEnv := ShellEnv{
-		Git:        mock.Git{Repository: repository},
-		TmuxRunner: tmuxSpy,
-		Path:       mock.Path{},
+		CmdRunner: spyRunner,
+		Path:      mock.Path{},
 	}
 
 	err := Edit([]string{file}, shellEnv)
@@ -177,18 +210,17 @@ func TestEditFileInRepository(t *testing.T) {
 		t.Errorf("err=%v", err)
 	}
 
-	session := project.Name(repository)
-
-	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: tmux.Args{TargetSession: file}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
-		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: repository, Command: []string{editor, file}}},
-		{Name: "attach", Args: tmux.Args{TargetSession: session}},
+	expectedCalls := [][]string{
+		{"tmux", "has-session", "-t", file + ":"},
+		{"git", "-C", repository, "rev-parse", "--show-toplevel"},
+		{"tmux", "has-session", "-t", session + ":" + editor},
+		{"tmux", "has-session", "-t", session + ":"},
+		{"tmux", "new-session", "-c", repository, "-d", "-s", session, editor, file},
+		{"tmux", "attach", "-t", session + ":"},
 	}
 
-	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
-		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
+	if !cmp.Equal(expectedCalls, spyRunner.Calls) {
+		t.Error(cmp.Diff(expectedCalls, spyRunner.Calls))
 	}
 }
 
@@ -199,14 +231,18 @@ func TestEditFromAnotherSession(t *testing.T) {
 	dir := t.TempDir()
 	session := project.Name(dir)
 
-	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session", "has-session", "has-session"},
+	spyRunner := &spy.SpyRunner{
+		Mocks: []spy.Mock{
+			{Args: []string{"git", "-C", dir, "rev-parse", "--show-toplevel"}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", dir + ":"}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", session + ":" + editor}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", session + ":"}, OnRun: mock.SimulateError},
+		},
 	}
 
 	shellEnv := ShellEnv{
-		Git:        mock.Git{},
-		TmuxRunner: tmuxSpy,
-		Path:       mock.Path{},
+		CmdRunner: spyRunner,
+		Path:      mock.Path{},
 	}
 
 	err := Edit([]string{dir}, shellEnv)
@@ -215,16 +251,17 @@ func TestEditFromAnotherSession(t *testing.T) {
 		t.Errorf("err=%v", err)
 	}
 
-	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: tmux.Args{TargetSession: dir}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session}},
-		{Name: "new-session", Args: tmux.Args{SessionName: session, Detach: true, WorkingDir: dir, Command: []string{editor, dir}}},
-		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
+	expectedCalls := [][]string{
+		{"tmux", "has-session", "-t", dir + ":"},
+		{"git", "-C", dir, "rev-parse", "--show-toplevel"},
+		{"tmux", "has-session", "-t", session + ":" + editor},
+		{"tmux", "has-session", "-t", session + ":"},
+		{"tmux", "new-session", "-c", dir, "-d", "-s", session, editor, dir},
+		{"tmux", "switch-client", "-t", session + ":"},
 	}
 
-	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
-		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
+	if !cmp.Equal(expectedCalls, spyRunner.Calls) {
+		t.Error(cmp.Diff(expectedCalls, spyRunner.Calls))
 	}
 }
 
@@ -235,14 +272,16 @@ func TestEditWithExistingWindow(t *testing.T) {
 	dir := t.TempDir()
 	session := project.Name(dir)
 
-	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session"},
+	spyRunner := &spy.SpyRunner{
+		Mocks: []spy.Mock{
+			{Args: []string{"git", "-C", dir, "rev-parse", "--show-toplevel"}, OnRun: mock.SimulateError},
+			{Args: []string{"tmux", "has-session", "-t", dir + ":"}, OnRun: mock.SimulateError},
+		},
 	}
 
 	shellEnv := ShellEnv{
-		Git:        mock.Git{},
-		TmuxRunner: tmuxSpy,
-		Path:       mock.Path{},
+		CmdRunner: spyRunner,
+		Path:      mock.Path{},
 	}
 
 	err := Edit([]string{dir}, shellEnv)
@@ -251,15 +290,16 @@ func TestEditWithExistingWindow(t *testing.T) {
 		t.Errorf("err=%v", err)
 	}
 
-	expectedCalls := []spy.Call{
-		{Name: "has-session", Args: tmux.Args{TargetSession: dir}},
-		{Name: "has-session", Args: tmux.Args{TargetSession: session, TargetWindow: editor}},
-		{Name: "new-window", Args: tmux.Args{TargetSession: session, TargetWindow: editor, WindowName: editor, Kill: true, WorkingDir: dir, Command: []string{editor, dir}}},
-		{Name: "switch-client", Args: tmux.Args{TargetSession: session}},
+	expectedCalls := [][]string{
+		{"tmux", "has-session", "-t", dir + ":"},
+		{"git", "-C", dir, "rev-parse", "--show-toplevel"},
+		{"tmux", "has-session", "-t", session + ":" + editor},
+		{"tmux", "new-window", "-t", session + ":" + editor, "-c", dir, "-k", "-n", editor, "editor", dir},
+		{"tmux", "switch-client", "-t", session + ":"},
 	}
 
-	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
-		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
+	if !cmp.Equal(expectedCalls, spyRunner.Calls) {
+		t.Error(cmp.Diff(expectedCalls, spyRunner.Calls))
 	}
 }
 
@@ -269,14 +309,15 @@ func TestEditWithUnsetEditor(t *testing.T) {
 
 	dir := t.TempDir()
 
-	tmuxSpy := &spy.Tmux{
-		Errors: []string{"has-session"},
+	spyRunner := &spy.SpyRunner{
+		Mocks: []spy.Mock{
+			{Args: []string{"git", "-C", dir, "rev-parse", "--show-toplevel"}, OnRun: mock.SimulateError},
+		},
 	}
 
 	shellEnv := ShellEnv{
-		Git:        mock.Git{},
-		TmuxRunner: tmuxSpy,
-		Path:       mock.Path{},
+		CmdRunner: spyRunner,
+		Path:      mock.Path{},
 	}
 
 	err := Edit([]string{dir}, shellEnv)
@@ -284,9 +325,9 @@ func TestEditWithUnsetEditor(t *testing.T) {
 	if !errors.Is(err, ErrEditorEnvNotSet) {
 		t.Errorf("got=%v, want=%v", err, ErrEditorEnvNotSet)
 	}
-	var expectedCalls []spy.Call
-	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
-		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
+	var expectedCalls [][]string
+	if !cmp.Equal(expectedCalls, spyRunner.Calls) {
+		t.Error(cmp.Diff(expectedCalls, spyRunner.Calls))
 	}
 }
 
@@ -295,22 +336,25 @@ func TestEditWithEditorNotInstalled(t *testing.T) {
 	os.Unsetenv("TMUX")
 
 	dir := t.TempDir()
+	mockPath := mock.Path{Missing: []string{editor}}
 
-	tmuxSpy := &spy.Tmux{}
+	spyRunner := &spy.SpyRunner{
+		Mocks: []spy.Mock{
+			{Args: []string{"git", "-C", dir, "rev-parse", "--show-toplevel"}, OnRun: mock.SimulateError},
+		},
+	}
 
 	shellEnv := ShellEnv{
-		Git:        mock.Git{},
-		TmuxRunner: tmuxSpy,
-		Path:       mock.Path{Missing: []string{editor}},
+		CmdRunner: spyRunner,
+		Path:      &mockPath,
 	}
 
 	err := Edit([]string{dir}, shellEnv)
 	if !errors.Is(err, ErrEditorNotInstalled) {
 		t.Errorf("got=%v, want=%v", err, ErrEditorNotInstalled)
 	}
-	var expectedCalls []spy.Call
-	if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
-		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
+	var expectedCalls [][]string
+	if !cmp.Equal(expectedCalls, spyRunner.Calls) {
+		t.Error(cmp.Diff(expectedCalls, spyRunner.Calls))
 	}
 }
-*/
