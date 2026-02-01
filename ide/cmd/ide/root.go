@@ -12,10 +12,10 @@ import (
 
 type ShellEnv struct {
 	Git        project.Git
-	TmuxRunner tmux.Runner
-	Path       tmux.ShellPath
-	FdRunner   tmux.Runner
-	FzfRunner  tmux.Runner
+	TmuxRunner shell.Runner
+	Path       shell.ShellPath
+	FdRunner   shell.Runner
+	FzfRunner  shell.Runner
 }
 
 var rootCmd = &cobra.Command{
