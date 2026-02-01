@@ -3,11 +3,11 @@ package fd
 import (
 	"os"
 
-	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
+	"github.com/eskelinenantti/tmuxide/internal/shell"
 )
 
 type Fd struct {
-	tmux.Runner
+	shell.Runner
 }
 
 type Args struct{}

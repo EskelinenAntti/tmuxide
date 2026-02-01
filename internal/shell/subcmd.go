@@ -6,8 +6,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-
-	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
 
 var ErrSubCmd = errors.New("command failed")
@@ -16,7 +14,18 @@ type CmdRunner struct {
 	Command string
 }
 
-func (c CmdRunner) Attach(subCommand string, args tmux.Parser) error {
+type Parser interface {
+	Parse() []string
+}
+
+type Runner interface {
+	Run(name string, args Parser) error
+	Attach(name string, args Parser) error
+	Output(name string, args Parser) ([]byte, error)
+	Pipe(name string, args Parser, input io.Reader) ([]byte, error)
+}
+
+func (c CmdRunner) Attach(subCommand string, args Parser) error {
 	cmd := c.createCmd(subCommand, args)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
@@ -24,17 +33,17 @@ func (c CmdRunner) Attach(subCommand string, args tmux.Parser) error {
 	return c.run(cmd)
 }
 
-func (c CmdRunner) Run(subCommand string, args tmux.Parser) error {
+func (c CmdRunner) Run(subCommand string, args Parser) error {
 	cmd := c.createCmd(subCommand, args)
 	return c.run(cmd)
 }
 
-func (c CmdRunner) Output(subCommand string, args tmux.Parser) ([]byte, error) {
+func (c CmdRunner) Output(subCommand string, args Parser) ([]byte, error) {
 	cmd := c.createCmd(subCommand, args)
 	return cmd.CombinedOutput()
 }
 
-func (c CmdRunner) Pipe(subCmd string, args tmux.Parser, input io.Reader) ([]byte, error) {
+func (c CmdRunner) Pipe(subCmd string, args Parser, input io.Reader) ([]byte, error) {
 	cmd := c.createCmd(subCmd, args)
 	cmd.Stdin = input
 	cmd.Stderr = os.Stderr
@@ -49,7 +58,7 @@ func (c CmdRunner) run(cmd *exec.Cmd) error {
 	return nil
 }
 
-func (c CmdRunner) createCmd(subCommand string, args tmux.Parser) *exec.Cmd {
+func (c CmdRunner) createCmd(subCommand string, args Parser) *exec.Cmd {
 	cmd := exec.Command(c.Command)
 	if subCommand != "" {
 		cmd.Args = append(cmd.Args, subCommand)

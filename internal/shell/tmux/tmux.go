@@ -3,25 +3,15 @@ package tmux
 import (
 	"errors"
 	"fmt"
-	"io"
 	"strings"
+
+	"github.com/eskelinenantti/tmuxide/internal/shell"
 )
 
 var ErrTmuxNotInstalled = errors.New("tmux not installed")
 
-type Parser interface {
-	Parse() []string
-}
-
-type Runner interface {
-	Run(name string, args Parser) error
-	Attach(name string, args Parser) error
-	Output(name string, args Parser) ([]byte, error)
-	Pipe(name string, args Parser, input io.Reader) ([]byte, error)
-}
-
 type Tmux struct {
-	Runner
+	shell.Runner
 }
 
 func (t Tmux) HasSession(targetSession string, targetWindow string) bool {
@@ -118,7 +108,7 @@ type ShellPath interface {
 	Contains(path string) bool
 }
 
-func InitTmux(path ShellPath, tmuxRunner Runner) (Tmux, error) {
+func InitTmux(path ShellPath, tmuxRunner shell.Runner) (Tmux, error) {
 	if !path.Contains("tmux") {
 		return Tmux{}, ErrTmuxNotInstalled
 	}

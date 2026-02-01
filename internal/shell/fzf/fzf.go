@@ -3,11 +3,11 @@ package fzf
 import (
 	"io"
 
-	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
+	"github.com/eskelinenantti/tmuxide/internal/shell"
 )
 
 type Fzf struct {
-	tmux.Runner
+	shell.Runner
 }
 
 type Args struct{}
