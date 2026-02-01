@@ -1,9 +1,9 @@
 package tmux
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -55,12 +55,10 @@ func (t Tmux) ChooseSession() error {
 	return t.Run(tmuxCmd)
 }
 
-func (t Tmux) ListSessions() ([]byte, error) {
+func (t Tmux) ListSessions(output io.Writer) error {
 	tmuxCmd := tmuxCommand("list-sessions", Args{Format: "#S"})
-	var out bytes.Buffer
-	tmuxCmd.Stdout = &out
-	err := t.Run(tmuxCmd)
-	return out.Bytes(), err
+	tmuxCmd.Stdout = output
+	return t.Run(tmuxCmd)
 }
 
 type Args struct {

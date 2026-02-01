@@ -1,7 +1,7 @@
 package shell
 
 import (
-	"bytes"
+	"io"
 	"os"
 	"os/exec"
 )
@@ -10,7 +10,13 @@ type FdCmd struct {
 	Runner
 }
 
-func (f FdCmd) Fd() ([]byte, error) {
+type Waitable interface {
+	Wait() error
+	Start() error
+	StdoutPipe() (io.ReadCloser, error)
+}
+
+func (f FdCmd) Fd(output io.Writer) error {
 	args := []string{
 		"--follow",
 		"--hidden",
@@ -20,9 +26,7 @@ func (f FdCmd) Fd() ([]byte, error) {
 	}
 
 	fdCmd := exec.Command("fd", args...)
-	var out bytes.Buffer
-	fdCmd.Stdout = &out
+	fdCmd.Stdout = output
 
-	err := f.Run(fdCmd)
-	return out.Bytes(), err
+	return f.Run(fdCmd)
 }

@@ -2,7 +2,8 @@ package picker
 
 import (
 	"bytes"
-	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/shell"
@@ -10,23 +11,41 @@ import (
 )
 
 func Prompt(tmux tmux.Tmux, fd shell.FdCmd, fzf shell.FzfCmd) (string, error) {
-	var input bytes.Buffer
+	args := []string{
+		"--reverse",
+		"--height",
+		"30%",
+	}
+	fzfCmd := exec.Command("fzf", args...)
 
-	if out, err := tmux.ListSessions(); err == nil {
-		input.Write(out)
+	var buffer bytes.Buffer
+	fzfCmd.Stdout = &buffer
+	fzfCmd.Stderr = os.Stderr
+
+	pipe, err := fzfCmd.StdinPipe()
+	if err != nil {
+		return "", err
 	}
 
-	out, err := fd.Fd()
-	if err != nil {
-		return "", fmt.Errorf("failed to run fd %w: %s", err, string(out))
+	if err := fzfCmd.Start(); err != nil {
+		return "", err
 	}
-	input.Write(out)
 
-	out, err = fzf.Fzf(&input)
+	// Sequentially copy tmux output
+	err = tmux.ListSessions(pipe)
 	if err != nil {
-		// Hide the error as most likely user just cancelled the operation
 		return "", nil
 	}
-	selection := strings.TrimSpace(string(out))
-	return selection, nil
+
+	err = fd.Fd(pipe)
+	if err != nil {
+		return "", nil
+	}
+
+	pipe.Close()
+	err = fzfCmd.Wait()
+	if err == nil {
+		return "", nil
+	}
+	return strings.TrimSpace(buffer.String()), nil
 }
