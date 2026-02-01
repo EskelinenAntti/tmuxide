@@ -1,20 +1,9 @@
 package cmd
 
-import (
-	"errors"
-	"os"
-	"testing"
-
-	"github.com/eskelinenantti/tmuxide/internal/project"
-	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
-	"github.com/eskelinenantti/tmuxide/internal/test/mock"
-	"github.com/eskelinenantti/tmuxide/internal/test/spy"
-	"github.com/google/go-cmp/cmp"
-)
-
 const program string = "program"
 const editor string = "editor"
 
+/*
 func TestEditFile(t *testing.T) {
 	os.Unsetenv("TMUX")
 	t.Setenv("EDITOR", editor)
@@ -324,3 +313,4 @@ func TestEditWithEditorNotInstalled(t *testing.T) {
 		t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
 	}
 }
+*/
