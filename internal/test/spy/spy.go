@@ -1,26 +1,33 @@
 package spy
 
 import (
-	"errors"
 	"os/exec"
 	"reflect"
 	"slices"
 )
 
-type SpyRunner struct {
-	Calls  [][]string
-	Errors [][]string
+type MockFunc func(cmd *exec.Cmd) error
+
+type Mock struct {
+	Args  []string
+	OnRun MockFunc
 }
 
-func (t *SpyRunner) Run(cmd exec.Cmd) error {
+type SpyRunner struct {
+	Calls [][]string
+	Mocks []Mock
+}
+
+func (t *SpyRunner) Run(cmd *exec.Cmd) error {
 	call := cmd.Args
 	t.Calls = append(t.Calls, call)
 
-	for i, error := range t.Errors {
-		if reflect.DeepEqual(error, call) {
-			t.Errors = slices.Delete(t.Errors, i, i+1)
-			return errors.New("error")
+	for i, mock := range t.Mocks {
+		if reflect.DeepEqual(mock.Args, call) {
+			t.Mocks = slices.Delete(t.Mocks, i, i+1)
+			return mock.OnRun(cmd)
 		}
 	}
+
 	return nil
 }

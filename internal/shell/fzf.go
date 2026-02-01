@@ -23,6 +23,6 @@ func (f FzfCmd) Fzf(input io.Reader) ([]byte, error) {
 	fzfCmd.Stdin = input
 	fzfCmd.Stdout = &out
 
-	err := f.Run(*fzfCmd)
+	err := f.Run(fzfCmd)
 	return out.Bytes(), err
 }

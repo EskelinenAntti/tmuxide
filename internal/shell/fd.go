@@ -23,6 +23,6 @@ func (f FdCmd) Fd() ([]byte, error) {
 	var out bytes.Buffer
 	fdCmd.Stdout = &out
 
-	err := f.Run(*fdCmd)
+	err := f.Run(fdCmd)
 	return out.Bytes(), err
 }

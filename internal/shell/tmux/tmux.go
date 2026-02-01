@@ -19,17 +19,17 @@ type Tmux struct {
 
 func (t Tmux) HasSession(targetSession string, targetWindow string) bool {
 	tmuxCmd := tmuxCommand("has-session", Args{TargetSession: targetSession, TargetWindow: targetWindow})
-	return t.Run(*tmuxCmd) == nil
+	return t.Run(tmuxCmd) == nil
 }
 
 func (t Tmux) New(session string, dir string, cmd []string) error {
 	tmuxCmd := tmuxCommand("new-session", Args{SessionName: session, Detach: true, WorkingDir: dir, Command: cmd})
-	return t.Run(*tmuxCmd)
+	return t.Run(tmuxCmd)
 }
 
 func (t Tmux) NewWindow(session string, window string, workingDir string, name string, cmd []string) error {
 	tmuxCmd := tmuxCommand("new-window", Args{Kill: true, WindowName: name, WorkingDir: workingDir, TargetSession: session, TargetWindow: window, Command: cmd})
-	return t.Run(*tmuxCmd)
+	return t.Run(tmuxCmd)
 }
 
 func (t Tmux) Attach(session string) error {
@@ -37,29 +37,29 @@ func (t Tmux) Attach(session string) error {
 	tmuxCmd.Stdin = os.Stdin
 	tmuxCmd.Stdout = os.Stdout
 	tmuxCmd.Stderr = os.Stderr
-	return t.Run(*tmuxCmd)
+	return t.Run(tmuxCmd)
 }
 
 func (t Tmux) Switch(session string) error {
 	tmuxCmd := tmuxCommand("switch-client", Args{TargetSession: session})
-	return t.Run(*tmuxCmd)
+	return t.Run(tmuxCmd)
 }
 
 func (t Tmux) Kill(session string) error {
 	tmuxCmd := tmuxCommand("kill-session", Args{TargetSession: session})
-	return t.Run(*tmuxCmd)
+	return t.Run(tmuxCmd)
 }
 
 func (t Tmux) ChooseSession() error {
 	tmuxCmd := tmuxCommand("choose-session", Args{})
-	return t.Run(*tmuxCmd)
+	return t.Run(tmuxCmd)
 }
 
 func (t Tmux) ListSessions() ([]byte, error) {
 	tmuxCmd := tmuxCommand("list-sessions", Args{Format: "#S"})
 	var out bytes.Buffer
 	tmuxCmd.Stdout = &out
-	err := t.Run(*tmuxCmd)
+	err := t.Run(tmuxCmd)
 	return out.Bytes(), err
 }
 

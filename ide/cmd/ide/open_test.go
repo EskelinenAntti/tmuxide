@@ -1,7 +1,9 @@
 package cmd
 
 import (
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -11,29 +13,41 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-/*
-	func TestOpen(t *testing.T) {
-		os.Unsetenv("TMUX")
-		spyRunner := &spy.SpyRunner{}
-		shellEnv := ShellEnv{
-			CmdRunner: spyRunner,
-			Path:      mock.Path{},
-		}
-		err := Open([]string{}, shellEnv)
-		if err != nil {
-			t.Errorf("err=%v", err)
-		}
-
-		expectedCalls := []spy.Call{
-			{"choose-session"},
-			{Name: "attach", Args: tmux.Args{}},
-		}
-
-		if !cmp.Equal(expectedCalls, tmuxSpy.Calls) {
-			t.Error(cmp.Diff(expectedCalls, tmuxSpy.Calls))
-		}
+func TestOpen(t *testing.T) {
+	os.Unsetenv("TMUX")
+	session := "session"
+	spyRunner := &spy.SpyRunner{
+		Mocks: []spy.Mock{{
+			Args: []string{
+				"fzf", "--reverse", "--height", "30%",
+			},
+			OnRun: writeToStdout(session),
+		}},
+	}
+	shellEnv := ShellEnv{
+		CmdRunner: spyRunner,
+		Path:      mock.Path{},
+	}
+	err := Open([]string{}, shellEnv)
+	if err != nil {
+		t.Errorf("err=%v", err)
 	}
 
+	expectedCalls := [][]string{
+		{"tmux", "list-sessions", "-F", "#S"},
+		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", os.Getenv("HOME")},
+		{"fzf", "--reverse", "--height", "30%"},
+		{"tmux", "has-session", "-t", session + ":"},
+		{"tmux", "has-session", "-t", session + ":"},
+		{"tmux", "attach", "-t", session + ":"},
+	}
+
+	if !cmp.Equal(expectedCalls, spyRunner.Calls) {
+		t.Error(cmp.Diff(expectedCalls, spyRunner.Calls))
+	}
+}
+
+/*
 	func TestOpenWhenAttached(t *testing.T) {
 		t.Setenv("TMUX", "test")
 		tmuxSpy := &spy.Tmux{}
@@ -93,9 +107,9 @@ func TestOpenDirInsideRepository(t *testing.T) {
 	session := project.Name(dir)
 
 	spyRunner := &spy.SpyRunner{
-		Errors: [][]string{
-			{"tmux", "has-session", "-t", dir + ":"},
-			{"tmux", "has-session", "-t", session + ":"},
+		Mocks: []spy.Mock{
+			{Args: []string{"tmux", "has-session", "-t", dir + ":"}, OnRun: simulateError},
+			{Args: []string{"tmux", "has-session", "-t", session + ":"}, OnRun: simulateError},
 		},
 	}
 
@@ -245,3 +259,11 @@ func TestOpenFile(t *testing.T) {
 	}
 }
 */
+
+func simulateError(cmd *exec.Cmd) error { return errors.New("") }
+func writeToStdout(value string) func(*exec.Cmd) error {
+	return func(cmd *exec.Cmd) error {
+		cmd.Stdout.Write([]byte(value))
+		return nil
+	}
+}
