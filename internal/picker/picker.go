@@ -34,17 +34,18 @@ func Prompt(tmux tmux.Tmux, fd shell.FdCmd, fzf shell.FzfCmd) (string, error) {
 	// Sequentially copy tmux output
 	err = tmux.ListSessions(pipe)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	err = fd.Fd(pipe)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	pipe.Close()
 	err = fzfCmd.Wait()
-	if err == nil {
+	if err != nil {
+		// As a workaround, silence errors from fzf to not show an error if user closed it.
 		return "", nil
 	}
 	return strings.TrimSpace(buffer.String()), nil
