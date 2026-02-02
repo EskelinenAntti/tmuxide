@@ -31,11 +31,7 @@ func Prompt(tmux tmux.Tmux, fd shell.FdCmd, fzf shell.FzfCmd) (string, error) {
 		return "", err
 	}
 
-	// Sequentially copy tmux output
-	err = tmux.ListSessions(pipe)
-	if err != nil {
-		return "", err
-	}
+	tmux.ListSessions(pipe)
 
 	err = fd.Fd(pipe)
 	if err != nil {
