@@ -10,12 +10,6 @@ type FdCmd struct {
 	Runner
 }
 
-type Waitable interface {
-	Wait() error
-	Start() error
-	StdoutPipe() (io.ReadCloser, error)
-}
-
 func (f FdCmd) Fd(output io.Writer) error {
 	args := []string{
 		"--follow",

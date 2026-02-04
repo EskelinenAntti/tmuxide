@@ -4,6 +4,8 @@ import (
 	"os/exec"
 	"reflect"
 	"slices"
+
+	"github.com/eskelinenantti/tmuxide/internal/shell"
 )
 
 type MockFunc func(cmd *exec.Cmd) error
@@ -18,6 +20,16 @@ type SpyRunner struct {
 	Mocks []Mock
 }
 
+type FakeWriteCloser struct{}
+
+func (f FakeWriteCloser) Close() error {
+	return nil
+}
+
+func (f FakeWriteCloser) Write(p []byte) (n int, err error) {
+	return 0, nil
+}
+
 func (t *SpyRunner) Run(cmd *exec.Cmd) error {
 	call := cmd.Args
 	t.Calls = append(t.Calls, call)
@@ -30,4 +42,8 @@ func (t *SpyRunner) Run(cmd *exec.Cmd) error {
 	}
 
 	return nil
+}
+
+func (t *SpyRunner) Start(cmd *exec.Cmd) (shell.WriteCloser, error) {
+	return FakeWriteCloser{}, t.Run(cmd)
 }

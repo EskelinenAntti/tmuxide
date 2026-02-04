@@ -10,15 +10,16 @@ type FzfCmd struct {
 	Runner
 }
 
-func (f FzfCmd) Fzf(input io.Reader, output io.Writer) Waitable {
+func (f FzfCmd) Fzf(output io.Writer) (WriteCloser, error) {
 	args := []string{
 		"--reverse",
 		"--height",
 		"30%",
 	}
 	fzfCmd := exec.Command("fzf", args...)
-	fzfCmd.Stdin = input
 	fzfCmd.Stdout = output
 	fzfCmd.Stderr = os.Stderr
-	return fzfCmd
+	waiter, err := f.Start(fzfCmd)
+	return waiter, err
+
 }

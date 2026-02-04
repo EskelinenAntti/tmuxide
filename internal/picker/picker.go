@@ -2,8 +2,6 @@ package picker
 
 import (
 	"bytes"
-	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/shell"
@@ -11,35 +9,20 @@ import (
 )
 
 func Prompt(tmux tmux.Tmux, fd shell.FdCmd, fzf shell.FzfCmd) (string, error) {
-	args := []string{
-		"--reverse",
-		"--height",
-		"30%",
-	}
-	fzfCmd := exec.Command("fzf", args...)
-
 	var buffer bytes.Buffer
-	fzfCmd.Stdout = &buffer
-	fzfCmd.Stderr = os.Stderr
+	fzfStdin, err := fzf.Fzf(&buffer)
+	if err != nil {
+		return "", nil
+	}
 
-	pipe, err := fzfCmd.StdinPipe()
+	tmux.ListSessions(fzfStdin)
+	err = fd.Fd(fzfStdin)
+
 	if err != nil {
 		return "", err
 	}
 
-	if err := fzfCmd.Start(); err != nil {
-		return "", err
-	}
-
-	tmux.ListSessions(pipe)
-
-	err = fd.Fd(pipe)
-	if err != nil {
-		return "", err
-	}
-
-	pipe.Close()
-	err = fzfCmd.Wait()
+	err = fzfStdin.Close()
 	if err != nil {
 		// As a workaround, silence errors from fzf to not show an error if user closed it.
 		return "", nil
