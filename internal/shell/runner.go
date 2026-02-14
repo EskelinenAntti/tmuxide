@@ -38,13 +38,13 @@ func (c CmdRunner) Run(cmd *exec.Cmd) error {
 }
 
 func (c CmdRunner) Start(cmd *exec.Cmd) (WriteCloser, error) {
-	err := cmd.Start()
-	if err != nil {
-		return nil, fmt.Errorf("'%v' %w: %w", cmd.Args, ErrCommandFailed, err)
-	}
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, err
+	}
+	err = cmd.Start()
+	if err != nil {
+		return nil, fmt.Errorf("'%v' %w: %w", cmd.Args, ErrCommandFailed, err)
 	}
 
 	return CmdWriteCloser{cmd: cmd, stdin: stdin}, nil

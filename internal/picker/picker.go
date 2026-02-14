@@ -12,12 +12,11 @@ func Prompt(tmux tmux.Tmux, fd shell.FdCmd, fzf shell.FzfCmd) (string, error) {
 	var buffer bytes.Buffer
 	fzfStdin, err := fzf.Fzf(&buffer)
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	tmux.ListSessions(fzfStdin)
 	err = fd.Fd(fzfStdin)
-
 	if err != nil {
 		return "", err
 	}
