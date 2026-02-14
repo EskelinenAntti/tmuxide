@@ -8,7 +8,7 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
 
-func Prompt(tmux tmux.Tmux, fd shell.FdCmd, fzf shell.FzfCmd) (string, error) {
+func Prompt(filterDir bool, tmux tmux.Tmux, fd shell.FdCmd, fzf shell.FzfCmd) (string, error) {
 	var buffer bytes.Buffer
 	fzfStdin, err := fzf.Fzf(&buffer)
 	if err != nil {
@@ -16,7 +16,7 @@ func Prompt(tmux tmux.Tmux, fd shell.FdCmd, fzf shell.FzfCmd) (string, error) {
 	}
 
 	tmux.ListSessions(fzfStdin)
-	err = fd.Fd(fzfStdin)
+	err = fd.Fd(filterDir, fzfStdin)
 	if err != nil {
 		return "", err
 	}

@@ -58,7 +58,7 @@ func Edit(args []string, shellEnv ShellEnv) error {
 
 	var editArg string
 	if len(args) == 0 {
-		editArg, err = picker.Prompt(tmux, shell.FdCmd{Runner: shellEnv.CmdRunner}, shell.FzfCmd{Runner: shellEnv.CmdRunner})
+		editArg, err = picker.Prompt(false, tmux, shell.FdCmd{Runner: shellEnv.CmdRunner}, shell.FzfCmd{Runner: shellEnv.CmdRunner})
 	} else {
 		editArg = args[0]
 	}

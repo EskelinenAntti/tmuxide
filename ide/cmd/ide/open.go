@@ -36,7 +36,7 @@ func Open(args []string, shellEnv ShellEnv) error {
 	var workingDir string
 	var command []string
 	if len(args) == 0 {
-		workingDir, err = picker.Prompt(tmux, shell.FdCmd{Runner: shellEnv.CmdRunner}, shell.FzfCmd{Runner: shellEnv.CmdRunner})
+		workingDir, err = picker.Prompt(true, tmux, shell.FdCmd{Runner: shellEnv.CmdRunner}, shell.FzfCmd{Runner: shellEnv.CmdRunner})
 	} else {
 		workingDir = args[0]
 		command = args[1:]
