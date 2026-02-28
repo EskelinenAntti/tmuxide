@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
 
 var ErrInvalidPath = errors.New("invalid path")
@@ -25,7 +27,12 @@ type Git interface {
 	RevParse(cwd string) (string, error)
 }
 
-func ForPath(path string, git Git) (Project, error) {
+func ForPath(path string, git Git, tmux tmux.Cmd) (Project, error) {
+	if tmux.HasSession(path, "") {
+		return Project{
+			Name: path,
+		}, nil
+	}
 	workingDir, err := repository(path, git)
 	if err != nil {
 		if workingDir, err = dir(path); err != nil {
@@ -45,7 +52,13 @@ func ForPath(path string, git Git) (Project, error) {
 	}, nil
 }
 
-func ForDir(directory string) (Project, error) {
+func ForDir(directory string, tmux tmux.Cmd) (Project, error) {
+	if tmux.HasSession(directory, "") {
+		return Project{
+			Name: directory,
+		}, nil
+	}
+
 	fileInfo, err := os.Stat(directory)
 	if err != nil {
 		return Project{}, ErrInvalidPath

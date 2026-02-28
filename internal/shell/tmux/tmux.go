@@ -1,56 +1,61 @@
 package tmux
 
 import (
-	"errors"
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
 	"strings"
+
+	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 )
 
-var ErrTmuxNotInstalled = errors.New("tmux not installed")
-
-type Parser interface {
-	Parse() []string
+type Cmd struct {
+	runner.Runner
 }
 
-type Runner interface {
-	Run(name string, args Parser) error
-	Attach(name string, args Parser) error
+func (t Cmd) HasSession(targetSession string, targetWindow string) bool {
+	tmuxCmd := tmuxCommand("has-session", Args{TargetSession: targetSession, TargetWindow: targetWindow})
+	return t.Run(tmuxCmd) == nil
 }
 
-type Tmux struct {
-	Runner
+func (t Cmd) New(session string, dir string, cmd []string) error {
+	tmuxCmd := tmuxCommand("new-session", Args{SessionName: session, Detach: true, WorkingDir: dir, Command: cmd})
+	return t.Run(tmuxCmd)
 }
 
-func (t Tmux) HasSession(targetSession string, targetWindow string) bool {
-	return t.Run("has-session", Args{TargetSession: targetSession, TargetWindow: targetWindow}) == nil
+func (t Cmd) NewWindow(session string, window string, workingDir string, name string, cmd []string) error {
+	tmuxCmd := tmuxCommand("new-window", Args{Kill: true, WindowName: name, WorkingDir: workingDir, TargetSession: session, TargetWindow: window, Command: cmd})
+	return t.Run(tmuxCmd)
 }
 
-func (t Tmux) New(session string, dir string, cmd []string) error {
-	return t.Run("new-session", Args{SessionName: session, Detach: true, WorkingDir: dir, Command: cmd})
+func (t Cmd) Attach(session string) error {
+	tmuxCmd := tmuxCommand("attach", Args{TargetSession: session})
+	tmuxCmd.Stdin = os.Stdin
+	tmuxCmd.Stdout = os.Stdout
+	tmuxCmd.Stderr = os.Stderr
+	return t.Run(tmuxCmd)
 }
 
-func (t Tmux) NewWindow(session string, window string, workingDir string, name string, cmd []string) error {
-	return t.Run("new-window", Args{Kill: true, WindowName: name, WorkingDir: workingDir, TargetSession: session, TargetWindow: window, Command: cmd})
+func (t Cmd) Switch(session string) error {
+	tmuxCmd := tmuxCommand("switch-client", Args{TargetSession: session})
+	return t.Run(tmuxCmd)
 }
 
-func (t Tmux) Attach(session string) error {
-	return t.Runner.Attach("attach", Args{TargetSession: session})
+func (t Cmd) Kill(session string) error {
+	tmuxCmd := tmuxCommand("kill-session", Args{TargetSession: session})
+	return t.Run(tmuxCmd)
 }
 
-func (t Tmux) Switch(session string) error {
-	return t.Runner.Attach("switch-client", Args{TargetSession: session})
+func (t Cmd) ChooseSession() error {
+	tmuxCmd := tmuxCommand("choose-session", Args{})
+	return t.Run(tmuxCmd)
 }
 
-func (t Tmux) Kill(session string) error {
-	return t.Run("kill-session", Args{TargetSession: session})
-}
-
-func (t Tmux) ChooseSession() error {
-	return t.Run("choose-session", Args{})
-}
-
-func (t Tmux) KillSession() error {
-	return t.Run("kill-session", Args{})
+func (t Cmd) ListSessions(output io.Writer) error {
+	tmuxCmd := tmuxCommand("list-sessions", Args{Format: "#S"})
+	tmuxCmd.Stdout = output
+	return t.Run(tmuxCmd)
 }
 
 type Args struct {
@@ -62,6 +67,7 @@ type Args struct {
 	WorkingDir    string
 	Command       []string
 	Kill          bool
+	Format        string
 }
 
 func (a Args) Parse() []string {
@@ -91,6 +97,10 @@ func (a Args) Parse() []string {
 		args = append(args, "-n", a.WindowName)
 	}
 
+	if a.Format != "" {
+		args = append(args, "-F", a.Format)
+	}
+
 	if len(a.Command) > 0 {
 		args = append(args, a.Command...)
 	}
@@ -102,14 +112,8 @@ func (a Args) String() string {
 	return strings.Join(a.Parse(), " ")
 }
 
-type ShellPath interface {
-	Contains(path string) bool
-}
-
-func InitTmux(path ShellPath, tmuxRunner Runner) (Tmux, error) {
-	if !path.Contains("tmux") {
-		return Tmux{}, ErrTmuxNotInstalled
-	}
-
-	return Tmux{Runner: tmuxRunner}, nil
+func tmuxCommand(subCommand string, args Args) *exec.Cmd {
+	cmd := exec.Command("tmux", subCommand)
+	cmd.Args = append(cmd.Args, args.Parse()...)
+	return cmd
 }

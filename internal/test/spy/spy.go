@@ -1,35 +1,49 @@
 package spy
 
 import (
-	"errors"
+	"os/exec"
+	"reflect"
 	"slices"
 
-	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
+	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 )
 
-type Call struct {
-	Name string
-	Args tmux.Parser
+type MockFunc func(cmd *exec.Cmd) error
+
+type Mock struct {
+	Args  []string
+	OnRun MockFunc
 }
 
-type Tmux struct {
-	Calls  []Call
-	Errors []string
+type SpyRunner struct {
+	Calls [][]string
+	Mocks []Mock
 }
 
-func (t *Tmux) Run(name string, args tmux.Parser) error {
-	call := Call{Name: name, Args: args}
-	t.Calls = append(t.Calls, call)
+type FakeWriteCloser struct{}
 
-	for i, error := range t.Errors {
-		if name == error {
-			t.Errors = slices.Delete(t.Errors, i, i+1)
-			return errors.New("error")
-		}
-	}
+func (f FakeWriteCloser) Close() error {
 	return nil
 }
 
-func (t *Tmux) Attach(name string, args tmux.Parser) error {
-	return t.Run(name, args)
+func (f FakeWriteCloser) Write(p []byte) (n int, err error) {
+	return 0, nil
+}
+
+func (t *SpyRunner) Run(cmd *exec.Cmd) error {
+	call := cmd.Args
+	t.Calls = append(t.Calls, call)
+
+	for i, mock := range t.Mocks {
+		if reflect.DeepEqual(mock.Args, call) {
+			t.Mocks = slices.Delete(t.Mocks, i, i+1)
+			return mock.OnRun(cmd)
+		}
+	}
+
+	return nil
+}
+
+func (t *SpyRunner) Start(cmd *exec.Cmd) (runner.WriteCloser, error) {
+	return FakeWriteCloser{}, t.Run(cmd)
 }

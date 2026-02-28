@@ -7,9 +7,11 @@ import (
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
+	"github.com/eskelinenantti/tmuxide/internal/picker"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
-	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
+	"github.com/eskelinenantti/tmuxide/internal/shell/path"
+	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 	"github.com/spf13/cobra"
 )
 
@@ -30,18 +32,14 @@ var editCmd = &cobra.Command{
 	Use:   "edit [path]",
 	Short: "Open editor inside a tmux session.",
 	Long:  helpEdit,
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return Edit(args, ShellEnv{
-			Git:        shell.Git{},
-			TmuxRunner: shell.SubCmdRunner{Command: "tmux"},
-			Path:       shell.Path{},
-		})
+		return Edit(args, runner.CmdRunner{}, path.Path{})
 	},
 }
 
-func Edit(args []string, shell ShellEnv) error {
-	tmux, err := tmux.InitTmux(shell.Path, shell.TmuxRunner)
+func Edit(args []string, runner runner.Runner, path path.ShellPath) error {
+	shell, err := shell.Init(path, runner)
 	if err != nil {
 		return err
 	}
@@ -52,18 +50,33 @@ func Edit(args []string, shell ShellEnv) error {
 		return ErrEditorEnvNotSet
 	}
 
-	if !shell.Path.Contains(editorCmd[0]) {
+	if !path.Contains(editorCmd[0]) {
 		return ErrEditorNotInstalled
 	}
 
-	editorPath := args[0]
-	project, err := project.ForPath(editorPath, shell.Git)
-	if err != nil {
-		return fmt.Errorf("could not edit %s: %w", editorPath, err)
+	var editArg string
+	if len(args) == 0 {
+		editArg, err = picker.Prompt(false, shell.Tmux, shell.Fd, shell.Fzf)
+	} else {
+		editArg = args[0]
 	}
 
-	command := append(editorCmd, editorPath)
-	return ide.Start(command, project, tmux)
+	if editArg == "" || err != nil {
+		return err
+	}
+
+	project, err := project.ForPath(editArg, shell.Git, shell.Tmux)
+
+	if err != nil {
+		return fmt.Errorf("could not edit %s: %w", editArg, err)
+	}
+
+	var command []string
+	if editArg != project.Name {
+		command = append(editorCmd, editArg)
+	}
+
+	return ide.Start(command, project, shell.Tmux)
 }
 
 func init() {

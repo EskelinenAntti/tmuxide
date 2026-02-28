@@ -10,7 +10,7 @@ import (
 
 var ErrNoSessionsFound = errors.New("no active sessions")
 
-func Start(command []string, project project.Project, tmux tmux.Tmux) error {
+func Start(command []string, project project.Project, tmux tmux.Cmd) error {
 	var err error
 	if len(command) == 0 {
 		err = startWithoutCommand(tmux, project)
@@ -29,27 +29,7 @@ func Start(command []string, project project.Project, tmux tmux.Tmux) error {
 	return tmux.Attach(project.Name)
 }
 
-func List(tmux tmux.Tmux) error {
-	err := tmux.ChooseSession()
-	if err != nil {
-		return ErrNoSessionsFound
-	}
-
-	if isAttached() {
-		return err
-	}
-
-	return tmux.Attach("")
-}
-
-func Quit(tmux tmux.Tmux) error {
-	if !isAttached() {
-		return nil
-	}
-	return tmux.KillSession()
-}
-
-func startWithCommand(tmux tmux.Tmux, project project.Project, command []string) error {
+func startWithCommand(tmux tmux.Cmd, project project.Project, command []string) error {
 	windowName := command[0]
 
 	if tmux.HasSession(project.Name, windowName) {
@@ -61,7 +41,7 @@ func startWithCommand(tmux tmux.Tmux, project project.Project, command []string)
 	}
 }
 
-func startWithoutCommand(tmux tmux.Tmux, project project.Project) error {
+func startWithoutCommand(tmux tmux.Cmd, project project.Project) error {
 	if tmux.HasSession(project.Name, "") {
 		// When no command was provided and session exists, don't create any new windows or sessions
 		return nil

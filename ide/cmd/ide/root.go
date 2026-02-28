@@ -2,29 +2,25 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
-	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
-	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
+	"github.com/eskelinenantti/tmuxide/internal/shell/path"
+	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 	"github.com/spf13/cobra"
 )
 
 type ShellEnv struct {
-	Git        project.Git
-	TmuxRunner tmux.Runner
-	Path       tmux.ShellPath
+	Path      path.ShellPath
+	CmdRunner runner.Runner
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "ide",
 	Short: "Turn tmux and your favourite editor into an IDE with tmuxide.",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return Open(args, ShellEnv{
-			Git:        shell.Git{},
-			TmuxRunner: shell.SubCmdRunner{Command: "tmux"},
-			Path:       shell.Path{},
-		})
+		return Open(args, runner.CmdRunner{}, path.Path{})
 	}}
 
 var helpNoEditorConfigured = `
@@ -33,11 +29,11 @@ For example, to use Vim as your editor, add the following line to your ~/.zshrc 
 				
 export EDITOR=vim`
 
-var helpTmuxNotInstalled = `
-Did not find tmux, which is a required dependency for ide command.
+var helpCommandNotInstalledTemplate = `
+Did not find %s, which is a required dependency for ide command.
 
-You can install tmux e.g. via homebrew by running:
-brew install tmux`
+You can install %[1]s e.g. via homebrew by running:
+brew install %[1]s`
 
 func Execute() {
 	rootCmd.SilenceUsage = true
@@ -52,8 +48,9 @@ func Execute() {
 		rootCmd.PrintErrln(helpNoEditorConfigured)
 	}
 
-	if errors.Is(err, tmux.ErrTmuxNotInstalled) {
-		rootCmd.PrintErrln(helpTmuxNotInstalled)
+	var commandNotInstalled shell.NotInstalledError
+	if errors.As(err, &commandNotInstalled) {
+		rootCmd.PrintErrln(fmt.Sprintf(helpCommandNotInstalledTemplate, commandNotInstalled.Cmd))
 	}
 
 	os.Exit(1)
