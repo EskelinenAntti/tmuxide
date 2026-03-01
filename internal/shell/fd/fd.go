@@ -24,6 +24,7 @@ func (f Cmd) Fd(filterDir bool, output io.Writer) error {
 		"--hidden",
 		"--exclude", "{.git,node_modules,target,build,Library}",
 		".",
+		"--base-directory",
 		os.Getenv("HOME"),
 	)
 	fdCmd := exec.Command("fd", args...)

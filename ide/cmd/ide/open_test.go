@@ -33,7 +33,7 @@ func TestOpen(t *testing.T) {
 	expectedCalls := [][]string{
 		{"fzf", "--reverse", "--height", "30%"},
 		{"tmux", "list-sessions", "-F", "#S"},
-		{"fd", "--type", "dir", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", os.Getenv("HOME")},
+		{"fd", "--type", "dir", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", "--base-directory", os.Getenv("HOME")},
 		{"tmux", "has-session", "-t", session + ":"},
 		{"tmux", "has-session", "-t", session + ":"},
 		{"tmux", "attach", "-t", session + ":"},
@@ -64,7 +64,7 @@ func TestOpenWhenAttached(t *testing.T) {
 	expectedCalls := [][]string{
 		{"fzf", "--reverse", "--height", "30%"},
 		{"tmux", "list-sessions", "-F", "#S"},
-		{"fd", "--type", "dir", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", os.Getenv("HOME")},
+		{"fd", "--type", "dir", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", "--base-directory", os.Getenv("HOME")},
 		{"tmux", "has-session", "-t", session + ":"},
 		{"tmux", "has-session", "-t", session + ":"},
 		{"tmux", "switch-client", "-t", session + ":"},
