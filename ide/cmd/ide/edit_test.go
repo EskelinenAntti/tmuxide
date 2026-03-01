@@ -15,6 +15,36 @@ import (
 const program string = "program"
 const editor string = "editor"
 
+func TestEdit(t *testing.T) {
+	os.Unsetenv("TMUX")
+	session := "session"
+	spyRunner := &spy.SpyRunner{
+		Mocks: []spy.Mock{{
+			Args: []string{
+				"fzf", "--reverse", "--height", "30%",
+			},
+			OnRun: mock.WriteToStdout(session),
+		}},
+	}
+	err := Edit([]string{}, spyRunner, mock.Path{})
+	if err != nil {
+		t.Errorf("err=%v", err)
+	}
+
+	expectedCalls := [][]string{
+		{"fzf", "--reverse", "--height", "30%"},
+		{"tmux", "list-sessions", "-F", "#S"},
+		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", os.Getenv("HOME")},
+		{"tmux", "has-session", "-t", session + ":"},
+		{"tmux", "has-session", "-t", session + ":"},
+		{"tmux", "attach", "-t", session + ":"},
+	}
+
+	if !cmp.Equal(expectedCalls, spyRunner.Calls) {
+		t.Error(cmp.Diff(expectedCalls, spyRunner.Calls))
+	}
+}
+
 func TestEditFile(t *testing.T) {
 	os.Unsetenv("TMUX")
 	t.Setenv("EDITOR", editor)
