@@ -30,13 +30,14 @@ func TestOpen(t *testing.T) {
 		t.Errorf("err=%v", err)
 	}
 
+	selectedPath := filepath.Join(os.Getenv("HOME"), session)
 	expectedCalls := [][]string{
 		{"fzf", "--reverse", "--height", "30%"},
 		{"tmux", "list-sessions", "-F", "#S"},
 		{"fd", "--type", "dir", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", "--base-directory", os.Getenv("HOME")},
-		{"tmux", "has-session", "-t", session + ":"},
-		{"tmux", "has-session", "-t", session + ":"},
-		{"tmux", "attach", "-t", session + ":"},
+		{"tmux", "has-session", "-t", selectedPath + ":"},
+		{"tmux", "has-session", "-t", selectedPath + ":"},
+		{"tmux", "attach", "-t", selectedPath + ":"},
 	}
 
 	if !cmp.Equal(expectedCalls, spyRunner.Calls) {
@@ -61,13 +62,14 @@ func TestOpenWhenAttached(t *testing.T) {
 		t.Errorf("err=%v", err)
 	}
 
+	selectedPath := filepath.Join(os.Getenv("HOME"), session)
 	expectedCalls := [][]string{
 		{"fzf", "--reverse", "--height", "30%"},
 		{"tmux", "list-sessions", "-F", "#S"},
 		{"fd", "--type", "dir", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", "--base-directory", os.Getenv("HOME")},
-		{"tmux", "has-session", "-t", session + ":"},
-		{"tmux", "has-session", "-t", session + ":"},
-		{"tmux", "switch-client", "-t", session + ":"},
+		{"tmux", "has-session", "-t", selectedPath + ":"},
+		{"tmux", "has-session", "-t", selectedPath + ":"},
+		{"tmux", "switch-client", "-t", selectedPath + ":"},
 	}
 
 	if !cmp.Equal(expectedCalls, spyRunner.Calls) {

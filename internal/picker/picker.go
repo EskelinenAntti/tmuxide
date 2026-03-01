@@ -2,6 +2,8 @@ package picker
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
@@ -27,5 +29,5 @@ func Prompt(filterDir bool, tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, erro
 		// As a workaround, silence errors from fzf to not show an error if user closed it.
 		return "", nil
 	}
-	return strings.TrimSpace(buffer.String()), nil
+	return filepath.Join(os.Getenv("HOME"), strings.TrimSpace(buffer.String())), nil
 }
