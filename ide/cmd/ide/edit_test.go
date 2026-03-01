@@ -17,6 +17,7 @@ const editor string = "editor"
 
 func TestEdit(t *testing.T) {
 	os.Unsetenv("TMUX")
+	t.Setenv("EDITOR", editor)
 	session := "session"
 	spyRunner := &spy.SpyRunner{
 		Mocks: []spy.Mock{{
