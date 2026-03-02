@@ -33,7 +33,39 @@ func TestOpen(t *testing.T) {
 	selectedPath := filepath.Join(os.Getenv("HOME"), session)
 	expectedCalls := [][]string{
 		{"fzf", "--reverse", "--height", "30%"},
-		{"tmux", "list-sessions", "-F", "#S"},
+		{"tmux", "list-sessions", "-F", "Session: #S"},
+		{"fd", "--type", "dir", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", "--base-directory", os.Getenv("HOME")},
+		{"tmux", "has-session", "-t", selectedPath + ":"},
+		{"tmux", "has-session", "-t", selectedPath + ":"},
+		{"tmux", "attach", "-t", selectedPath + ":"},
+	}
+
+	if !cmp.Equal(expectedCalls, spyRunner.Calls) {
+		t.Error(cmp.Diff(expectedCalls, spyRunner.Calls))
+	}
+}
+func TestOpenWhenSelectsSession(t *testing.T) {
+	os.Unsetenv("TMUX")
+	session := "test-session"
+	selection := "Session: " + session
+
+	spyRunner := &spy.SpyRunner{
+		Mocks: []spy.Mock{{
+			Args: []string{
+				"fzf", "--reverse", "--height", "30%",
+			},
+			OnRun: mock.WriteToStdout(selection),
+		}},
+	}
+	err := Open([]string{}, spyRunner, mock.Path{})
+	if err != nil {
+		t.Errorf("err=%v", err)
+	}
+
+	selectedPath := session
+	expectedCalls := [][]string{
+		{"fzf", "--reverse", "--height", "30%"},
+		{"tmux", "list-sessions", "-F", "Session: #S"},
 		{"fd", "--type", "dir", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", "--base-directory", os.Getenv("HOME")},
 		{"tmux", "has-session", "-t", selectedPath + ":"},
 		{"tmux", "has-session", "-t", selectedPath + ":"},
@@ -65,7 +97,7 @@ func TestOpenWhenAttached(t *testing.T) {
 	selectedPath := filepath.Join(os.Getenv("HOME"), session)
 	expectedCalls := [][]string{
 		{"fzf", "--reverse", "--height", "30%"},
-		{"tmux", "list-sessions", "-F", "#S"},
+		{"tmux", "list-sessions", "-F", "Session: #S"},
 		{"fd", "--type", "dir", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", "--base-directory", os.Getenv("HOME")},
 		{"tmux", "has-session", "-t", selectedPath + ":"},
 		{"tmux", "has-session", "-t", selectedPath + ":"},

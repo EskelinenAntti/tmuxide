@@ -52,8 +52,8 @@ func (t Cmd) ChooseSession() error {
 	return t.Run(tmuxCmd)
 }
 
-func (t Cmd) ListSessions(output io.Writer) error {
-	tmuxCmd := tmuxCommand("list-sessions", Args{Format: "#S"})
+func (t Cmd) ListSessions(output io.Writer, prefix string) error {
+	tmuxCmd := tmuxCommand("list-sessions", Args{Format: prefix + "#S"})
 	tmuxCmd.Stdout = output
 	return t.Run(tmuxCmd)
 }

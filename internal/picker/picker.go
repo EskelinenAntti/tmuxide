@@ -18,7 +18,8 @@ func Prompt(filterDir bool, tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, erro
 		return "", err
 	}
 
-	tmux.ListSessions(fzfStdin)
+	sessionPrefix := "Session: "
+	tmux.ListSessions(fzfStdin, sessionPrefix)
 	err = fd.Fd(filterDir, fzfStdin)
 	if err != nil {
 		return "", err
@@ -29,5 +30,11 @@ func Prompt(filterDir bool, tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, erro
 		// As a workaround, silence errors from fzf to not show an error if user closed it.
 		return "", nil
 	}
-	return filepath.Join(os.Getenv("HOME"), strings.TrimSpace(buffer.String())), nil
+
+	selection := strings.TrimSpace(buffer.String())
+	if sessionName, isSession := strings.CutPrefix(selection, sessionPrefix); isSession {
+		return sessionName, nil
+	}
+
+	return filepath.Join(os.Getenv("HOME"), selection), nil
 }
