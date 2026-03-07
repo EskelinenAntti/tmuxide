@@ -17,6 +17,7 @@ const editor string = "editor"
 
 func TestSelectFolderFromPrompt(t *testing.T) {
 	os.Unsetenv("TMUX")
+	t.Setenv("EDITOR", editor)
 	folder := "session"
 	spyRunner := &spy.SpyRunner{
 		Mocks: []spy.Mock{{
@@ -48,6 +49,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 
 func TestSelectSessionFromPrompt(t *testing.T) {
 	os.Unsetenv("TMUX")
+	t.Setenv("EDITOR", editor)
 	session := "test-session"
 	selection := "Session: " + session
 
@@ -81,6 +83,7 @@ func TestSelectSessionFromPrompt(t *testing.T) {
 
 func TestSelectFolderFromPromptWhenAttachedToSession(t *testing.T) {
 	t.Setenv("TMUX", "test")
+	t.Setenv("EDITOR", editor)
 	session := "session"
 	spyRunner := &spy.SpyRunner{
 		Mocks: []spy.Mock{{
@@ -113,6 +116,7 @@ func TestSelectFolderFromPromptWhenAttachedToSession(t *testing.T) {
 
 func TestTargetDirInsideRepository(t *testing.T) {
 	os.Unsetenv("TMUX")
+	t.Setenv("EDITOR", editor)
 
 	repository := t.TempDir()
 	dir := filepath.Join(repository, "path/to/dir/in/repository")
@@ -150,6 +154,7 @@ func TestTargetDirInsideRepository(t *testing.T) {
 
 func TestSessionExistsForTargetDir(t *testing.T) {
 	t.Setenv("TMUX", "test")
+	t.Setenv("EDITOR", editor)
 
 	dir := t.TempDir()
 	session := project.Name(dir)
@@ -179,6 +184,7 @@ func TestSessionExistsForTargetDir(t *testing.T) {
 
 func TestTmuxNotInstalled(t *testing.T) {
 	os.Unsetenv("TMUX")
+	t.Setenv("EDITOR", editor)
 
 	spyRunner := &spy.SpyRunner{}
 
