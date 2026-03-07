@@ -13,20 +13,16 @@ type Cmd struct {
 	runner.Runner
 }
 
-func (f Cmd) Fd(filterDir bool, output io.Writer) error {
-	args := []string{}
-	if filterDir {
-		args = append(args, "--type", "dir")
-	}
-
-	args = append(args,
+func (f Cmd) Fd(output io.Writer) error {
+	args := []string{
 		"--follow",
 		"--hidden",
 		"--exclude", "{.git,node_modules,target,build,Library}",
 		".",
 		"--base-directory",
 		os.Getenv("HOME"),
-	)
+	}
+
 	fdCmd := exec.Command("fd", args...)
 	fdCmd.Stdout = output
 

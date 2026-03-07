@@ -11,7 +11,7 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
 
-func Prompt(filterDir bool, tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, error) {
+func Prompt(tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 	var buffer bytes.Buffer
 	fzfStdin, err := fzf.Fzf(&buffer)
 	if err != nil {
@@ -20,7 +20,7 @@ func Prompt(filterDir bool, tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, erro
 
 	sessionPrefix := "Session: "
 	tmux.ListSessions(fzfStdin, sessionPrefix)
-	err = fd.Fd(filterDir, fzfStdin)
+	err = fd.Fd(fzfStdin)
 	if err != nil {
 		return "", err
 	}

@@ -27,15 +27,16 @@ type Git interface {
 	RevParse(cwd string) (string, error)
 }
 
-func ForPath(path string, git Git, tmux tmux.Cmd) (Project, error) {
-	if tmux.HasSession(path, "") {
-		return Project{
-			Name: path,
-		}, nil
+func ForSession(target string) Project {
+	return Project{
+		Name: target,
 	}
-	workingDir, err := repository(path, git)
+}
+
+func ForFile(file string, git Git, tmux tmux.Cmd) (Project, error) {
+	workingDir, err := repository(file, git)
 	if err != nil {
-		if workingDir, err = dir(path); err != nil {
+		if workingDir, err = dir(file); err != nil {
 			return Project{}, err
 		}
 	}
@@ -52,22 +53,7 @@ func ForPath(path string, git Git, tmux tmux.Cmd) (Project, error) {
 	}, nil
 }
 
-func ForDir(directory string, tmux tmux.Cmd) (Project, error) {
-	if tmux.HasSession(directory, "") {
-		return Project{
-			Name: directory,
-		}, nil
-	}
-
-	fileInfo, err := os.Stat(directory)
-	if err != nil {
-		return Project{}, ErrInvalidPath
-	}
-
-	if !fileInfo.IsDir() {
-		return Project{}, ErrNotADirectory
-	}
-
+func ForDir(directory string) (Project, error) {
 	absoluteDir, err := filepath.Abs(directory)
 	if err != nil {
 		return Project{}, err
