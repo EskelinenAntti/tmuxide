@@ -8,7 +8,7 @@ It doesn't matter if you run it inside or outside tmux, or if the session didn't
 > Add the following config to your `tmux.conf` to start jumping between sessions, folders, and files from anywhere.
 >
 > ```
-> bind-key o "neww 'ide'"
+> bind-key o "popup -E 'ide'"
 > ```
 
 ## Editing files

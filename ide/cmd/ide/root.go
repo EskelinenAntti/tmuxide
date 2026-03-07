@@ -23,7 +23,7 @@ type ShellEnv struct {
 
 var rootCmd = &cobra.Command{
 	Use:   "ide [session|file|folder]",
-	Short: "Turn tmux and your favourite editor into an IDE with tmuxide.",
+	Short: "tmuxide creates or switches to tmux sessions based on files and folders.",
 	Long: `tmuxide creates or switches to tmux sessions based on files and folders.
 
 Run it without arguments to pick a location from a fuzzy finder. A tmux

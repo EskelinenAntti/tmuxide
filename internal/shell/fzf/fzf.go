@@ -15,8 +15,6 @@ type Cmd struct {
 func (f Cmd) Fzf(output io.Writer) (runner.WriteCloser, error) {
 	args := []string{
 		"--reverse",
-		"--height",
-		"30%",
 	}
 	fzfCmd := exec.Command("fzf", args...)
 	fzfCmd.Stdout = output

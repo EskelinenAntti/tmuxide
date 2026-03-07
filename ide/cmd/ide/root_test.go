@@ -22,7 +22,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 	spyRunner := &spy.SpyRunner{
 		Mocks: []spy.Mock{{
 			Args: []string{
-				"fzf", "--reverse", "--height", "30%",
+				"fzf", "--reverse",
 			},
 			OnRun: mock.WriteToStdout(folder),
 		}},
@@ -34,7 +34,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 
 	selectedPath := filepath.Join(os.Getenv("HOME"), folder)
 	expectedCalls := [][]string{
-		{"fzf", "--reverse", "--height", "30%"},
+		{"fzf", "--reverse"},
 		{"tmux", "list-sessions", "-F", "Session: #S"},
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", "--base-directory", os.Getenv("HOME")},
 		{"tmux", "has-session", "-t", selectedPath + ":"},
@@ -56,7 +56,7 @@ func TestSelectSessionFromPrompt(t *testing.T) {
 	spyRunner := &spy.SpyRunner{
 		Mocks: []spy.Mock{{
 			Args: []string{
-				"fzf", "--reverse", "--height", "30%",
+				"fzf", "--reverse",
 			},
 			OnRun: mock.WriteToStdout(selection),
 		}},
@@ -68,7 +68,7 @@ func TestSelectSessionFromPrompt(t *testing.T) {
 
 	selectedPath := session
 	expectedCalls := [][]string{
-		{"fzf", "--reverse", "--height", "30%"},
+		{"fzf", "--reverse"},
 		{"tmux", "list-sessions", "-F", "Session: #S"},
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", "--base-directory", os.Getenv("HOME")},
 		{"tmux", "has-session", "-t", selectedPath + ":"},
@@ -88,7 +88,7 @@ func TestSelectFolderFromPromptWhenAttachedToSession(t *testing.T) {
 	spyRunner := &spy.SpyRunner{
 		Mocks: []spy.Mock{{
 			Args: []string{
-				"fzf", "--reverse", "--height", "30%",
+				"fzf", "--reverse",
 			},
 			OnRun: mock.WriteToStdout(session),
 		}},
@@ -101,7 +101,7 @@ func TestSelectFolderFromPromptWhenAttachedToSession(t *testing.T) {
 
 	selectedPath := filepath.Join(os.Getenv("HOME"), session)
 	expectedCalls := [][]string{
-		{"fzf", "--reverse", "--height", "30%"},
+		{"fzf", "--reverse"},
 		{"tmux", "list-sessions", "-F", "Session: #S"},
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,target,build,Library}", ".", "--base-directory", os.Getenv("HOME")},
 		{"tmux", "has-session", "-t", selectedPath + ":"},
