@@ -17,7 +17,7 @@ func (f Cmd) Fd(output io.Writer) error {
 	args := []string{
 		"--follow",
 		"--hidden",
-		"--exclude", "{.git,node_modules,target,build,Library}",
+		"--exclude", "{.git,node_modules,Library}",
 		".",
 		"--base-directory",
 		os.Getenv("HOME"),
