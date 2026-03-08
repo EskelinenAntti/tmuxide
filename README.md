@@ -8,20 +8,40 @@ It doesn't matter if you run it inside or outside tmux, or if the session didn't
 > Add the following config to your `tmux.conf` to start jumping between sessions, folders, and files from anywhere.
 >
 > ```
-> bind-key o "popup -E 'ide'"
+> bind-key o "run ide"
 > ```
 
-## Editing files
+## Manual
 
-When you pick a file, tmuxide will open it in an editor window in addition to opening the sesssion:
+Running `ide` will start a fuzzy finder where you can fuzzy find sessions, folders and files.
+
+Alternatively, you can pass sessions, folders and files as argument to the command.
+
+### Folder targets
+
+```bash
+ide project/
+#          \
+#           The session is created for the absolute path of the selected folder.
+```
+
+### File targets
 
 ```bash
 #                         The file given as argument is opened in editor configured by the $EDITOR variable
 #                        /
-path/to/dir/some/file.txt
-#           \
-#            The session is automatically created for the repository root of the given file,
-#            or for the surrounding directory if file isn't inside a git repository.
+ide project/dir/file.txt
+#          \
+#           The session is automatically created for the repository root of the given file,
+#           or for the surrounding directory if file isn't inside a git repository.
+```
+
+### Session targets
+
+```bash
+ide project-1a5f
+#               \
+#                Opens the session. A shortcut for `tmux attach` and `tmux switch` which works inside and outside tmux sessions.
 ```
 
 ## Installation
