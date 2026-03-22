@@ -1,6 +1,6 @@
 # tmuxide 🪄
 
-Run `ide`, pick a session, file or folder from the fuzzy finder, you'll find yourself in a nicely named tmux session created for that particular location.
+Run `ide`, pick any file or folder from the fuzzy finder, you'll find yourself in a nicely named tmux session created for that particular location.
 
 It doesn't matter if you run it inside or outside tmux, or if the session didn't yet exist. It'll *just work* 🪄
 
@@ -48,12 +48,7 @@ ide project-1a5f
 
 You can install it with `homebrew`
 
+
 ```bash
 brew install eskelinenantti/cli/tmuxide
-```
-
-Alternatively, if you prefer to use `go`, you can run
-
-```bash
-go install github.com/eskelinenantti/tmuxide/cmd/ide@latest
 ```
