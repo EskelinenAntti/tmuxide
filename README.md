@@ -13,35 +13,35 @@ It doesn't matter if you run it inside or outside tmux, or if the session didn't
 
 ## Manual
 
-Running `ide` will start a fuzzy finder where you can fuzzy find sessions, folders and files.
+Running `ide` will start a fuzzy finder where you can fuzzy find sessions, folders and files. If a session for given location already exists, tmuxide will attach to it. Otherwise, tmuxide creates the session.
 
 Alternatively, you can pass sessions, folders and files as argument to the command.
 
 ### Folder targets
 
-```bash
-ide project/
-#          \
-#           The session is created for the absolute path of the selected folder.
+```txt
+path/to/project/
+              \
+               The session is created for the absolute path of the selected folder.
 ```
 
 ### File targets
 
-```bash
-#                         The file given as argument is opened in editor configured by the $EDITOR variable
-#                        /
-ide project/dir/file.txt
-#          \
-#           The session is automatically created for the repository root of the given file,
-#           or for the surrounding directory if file isn't inside a git repository.
+```txt
+                 The file given as argument is opened in editor configured by the $EDITOR variable
+                /
+path/to/file.txt
+      \
+       The session is automatically created for the repository root of the given file,
+       or for the surrounding directory if file isn't inside a git repository.
 ```
 
 ### Session targets
 
-```bash
-ide project-1a5f
-#               \
-#                Opens the session. A shortcut for `tmux attach` and `tmux switch` which works inside and outside tmux sessions.
+```txt
+project-1a5f
+           \
+            Selecting a session just opens it. Nothing fancy here.
 ```
 
 ## Installation
