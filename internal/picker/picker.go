@@ -20,8 +20,8 @@ func Prompt(tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 		return "", err
 	}
 
-	sessionPrefix := "Session: "
-	tmux.ListSessions(fzfStdin, sessionPrefix)
+	sessionPostfix := " (session)"
+	tmux.ListSessions(fzfStdin, sessionPostfix)
 	err = fd.Fd(fzfStdin)
 	if err != nil {
 		return "", err
@@ -36,7 +36,7 @@ func Prompt(tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 	}
 
 	selection := strings.TrimSpace(buffer.String())
-	if sessionName, isSession := strings.CutPrefix(selection, sessionPrefix); isSession {
+	if sessionName, isSession := strings.CutSuffix(selection, sessionPostfix); isSession {
 		return sessionName, nil
 	}
 

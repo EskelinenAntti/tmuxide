@@ -35,7 +35,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 	selectedPath := filepath.Join(os.Getenv("HOME"), folder)
 	expectedCalls := [][]string{
 		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
-		{"tmux", "list-sessions", "-F", "Session: #S"},
+		{"tmux", "list-sessions", "-F", "#S (session)"},
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", os.Getenv("HOME")},
 		{"tmux", "has-session", "-t", selectedPath + ":"},
 		{"tmux", "has-session", "-t", selectedPath + ":"},
@@ -51,7 +51,7 @@ func TestSelectSessionFromPrompt(t *testing.T) {
 	os.Unsetenv("TMUX")
 	t.Setenv("EDITOR", editor)
 	session := "test-session"
-	selection := "Session: " + session
+	selection := session + " (session)"
 
 	spyRunner := &spy.SpyRunner{
 		Mocks: []spy.Mock{{
@@ -69,7 +69,7 @@ func TestSelectSessionFromPrompt(t *testing.T) {
 	selectedPath := session
 	expectedCalls := [][]string{
 		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
-		{"tmux", "list-sessions", "-F", "Session: #S"},
+		{"tmux", "list-sessions", "-F", "#S (session)"},
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", os.Getenv("HOME")},
 		{"tmux", "has-session", "-t", selectedPath + ":"},
 		{"tmux", "has-session", "-t", selectedPath + ":"},
@@ -102,7 +102,7 @@ func TestSelectFolderFromPromptWhenAttachedToSession(t *testing.T) {
 	selectedPath := filepath.Join(os.Getenv("HOME"), session)
 	expectedCalls := [][]string{
 		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
-		{"tmux", "list-sessions", "-F", "Session: #S"},
+		{"tmux", "list-sessions", "-F", "#S (session)"},
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", os.Getenv("HOME")},
 		{"tmux", "has-session", "-t", selectedPath + ":"},
 		{"tmux", "has-session", "-t", selectedPath + ":"},
