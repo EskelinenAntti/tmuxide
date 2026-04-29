@@ -2,7 +2,9 @@ package picker
 
 import (
 	"bytes"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -27,8 +29,10 @@ func Prompt(tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 
 	err = fzfStdin.Close()
 	if err != nil {
-		// As a workaround, silence errors from fzf to not show an error if user closed it.
-		return "", nil
+		if IsUserCancelledErr(err) {
+			return "", nil
+		}
+		return "", err
 	}
 
 	selection := strings.TrimSpace(buffer.String())
@@ -37,4 +41,13 @@ func Prompt(tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 	}
 
 	return filepath.Join(os.Getenv("HOME"), selection), nil
+}
+
+func IsUserCancelledErr(err error) bool {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		exitCode := exitErr.ExitCode()
+		return exitCode == 130
+	}
+	return false
 }
