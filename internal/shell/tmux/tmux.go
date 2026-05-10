@@ -2,7 +2,6 @@ package tmux
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -42,22 +41,6 @@ func (t Cmd) Switch(session string) error {
 	return t.Run(tmuxCmd)
 }
 
-func (t Cmd) Kill(session string) error {
-	tmuxCmd := tmuxCommand("kill-session", Args{TargetSession: session})
-	return t.Run(tmuxCmd)
-}
-
-func (t Cmd) ChooseSession() error {
-	tmuxCmd := tmuxCommand("choose-session", Args{})
-	return t.Run(tmuxCmd)
-}
-
-func (t Cmd) ListSessions(output io.Writer, postfix string) error {
-	tmuxCmd := tmuxCommand("list-sessions", Args{Format: "#S" + postfix})
-	tmuxCmd.Stdout = output
-	return t.Run(tmuxCmd)
-}
-
 type Args struct {
 	TargetSession string
 	TargetWindow  string
@@ -67,7 +50,6 @@ type Args struct {
 	WorkingDir    string
 	Command       []string
 	Kill          bool
-	Format        string
 }
 
 func (a Args) Parse() []string {
@@ -95,10 +77,6 @@ func (a Args) Parse() []string {
 
 	if a.WindowName != "" {
 		args = append(args, "-n", a.WindowName)
-	}
-
-	if a.Format != "" {
-		args = append(args, "-F", a.Format)
 	}
 
 	if len(a.Command) > 0 {

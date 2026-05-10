@@ -12,7 +12,6 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/eskelinenantti/tmuxide/internal/shell/path"
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
-	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/spf13/cobra"
 )
 
@@ -22,7 +21,7 @@ type ShellEnv struct {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "ide [session|file|folder]",
+	Use:   "ide [file|folder]",
 	Short: "tmuxide creates or switches to tmux sessions based on files and folders.",
 	Long: `tmuxide creates or switches to tmux sessions based on files and folders.
 
@@ -74,15 +73,13 @@ func Ide(args []string, runner runner.Runner, path path.ShellPath) error {
 		return err
 	}
 
-	isSession, isDir, err := targetDetails(target, shell.Tmux)
+	isDir, err := isDir(target)
 	if err != nil {
 		return err
 	}
 
 	var proj project.Project
-	if isSession {
-		proj = project.ForSession(target)
-	} else if isDir {
+	if isDir {
 		proj, err = project.ForDir(target)
 	} else {
 		proj, err = project.ForFile(target, shell.Git, shell.Tmux)
@@ -93,25 +90,20 @@ func Ide(args []string, runner runner.Runner, path path.ShellPath) error {
 	}
 
 	var command []string
-	if !isSession && !isDir {
+	if !isDir {
 		command = append(editorCmd, target)
 	}
 
 	return ide.Start(command, proj, shell.Tmux)
 }
 
-func targetDetails(target string, tmux tmux.Cmd) (bool, bool, error) {
-	isSession := tmux.HasSession(target, "")
-	var isDir bool
-	if !isSession {
-		fileInfo, err := os.Stat(target)
-		if err != nil {
-			return false, false, project.ErrInvalidPath
-		}
-
-		isDir = fileInfo.IsDir()
+func isDir(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, project.ErrInvalidPath
 	}
-	return isSession, isDir, nil
+
+	return fileInfo.IsDir(), nil
 }
 
 func Execute() {

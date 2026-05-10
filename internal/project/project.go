@@ -27,12 +27,6 @@ type Git interface {
 	RevParse(cwd string) (string, error)
 }
 
-func ForSession(target string) Project {
-	return Project{
-		Name: target,
-	}
-}
-
 func ForFile(file string, git Git, tmux tmux.Cmd) (Project, error) {
 	workingDir, err := repository(file, git)
 	if err != nil {

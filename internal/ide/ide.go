@@ -1,14 +1,11 @@
 package ide
 
 import (
-	"errors"
 	"os"
 
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
-
-var ErrNoSessionsFound = errors.New("no active sessions")
 
 func Start(command []string, project project.Project, tmux tmux.Cmd) error {
 	var err error

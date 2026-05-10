@@ -13,8 +13,6 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
 
-var SessionPostfix = " (session)"
-
 func Prompt(tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 	var buffer bytes.Buffer
 	fzfStdin, err := fzf.Fzf(&buffer)
@@ -22,8 +20,6 @@ func Prompt(tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 		return "", err
 	}
 
-	sessionPostfix := SessionPostfix
-	tmux.ListSessions(fzfStdin, sessionPostfix)
 	err = fd.Fd(fzfStdin)
 	if err != nil {
 		return "", err
@@ -38,10 +34,6 @@ func Prompt(tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 	}
 
 	selection := strings.TrimSpace(buffer.String())
-	if sessionName, isSession := strings.CutSuffix(selection, sessionPostfix); isSession {
-		return sessionName, nil
-	}
-
 	return filepath.Join(os.Getenv("HOME"), selection), nil
 }
 

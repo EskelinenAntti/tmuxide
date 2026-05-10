@@ -5,7 +5,7 @@ Run `ide`, pick any file or folder from the fuzzy finder, you'll find yourself i
 It doesn't matter if you run it inside or outside tmux, or if the session didn't yet exist. It'll *just work* 🪄
 
 > [!TIP]
-> Add the following config to your `tmux.conf` to start jumping between sessions, folders, and files from anywhere.
+> Add the following config to your `tmux.conf` to start jumping between folders and files from anywhere.
 >
 > ```
 > bind-key o "run ide"
@@ -13,9 +13,9 @@ It doesn't matter if you run it inside or outside tmux, or if the session didn't
 
 ## Manual
 
-Running `ide` will start a fuzzy finder where you can fuzzy find sessions, folders and files. If a session for given location already exists, tmuxide will attach to it. Otherwise, tmuxide creates the session.
+Running `ide` will start a fuzzy finder where you can fuzzy find folders and files. If a session for given location already exists, tmuxide will attach to it. Otherwise, tmuxide creates the session.
 
-Alternatively, you can pass sessions, folders and files as argument to the command.
+Alternatively, you can pass folders and files as argument to the command.
 
 ### Folder targets
 
@@ -34,14 +34,6 @@ path/to/file.txt
       \
        The session is automatically created for the repository root of the given file,
        or for the surrounding directory if file isn't inside a git repository.
-```
-
-### Session targets
-
-```txt
-project-1a5f
-           \
-            Selecting a session just opens it. Nothing fancy here.
 ```
 
 ## Installation
