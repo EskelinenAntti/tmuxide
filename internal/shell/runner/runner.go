@@ -19,10 +19,6 @@ type Runner interface {
 	Start(cmd *exec.Cmd) (WriteCloser, error)
 }
 
-type Parser interface {
-	Parse() []string
-}
-
 type CmdRunner struct{}
 type CmdWriteCloser struct {
 	cmd   *exec.Cmd

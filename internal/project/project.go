@@ -7,27 +7,20 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
 
 var ErrInvalidPath = errors.New("invalid path")
-var ErrNotADirectory = errors.New("not a directory")
 
 type Project struct {
 	Name       string
 	WorkingDir string
 }
 
-type Input struct {
-	EditorPath string
-}
-
 type Git interface {
 	RevParse(cwd string) (string, error)
 }
 
-func ForFile(file string, git Git, tmux tmux.Cmd) (Project, error) {
+func ForFile(file string, git Git) (Project, error) {
 	workingDir, err := repository(file, git)
 	if err != nil {
 		if workingDir, err = dir(file); err != nil {

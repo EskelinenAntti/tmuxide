@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 )
@@ -84,10 +83,6 @@ func (a Args) Parse() []string {
 	}
 
 	return args
-}
-
-func (a Args) String() string {
-	return strings.Join(a.Parse(), " ")
 }
 
 func tmuxCommand(subCommand string, args Args) *exec.Cmd {

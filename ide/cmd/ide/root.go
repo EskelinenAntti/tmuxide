@@ -15,11 +15,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ShellEnv struct {
-	Path      path.ShellPath
-	CmdRunner runner.Runner
-}
-
 var rootCmd = &cobra.Command{
 	Use:   "ide [file|folder]",
 	Short: "tmuxide creates or switches to tmux sessions based on files and folders.",
@@ -82,7 +77,7 @@ func Ide(args []string, runner runner.Runner, path path.ShellPath) error {
 	if isDir {
 		proj, err = project.ForDir(target)
 	} else {
-		proj, err = project.ForFile(target, shell.Git, shell.Tmux)
+		proj, err = project.ForFile(target, shell.Git)
 	}
 
 	if err != nil {
