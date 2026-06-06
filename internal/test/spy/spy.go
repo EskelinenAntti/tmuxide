@@ -2,22 +2,19 @@ package spy
 
 import (
 	"os/exec"
-	"reflect"
-	"slices"
 
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 )
 
-type MockFunc func(cmd *exec.Cmd) error
+type RunFunc func(cmd *exec.Cmd) error
 
-type Mock struct {
-	Args  []string
-	OnRun MockFunc
+type Response struct {
+	OnRun RunFunc
 }
 
 type SpyRunner struct {
-	Calls [][]string
-	Mocks []Mock
+	Calls     [][]string
+	Responses []Response
 }
 
 type FakeWriteCloser struct{}
@@ -31,17 +28,18 @@ func (f FakeWriteCloser) Write(p []byte) (n int, err error) {
 }
 
 func (t *SpyRunner) Run(cmd *exec.Cmd) error {
-	call := cmd.Args
-	t.Calls = append(t.Calls, call)
+	t.Calls = append(t.Calls, cmd.Args)
 
-	for i, mock := range t.Mocks {
-		if reflect.DeepEqual(mock.Args, call) {
-			t.Mocks = slices.Delete(t.Mocks, i, i+1)
-			return mock.OnRun(cmd)
-		}
+	if len(t.Responses) == 0 {
+		return nil
 	}
 
-	return nil
+	response := t.Responses[0]
+	t.Responses = t.Responses[1:]
+	if response.OnRun == nil {
+		return nil
+	}
+	return response.OnRun(cmd)
 }
 
 func (t *SpyRunner) Start(cmd *exec.Cmd) (runner.WriteCloser, error) {
