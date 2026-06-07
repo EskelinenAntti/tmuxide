@@ -13,6 +13,7 @@ import (
 )
 
 var ErrCommandNotInstalled = errors.New("not installed")
+var dependencies = []string{"tmux", "fd", "fzf", "git"}
 
 type NotInstalledError struct {
 	Cmd string
@@ -34,17 +35,10 @@ type Shell struct {
 }
 
 func Init(path path.ShellPath, runner runner.Runner) (Shell, error) {
-	if err := assertInstalled("tmux", path); err != nil {
-		return Shell{}, err
-	}
-	if err := assertInstalled("fd", path); err != nil {
-		return Shell{}, err
-	}
-	if err := assertInstalled("fzf", path); err != nil {
-		return Shell{}, err
-	}
-	if err := assertInstalled("git", path); err != nil {
-		return Shell{}, err
+	for _, dependency := range dependencies {
+		if err := assertInstalled(dependency, path); err != nil {
+			return Shell{}, err
+		}
 	}
 
 	return Shell{
