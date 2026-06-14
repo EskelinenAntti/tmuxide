@@ -172,14 +172,14 @@ func TestTmuxNotInstalled(t *testing.T) {
 
 func TestEditorSessionWorkflow(t *testing.T) {
 	tests := []struct {
-		name                string
-		attached            bool
-		editorSessionExists bool
+		name          string
+		attached      bool
+		sessionExists bool
 	}{
 		{name: "creates and attaches to session"},
 		{name: "creates and switches to session", attached: true},
-		{name: "reuses editor and switches to session", editorSessionExists: true},
-		{name: "reuses editor session", attached: true, editorSessionExists: true},
+		{name: "opens new editor window and attaches to session", sessionExists: true},
+		{name: "opens new editor window and switches to session", attached: true, sessionExists: true},
 	}
 
 	for _, tt := range tests {
@@ -196,11 +196,8 @@ func TestEditorSessionWorkflow(t *testing.T) {
 			session := project.Name(dir)
 
 			responses := []spy.Response{{OnRun: mock.SimulateError}}
-			if !tt.editorSessionExists {
-				responses = append(responses,
-					spy.Response{OnRun: mock.SimulateError},
-					spy.Response{OnRun: mock.SimulateError},
-				)
+			if !tt.sessionExists {
+				responses = append(responses, spy.Response{OnRun: mock.SimulateError})
 			}
 			spyRunner := &spy.SpyRunner{Responses: responses}
 
@@ -209,15 +206,14 @@ func TestEditorSessionWorkflow(t *testing.T) {
 
 			expectedCalls := [][]string{
 				{"git", "-C", dir, "rev-parse", "--show-toplevel"},
-				{"tmux", "has-session", "-t", session + ":" + editor},
+				{"tmux", "has-session", "-t", session + ":"},
 			}
-			if tt.editorSessionExists {
+			if tt.sessionExists {
 				expectedCalls = append(expectedCalls,
-					[]string{"tmux", "new-window", "-t", session + ":" + editor, "-c", dir, "-k", "-n", editor, editor, file},
+					[]string{"tmux", "new-window", "-t", session + ":", "-c", dir, "-n", editor, editor, file},
 				)
 			} else {
 				expectedCalls = append(expectedCalls,
-					[]string{"tmux", "has-session", "-t", session + ":"},
 					[]string{"tmux", "new-session", "-c", dir, "-d", "-s", session, editor, file},
 				)
 			}
@@ -248,7 +244,6 @@ func TestRelativePathToFile(t *testing.T) {
 		Responses: []spy.Response{
 			{OnRun: mock.SimulateError},
 			{OnRun: mock.SimulateError},
-			{OnRun: mock.SimulateError},
 		},
 	}
 
@@ -257,7 +252,6 @@ func TestRelativePathToFile(t *testing.T) {
 
 	expectedCalls := [][]string{
 		{"git", "-C", ".", "rev-parse", "--show-toplevel"},
-		{"tmux", "has-session", "-t", session + ":" + editor},
 		{"tmux", "has-session", "-t", session + ":"},
 		{"tmux", "new-session", "-c", ".", "-d", "-s", session, editor, fileName},
 		{"tmux", "attach", "-t", session + ":"},
@@ -297,7 +291,6 @@ func TestFileInRepository(t *testing.T) {
 		Responses: []spy.Response{
 			{OnRun: mock.WriteToStdout(repository)},
 			{OnRun: mock.SimulateError},
-			{OnRun: mock.SimulateError},
 		},
 	}
 
@@ -306,7 +299,6 @@ func TestFileInRepository(t *testing.T) {
 
 	expectedCalls := [][]string{
 		{"git", "-C", repository, "rev-parse", "--show-toplevel"},
-		{"tmux", "has-session", "-t", session + ":" + editor},
 		{"tmux", "has-session", "-t", session + ":"},
 		{"tmux", "new-session", "-c", repository, "-d", "-s", session, editor, file},
 		{"tmux", "attach", "-t", session + ":"},

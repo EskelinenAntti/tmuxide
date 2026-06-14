@@ -1,7 +1,6 @@
 package tmux
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 
@@ -12,8 +11,8 @@ type Cmd struct {
 	runner.Runner
 }
 
-func (t Cmd) HasSession(targetSession string, targetWindow string) bool {
-	tmuxCmd := tmuxCommand("has-session", Args{TargetSession: targetSession, TargetWindow: targetWindow})
+func (t Cmd) HasSession(session string) bool {
+	tmuxCmd := tmuxCommand("has-session", Args{TargetSession: session})
 	return t.Run(tmuxCmd) == nil
 }
 
@@ -22,8 +21,8 @@ func (t Cmd) New(session string, dir string, cmd []string) error {
 	return t.Run(tmuxCmd)
 }
 
-func (t Cmd) NewWindow(session string, window string, workingDir string, name string, cmd []string) error {
-	tmuxCmd := tmuxCommand("new-window", Args{Kill: true, WindowName: name, WorkingDir: workingDir, TargetSession: session, TargetWindow: window, Command: cmd})
+func (t Cmd) NewWindow(session string, workingDir string, name string, cmd []string) error {
+	tmuxCmd := tmuxCommand("new-window", Args{WindowName: name, WorkingDir: workingDir, TargetSession: session, Command: cmd})
 	return t.Run(tmuxCmd)
 }
 
@@ -42,20 +41,18 @@ func (t Cmd) Switch(session string) error {
 
 type Args struct {
 	TargetSession string
-	TargetWindow  string
 	Detach        bool
 	SessionName   string
 	WindowName    string
 	WorkingDir    string
 	Command       []string
-	Kill          bool
 }
 
 func (a Args) Parse() []string {
 	args := []string{}
 
-	if a.TargetSession != "" || a.TargetWindow != "" {
-		args = append(args, "-t", fmt.Sprintf("%s:%s", a.TargetSession, a.TargetWindow))
+	if a.TargetSession != "" {
+		args = append(args, "-t", a.TargetSession+":")
 	}
 
 	if a.WorkingDir != "" {
@@ -64,10 +61,6 @@ func (a Args) Parse() []string {
 
 	if a.Detach {
 		args = append(args, "-d")
-	}
-
-	if a.Kill {
-		args = append(args, "-k")
 	}
 
 	if a.SessionName != "" {

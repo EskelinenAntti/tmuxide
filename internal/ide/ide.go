@@ -9,10 +9,12 @@ import (
 
 func Start(command []string, project project.Project, tmux tmux.Cmd) error {
 	var err error
-	if len(command) == 0 {
-		err = startWithoutCommand(tmux, project)
-	} else {
-		err = startWithCommand(tmux, project, command)
+	sessionExists := tmux.HasSession(project.Name)
+
+	if !sessionExists {
+		err = tmux.New(project.Name, project.WorkingDir, command)
+	} else if len(command) > 0 {
+		err = tmux.NewWindow(project.Name, project.WorkingDir, command[0], command)
 	}
 
 	if err != nil {
@@ -24,27 +26,6 @@ func Start(command []string, project project.Project, tmux tmux.Cmd) error {
 	}
 
 	return tmux.Attach(project.Name)
-}
-
-func startWithCommand(tmux tmux.Cmd, project project.Project, command []string) error {
-	windowName := command[0]
-
-	if tmux.HasSession(project.Name, windowName) {
-		return tmux.NewWindow(project.Name, windowName, project.WorkingDir, windowName, command)
-	} else if tmux.HasSession(project.Name, "") {
-		return tmux.NewWindow(project.Name, "", project.WorkingDir, windowName, command)
-	} else {
-		return tmux.New(project.Name, project.WorkingDir, command)
-	}
-}
-
-func startWithoutCommand(tmux tmux.Cmd, project project.Project) error {
-	if tmux.HasSession(project.Name, "") {
-		// When no command was provided and session exists, don't create any new windows or sessions
-		return nil
-	} else {
-		return tmux.New(project.Name, project.WorkingDir, nil)
-	}
 }
 
 func isAttached() bool {
