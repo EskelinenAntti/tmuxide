@@ -253,7 +253,7 @@ func TestRelativePathToFile(t *testing.T) {
 	expectedCalls := [][]string{
 		{"git", "-C", ".", "rev-parse", "--show-toplevel"},
 		{"tmux", "has-session", "-t", session + ":"},
-		{"tmux", "new-session", "-c", ".", "-d", "-s", session, editor, fileName},
+		{"tmux", "new-session", "-c", dir, "-d", "-s", session, editor, fileName},
 		{"tmux", "attach", "-t", session + ":"},
 	}
 

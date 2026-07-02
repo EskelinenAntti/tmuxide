@@ -28,16 +28,7 @@ func ForFile(file string, git Git) (Project, error) {
 		}
 	}
 
-	absolutePath, err := filepath.Abs(workingDir)
-	if err != nil {
-		return Project{}, err
-	}
-
-	name := Name(absolutePath)
-	return Project{
-		Name:       name,
-		WorkingDir: workingDir,
-	}, nil
+	return ForDir(workingDir)
 }
 
 func ForDir(directory string) (Project, error) {
