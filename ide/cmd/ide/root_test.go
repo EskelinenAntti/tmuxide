@@ -247,7 +247,7 @@ func TestEditorSessionWorkflow(t *testing.T) {
 			}
 			if tt.sessionExists {
 				expectedCalls = append(expectedCalls,
-					[]string{"tmux", "new-window", "-t", session + ":", "-c", dir, "-n", editor, editor, file},
+					[]string{"tmux", "new-window", "-t", session + ":", "-c", dir, editor, file},
 				)
 			} else {
 				expectedCalls = append(expectedCalls,

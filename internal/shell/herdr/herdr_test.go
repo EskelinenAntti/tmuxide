@@ -51,7 +51,7 @@ func TestOpen(t *testing.T) {
 		}},
 		{"file in existing workspace", true, []string{"nvim", "-R", "/project/a'b; $(touch bad)"}, []string{existing, tab, ok, ok, ok}, [][]string{
 			{"herdr", "workspace", "list"},
-			{"herdr", "tab", "create", "--workspace", "w1", "--cwd", "/project", "--label", "nvim", "--no-focus"},
+			{"herdr", "tab", "create", "--workspace", "w1", "--cwd", "/project", "--no-focus"},
 			{"herdr", "pane", "run", "w1:p2", "'nvim' '-R' '/project/a'\"'\"'b; $(touch bad)'"},
 			{"herdr", "tab", "focus", "w1:t2"}, {"herdr", "workspace", "focus", "w1"},
 		}},
@@ -70,6 +70,29 @@ func TestOpen(t *testing.T) {
 				t.Fatal(diff)
 			}
 		})
+	}
+}
+
+func TestEachEditorRequestCreatesUnnamedTab(t *testing.T) {
+	t.Setenv("HERDR_ENV", "1")
+	runner := &spy.SpyRunner{Responses: responses(existing, tab, ok, ok, ok, existing, tab, ok, ok, ok)}
+	mux := Cmd{Runner: runner, Binary: "herdr"}
+	p := project.Project{Name: "project", WorkingDir: "/project"}
+	var want [][]string
+	for range 2 {
+		if err := mux.Open(p, []string{"nvim", "file"}); err != nil {
+			t.Fatal(err)
+		}
+		want = append(want,
+			[]string{"herdr", "workspace", "list"},
+			[]string{"herdr", "tab", "create", "--workspace", "w1", "--cwd", "/project", "--no-focus"},
+			[]string{"herdr", "pane", "run", "w1:p2", "'nvim' 'file'"},
+			[]string{"herdr", "tab", "focus", "w1:t2"},
+			[]string{"herdr", "workspace", "focus", "w1"},
+		)
+	}
+	if diff := cmp.Diff(want, runner.Calls); diff != "" {
+		t.Fatal(diff)
 	}
 }
 
@@ -170,7 +193,7 @@ func TestFileInManuallyOpenedWorkspace(t *testing.T) {
 	want := [][]string{
 		{"herdr", "workspace", "list"},
 		{"herdr", "pane", "list"},
-		{"herdr", "tab", "create", "--workspace", "w1", "--cwd", "/project", "--label", "nvim", "--no-focus"},
+		{"herdr", "tab", "create", "--workspace", "w1", "--cwd", "/project", "--no-focus"},
 		{"herdr", "pane", "run", "w1:p2", "'nvim' 'file'"},
 		{"herdr", "tab", "focus", "w1:t2"},
 		{"herdr", "workspace", "focus", "w1"},

@@ -17,7 +17,7 @@ func (t Cmd) Open(project project.Project, command []string) error {
 	if !t.HasSession(project.Name) {
 		err = t.New(project.Name, project.WorkingDir, command)
 	} else if len(command) > 0 {
-		err = t.NewWindow(project.Name, project.WorkingDir, command[0], command)
+		err = t.NewWindow(project.Name, project.WorkingDir, command)
 	}
 	if err != nil {
 		return err
@@ -38,8 +38,8 @@ func (t Cmd) New(session string, dir string, cmd []string) error {
 	return t.Run(tmuxCmd)
 }
 
-func (t Cmd) NewWindow(session string, workingDir string, name string, cmd []string) error {
-	tmuxCmd := tmuxCommand("new-window", Args{WindowName: name, WorkingDir: workingDir, TargetSession: session, Command: cmd})
+func (t Cmd) NewWindow(session string, workingDir string, cmd []string) error {
+	tmuxCmd := tmuxCommand("new-window", Args{WorkingDir: workingDir, TargetSession: session, Command: cmd})
 	return t.Run(tmuxCmd)
 }
 
@@ -60,7 +60,6 @@ type Args struct {
 	TargetSession string
 	Detach        bool
 	SessionName   string
-	WindowName    string
 	WorkingDir    string
 	Command       []string
 }
@@ -82,10 +81,6 @@ func (a Args) Parse() []string {
 
 	if a.SessionName != "" {
 		args = append(args, "-s", a.SessionName)
-	}
-
-	if a.WindowName != "" {
-		args = append(args, "-n", a.WindowName)
 	}
 
 	if len(a.Command) > 0 {

@@ -129,7 +129,7 @@ func (h Cmd) Open(project project.Project, command []string) error {
 			return fmt.Errorf("herdr workspace create response has no workspace id")
 		}
 	} else if len(command) > 0 {
-		created, err = h.call("tab", "create", "--workspace", id, "--cwd", project.WorkingDir, "--label", command[0], "--no-focus")
+		created, err = h.call("tab", "create", "--workspace", id, "--cwd", project.WorkingDir, "--no-focus")
 		if err != nil {
 			return err
 		}
