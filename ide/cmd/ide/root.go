@@ -19,17 +19,15 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "ide [file|folder]",
-	Short: "Open projects in tmux sessions or Herdr workspaces.",
+	Short: "tmuxide creates or switches to tmux sessions based on files and folders.",
 	Args:  cobra.MaximumNArgs(1),
-	Long: `tmuxide opens projects in tmux sessions or native Herdr workspaces.
+	Long: `tmuxide creates or switches to tmux sessions based on files and folders.
 
-Run it without arguments to pick a location from a fuzzy finder. A project
-workspace will be created (or reused) for that location automatically.
-Inside Herdr, the Herdr backend is selected automatically; otherwise tmux
-is used. Use --backend to override this choice.
+Run it without arguments to pick a location from a fuzzy finder. A tmux
+session will be created (or reused) for that location automatically.
 
 When a file is selected or passed as an argument, tmuxide opens it in
-$EDITOR and creates the workspace for the repository root, or the file's
+$EDITOR and creates the session for the repository root, or the file's
 directory if it is not inside a git repository.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		backend, err := cmd.Flags().GetString("backend")
@@ -159,5 +157,9 @@ func editorCmd(path path.ShellPath) ([]string, error) {
 }
 
 func init() {
-	rootCmd.Flags().String("backend", "auto", "Terminal host: auto, tmux, or herdr")
+	rootCmd.Flags().String("backend", "auto", "Terminal host override")
+	// Keep the experimental host override out of help and completions.
+	if err := rootCmd.Flags().MarkHidden("backend"); err != nil {
+		panic(err)
+	}
 }

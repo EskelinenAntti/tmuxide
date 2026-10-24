@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/eskelinenantti/tmuxide/internal/project"
@@ -14,6 +16,25 @@ import (
 )
 
 const editor string = "editor"
+
+func TestHelpDoesNotAdvertiseExperimentalBackend(t *testing.T) {
+	var output bytes.Buffer
+	previous := rootCmd.OutOrStdout()
+	rootCmd.SetOut(&output)
+	t.Cleanup(func() { rootCmd.SetOut(previous) })
+	requireNoError(t, rootCmd.Help())
+	for _, text := range []string{output.String(), rootCmd.UsageString(), rootCmd.Short} {
+		for _, hint := range []string{"herdr", "--backend"} {
+			if strings.Contains(strings.ToLower(text), hint) {
+				t.Fatalf("help advertises %q: %s", hint, text)
+			}
+		}
+	}
+	flag := rootCmd.Flags().Lookup("backend")
+	if flag == nil || !flag.Hidden || flag.DefValue != "auto" {
+		t.Fatal("backend override must remain available but hidden")
+	}
+}
 
 func unsetenv(t *testing.T, key string) {
 	t.Helper()
