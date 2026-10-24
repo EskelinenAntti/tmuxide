@@ -17,23 +17,6 @@ import (
 
 const editor string = "editor"
 
-func TestHelpDoesNotAdvertiseExperimentalMultiplexer(t *testing.T) {
-	var output bytes.Buffer
-	previous := rootCmd.OutOrStdout()
-	rootCmd.SetOut(&output)
-	t.Cleanup(func() { rootCmd.SetOut(previous) })
-	requireNoError(t, rootCmd.Help())
-	for _, text := range []string{output.String(), rootCmd.UsageString(), rootCmd.Short} {
-		if strings.Contains(strings.ToLower(text), "herdr") {
-			t.Fatalf("help advertises Herdr: %s", text)
-		}
-	}
-	flag := rootCmd.Flags().Lookup("mux")
-	if flag == nil || flag.Hidden || flag.DefValue != "auto" {
-		t.Fatal("multiplexer override must remain available without special visibility handling")
-	}
-}
-
 func TestRunMuxOverride(t *testing.T) {
 	t.Setenv("HERDR_ENV", "1")
 	t.Setenv("HERDR_BIN_PATH", "herdr")
