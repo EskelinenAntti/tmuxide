@@ -33,7 +33,7 @@ directory if it is not inside a git repository.`,
 		if err != nil {
 			return err
 		}
-		return run(args, mux, runner.CmdRunner{}, path.Path{})
+		return Run(args, mux, runner.CmdRunner{}, path.Path{})
 	},
 }
 
@@ -52,7 +52,7 @@ brew install %[1]s`
 var ErrEditorNotInstalled = errors.New("editor not installed")
 var ErrEditorEnvNotSet = errors.New("editor not configured")
 
-func run(args []string, muxFlag string, runner runner.Runner, path path.ShellPath) error {
+func Run(args []string, muxFlag string, runner runner.Runner, path path.ShellPath) error {
 	mux, err := multiplexer.Select(muxFlag, path, runner)
 	if err != nil {
 		return err

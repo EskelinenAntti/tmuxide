@@ -1,11 +1,9 @@
 package cmd
 
 import (
-	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/eskelinenantti/tmuxide/internal/project"
@@ -23,7 +21,7 @@ func TestRunMuxOverride(t *testing.T) {
 	t.Setenv("EDITOR", editor)
 	dir := t.TempDir()
 	runner := &spy.SpyRunner{}
-	err := run([]string{dir}, "tmux", runner, mock.Path{Missing: []string{"tmux"}})
+	err := Run([]string{dir}, "tmux", runner, mock.Path{Missing: []string{"tmux"}})
 	var missing shell.NotInstalledError
 	if !errors.As(err, &missing) || missing.Cmd != "tmux" {
 		t.Fatalf("explicit multiplexer was not selected: %v", err)
@@ -93,7 +91,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 					{OnRun: mock.WriteToStdout(folder)},
 				},
 			}
-			err := run([]string{}, "auto", spyRunner, mock.Path{})
+			err := Run([]string{}, "auto", spyRunner, mock.Path{})
 			requireNoError(t, err)
 
 			session := project.Name(filepath.Join(home, folder))
@@ -148,7 +146,7 @@ func TestFolderSessionWorkflow(t *testing.T) {
 				spyRunner.Responses = []spy.Response{{OnRun: mock.SimulateError}}
 			}
 
-			err := run([]string{dir}, "auto", spyRunner, mock.Path{})
+			err := Run([]string{dir}, "auto", spyRunner, mock.Path{})
 			requireNoError(t, err)
 
 			expectedCalls := [][]string{
@@ -175,7 +173,7 @@ func TestTmuxNotInstalled(t *testing.T) {
 
 	spyRunner := &spy.SpyRunner{}
 
-	err := run([]string{}, "auto", spyRunner, mock.Path{Missing: []string{"tmux"}})
+	err := Run([]string{}, "auto", spyRunner, mock.Path{Missing: []string{"tmux"}})
 
 	expectedError := shell.NotInstalledError{Cmd: "tmux"}
 	var cmdNotInstalledError shell.NotInstalledError
@@ -221,7 +219,7 @@ func TestEditorSessionWorkflow(t *testing.T) {
 			}
 			spyRunner := &spy.SpyRunner{Responses: responses}
 
-			err := run([]string{file}, "auto", spyRunner, mock.Path{})
+			err := Run([]string{file}, "auto", spyRunner, mock.Path{})
 			requireNoError(t, err)
 
 			expectedCalls := [][]string{
@@ -268,7 +266,7 @@ func TestRelativePathToFile(t *testing.T) {
 		},
 	}
 
-	err := run([]string{fileName}, "auto", spyRunner, mock.Path{})
+	err := Run([]string{fileName}, "auto", spyRunner, mock.Path{})
 	requireNoError(t, err)
 
 	expectedCalls := [][]string{
@@ -291,7 +289,7 @@ func TestFileDoesNotExist(t *testing.T) {
 
 	spyRunner := &spy.SpyRunner{}
 
-	err := run([]string{file}, "auto", spyRunner, mock.Path{})
+	err := Run([]string{file}, "auto", spyRunner, mock.Path{})
 
 	if !errors.Is(err, project.ErrInvalidPath) {
 		t.Fatalf("got=%v, want=%v", err, project.ErrInvalidPath)
@@ -317,7 +315,7 @@ func TestFileInRepository(t *testing.T) {
 		},
 	}
 
-	err := run([]string{file}, "auto", spyRunner, mock.Path{})
+	err := Run([]string{file}, "auto", spyRunner, mock.Path{})
 	requireNoError(t, err)
 
 	expectedCalls := [][]string{
@@ -339,7 +337,7 @@ func TestEditorNotSet(t *testing.T) {
 
 	spyRunner := &spy.SpyRunner{}
 
-	err := run([]string{dir}, "auto", spyRunner, mock.Path{})
+	err := Run([]string{dir}, "auto", spyRunner, mock.Path{})
 
 	if !errors.Is(err, ErrEditorEnvNotSet) {
 		t.Fatalf("got=%v, want=%v", err, ErrEditorEnvNotSet)
@@ -357,7 +355,7 @@ func TestEditorNotInstalled(t *testing.T) {
 
 	spyRunner := &spy.SpyRunner{}
 
-	err := run([]string{dir}, "auto", spyRunner, &mockPath)
+	err := Run([]string{dir}, "auto", spyRunner, &mockPath)
 	if !errors.Is(err, ErrEditorNotInstalled) {
 		t.Fatalf("got=%v, want=%v", err, ErrEditorNotInstalled)
 	}
@@ -379,7 +377,7 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 		{OnRun: mock.WriteToStdout(`{"result":{"workspace":{"workspace_id":"w1"}}}`)},
 		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
 	}}
-	err := run(nil, "auto", runner, mock.Path{Missing: []string{"tmux", "herdr"}})
+	err := Run(nil, "auto", runner, mock.Path{Missing: []string{"tmux", "herdr"}})
 	requireNoError(t, err)
 	requireCalls(t, [][]string{
 		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
@@ -407,7 +405,7 @@ func TestHerdrRelativeFileInRepository(t *testing.T) {
 		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
 		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
 	}}
-	requireNoError(t, run([]string{"sub/file.txt"}, "auto", runner, mock.Path{Missing: []string{"tmux"}}))
+	requireNoError(t, Run([]string{"sub/file.txt"}, "auto", runner, mock.Path{Missing: []string{"tmux"}}))
 	requireCalls(t, [][]string{
 		{"git", "-C", "sub", "rev-parse", "--show-toplevel"},
 		{"herdr", "workspace", "list"},
