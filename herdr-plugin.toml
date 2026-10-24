@@ -1,7 +1,7 @@
 id = "tmuxide"
 name = "tmuxide"
 version = "0.1.0"
-min_herdr_version = "0.9.5"
+min_herdr_version = "0.9.1"
 description = "Fuzzy-find files and folders and open native project workspaces"
 platforms = ["linux", "macos"]
 
@@ -12,7 +12,7 @@ command = ["go", "build", "-o", "bin/ide", "./ide"]
 id = "open"
 title = "Open project or file"
 contexts = ["workspace"]
-command = ["sh", "herdr-picker.sh"]
+command = ["herdr", "plugin", "pane", "open", "--plugin", "tmuxide", "--entrypoint", "picker"]
 
 [[panes]]
 id = "picker"
