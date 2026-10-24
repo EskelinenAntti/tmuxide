@@ -1,6 +1,6 @@
-// Package workspace selects a terminal host without exposing its lifecycle to
+// Package multiplexer selects a terminal host without exposing its lifecycle to
 // project selection or editor configuration.
-package workspace
+package multiplexer
 
 import (
 	"fmt"
@@ -14,30 +14,34 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
 
-func Select(name string, path path.ShellPath, runner runner.Runner) (ide.Workspace, bool, error) {
+func Select(name string, path path.ShellPath, runner runner.Runner) (ide.Multiplexer, error) {
 	if name == "auto" {
-		name = "tmux"
-		if os.Getenv("HERDR_ENV") == "1" {
+		switch {
+		case os.Getenv("HERDR_ENV") == "1":
 			name = "herdr"
+		case os.Getenv("TMUX") != "":
+			name = "tmux"
+		default:
+			name = "tmux"
 		}
 	}
-	var host ide.Workspace
+	var mux ide.Multiplexer
 	var binary string
 	switch name {
 	case "tmux":
 		binary = "tmux"
-		host = tmux.Cmd{Runner: runner}
+		mux = tmux.Cmd{Runner: runner}
 	case "herdr":
 		binary = os.Getenv("HERDR_BIN_PATH")
 		if binary == "" {
 			binary = "herdr"
 		}
-		host = herdr.Cmd{Runner: runner, Binary: binary}
+		mux = herdr.Cmd{Runner: runner, Binary: binary}
 	default:
-		return nil, false, fmt.Errorf("unknown backend %q (use auto, tmux, or herdr)", name)
+		return nil, fmt.Errorf("unknown backend %q (use auto, tmux, or herdr)", name)
 	}
 	if !path.Contains(binary) {
-		return nil, false, shell.NotInstalledError{Cmd: binary}
+		return nil, shell.NotInstalledError{Cmd: binary}
 	}
-	return host, name == "herdr", nil
+	return mux, nil
 }

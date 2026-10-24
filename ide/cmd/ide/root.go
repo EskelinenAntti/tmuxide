@@ -4,16 +4,15 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
+	"github.com/eskelinenantti/tmuxide/internal/multiplexer"
 	"github.com/eskelinenantti/tmuxide/internal/picker"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/eskelinenantti/tmuxide/internal/shell/path"
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
-	"github.com/eskelinenantti/tmuxide/internal/workspace"
 	"github.com/spf13/cobra"
 )
 
@@ -53,12 +52,8 @@ brew install %[1]s`
 var ErrEditorNotInstalled = errors.New("editor not installed")
 var ErrEditorEnvNotSet = errors.New("editor not configured")
 
-func Ide(args []string, runner runner.Runner, path path.ShellPath) error {
-	return run(args, "auto", runner, path)
-}
-
 func run(args []string, backend string, runner runner.Runner, path path.ShellPath) error {
-	host, fullscreen, err := workspace.Select(backend, path, runner)
+	mux, err := multiplexer.Select(backend, path, runner)
 	if err != nil {
 		return err
 	}
@@ -74,7 +69,6 @@ func run(args []string, backend string, runner runner.Runner, path path.ShellPat
 
 	var target string
 	if len(args) == 0 {
-		shell.Fzf.Fullscreen = fullscreen
 		target, err = picker.Prompt(shell.Fd, shell.Fzf)
 	} else {
 		target = args[0]
@@ -102,15 +96,10 @@ func run(args []string, backend string, runner runner.Runner, path path.ShellPat
 
 	var command []string
 	if !isDir {
-		// The editor starts in the project root, not the caller's directory.
-		target, err = filepath.Abs(target)
-		if err != nil {
-			return err
-		}
 		command = append(editorCmd, target)
 	}
 
-	return ide.Start(command, proj, host)
+	return ide.Start(command, proj, mux)
 }
 
 func isDir(path string) (bool, error) {
@@ -158,8 +147,4 @@ func editorCmd(path path.ShellPath) ([]string, error) {
 
 func init() {
 	rootCmd.Flags().String("backend", "auto", "Terminal host override")
-	// Keep the experimental host override out of help and completions.
-	if err := rootCmd.Flags().MarkHidden("backend"); err != nil {
-		panic(err)
-	}
 }

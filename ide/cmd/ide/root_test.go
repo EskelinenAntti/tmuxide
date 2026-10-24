@@ -24,16 +24,28 @@ func TestHelpDoesNotAdvertiseExperimentalBackend(t *testing.T) {
 	t.Cleanup(func() { rootCmd.SetOut(previous) })
 	requireNoError(t, rootCmd.Help())
 	for _, text := range []string{output.String(), rootCmd.UsageString(), rootCmd.Short} {
-		for _, hint := range []string{"herdr", "--backend"} {
-			if strings.Contains(strings.ToLower(text), hint) {
-				t.Fatalf("help advertises %q: %s", hint, text)
-			}
+		if strings.Contains(strings.ToLower(text), "herdr") {
+			t.Fatalf("help advertises Herdr: %s", text)
 		}
 	}
 	flag := rootCmd.Flags().Lookup("backend")
-	if flag == nil || !flag.Hidden || flag.DefValue != "auto" {
-		t.Fatal("backend override must remain available but hidden")
+	if flag == nil || flag.Hidden || flag.DefValue != "auto" {
+		t.Fatal("backend override must remain available without special visibility handling")
 	}
+}
+
+func TestRunBackendOverride(t *testing.T) {
+	t.Setenv("HERDR_ENV", "1")
+	t.Setenv("HERDR_BIN_PATH", "herdr")
+	t.Setenv("EDITOR", editor)
+	dir := t.TempDir()
+	runner := &spy.SpyRunner{}
+	err := run([]string{dir}, "tmux", runner, mock.Path{Missing: []string{"tmux"}})
+	var missing shell.NotInstalledError
+	if !errors.As(err, &missing) || missing.Cmd != "tmux" {
+		t.Fatalf("explicit backend was not selected: %v", err)
+	}
+	requireCalls(t, nil, runner.Calls)
 }
 
 func unsetenv(t *testing.T, key string) {
@@ -98,7 +110,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 					{OnRun: mock.WriteToStdout(folder)},
 				},
 			}
-			err := Ide([]string{}, spyRunner, mock.Path{})
+			err := run([]string{}, "auto", spyRunner, mock.Path{})
 			requireNoError(t, err)
 
 			session := project.Name(filepath.Join(home, folder))
@@ -153,7 +165,7 @@ func TestFolderSessionWorkflow(t *testing.T) {
 				spyRunner.Responses = []spy.Response{{OnRun: mock.SimulateError}}
 			}
 
-			err := Ide([]string{dir}, spyRunner, mock.Path{})
+			err := run([]string{dir}, "auto", spyRunner, mock.Path{})
 			requireNoError(t, err)
 
 			expectedCalls := [][]string{
@@ -180,7 +192,7 @@ func TestTmuxNotInstalled(t *testing.T) {
 
 	spyRunner := &spy.SpyRunner{}
 
-	err := Ide([]string{}, spyRunner, mock.Path{Missing: []string{"tmux"}})
+	err := run([]string{}, "auto", spyRunner, mock.Path{Missing: []string{"tmux"}})
 
 	expectedError := shell.NotInstalledError{Cmd: "tmux"}
 	var cmdNotInstalledError shell.NotInstalledError
@@ -226,7 +238,7 @@ func TestEditorSessionWorkflow(t *testing.T) {
 			}
 			spyRunner := &spy.SpyRunner{Responses: responses}
 
-			err := Ide([]string{file}, spyRunner, mock.Path{})
+			err := run([]string{file}, "auto", spyRunner, mock.Path{})
 			requireNoError(t, err)
 
 			expectedCalls := [][]string{
@@ -273,13 +285,13 @@ func TestRelativePathToFile(t *testing.T) {
 		},
 	}
 
-	err := Ide([]string{fileName}, spyRunner, mock.Path{})
+	err := run([]string{fileName}, "auto", spyRunner, mock.Path{})
 	requireNoError(t, err)
 
 	expectedCalls := [][]string{
 		{"git", "-C", ".", "rev-parse", "--show-toplevel"},
 		{"tmux", "has-session", "-t", session + ":"},
-		{"tmux", "new-session", "-c", dir, "-d", "-s", session, editor, filepath.Join(dir, fileName)},
+		{"tmux", "new-session", "-c", dir, "-d", "-s", session, editor, fileName},
 		{"tmux", "attach", "-t", session + ":"},
 	}
 
@@ -296,7 +308,7 @@ func TestFileDoesNotExist(t *testing.T) {
 
 	spyRunner := &spy.SpyRunner{}
 
-	err := Ide([]string{file}, spyRunner, mock.Path{})
+	err := run([]string{file}, "auto", spyRunner, mock.Path{})
 
 	if !errors.Is(err, project.ErrInvalidPath) {
 		t.Fatalf("got=%v, want=%v", err, project.ErrInvalidPath)
@@ -322,7 +334,7 @@ func TestFileInRepository(t *testing.T) {
 		},
 	}
 
-	err := Ide([]string{file}, spyRunner, mock.Path{})
+	err := run([]string{file}, "auto", spyRunner, mock.Path{})
 	requireNoError(t, err)
 
 	expectedCalls := [][]string{
@@ -344,7 +356,7 @@ func TestEditorNotSet(t *testing.T) {
 
 	spyRunner := &spy.SpyRunner{}
 
-	err := Ide([]string{dir}, spyRunner, mock.Path{})
+	err := run([]string{dir}, "auto", spyRunner, mock.Path{})
 
 	if !errors.Is(err, ErrEditorEnvNotSet) {
 		t.Fatalf("got=%v, want=%v", err, ErrEditorEnvNotSet)
@@ -362,7 +374,7 @@ func TestEditorNotInstalled(t *testing.T) {
 
 	spyRunner := &spy.SpyRunner{}
 
-	err := Ide([]string{dir}, spyRunner, &mockPath)
+	err := run([]string{dir}, "auto", spyRunner, &mockPath)
 	if !errors.Is(err, ErrEditorNotInstalled) {
 		t.Fatalf("got=%v, want=%v", err, ErrEditorNotInstalled)
 	}
@@ -384,10 +396,10 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 		{OnRun: mock.WriteToStdout(`{"result":{"workspace":{"workspace_id":"w1"}}}`)},
 		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
 	}}
-	err := Ide(nil, runner, mock.Path{Missing: []string{"tmux", "herdr"}})
+	err := run(nil, "auto", runner, mock.Path{Missing: []string{"tmux", "herdr"}})
 	requireNoError(t, err)
 	requireCalls(t, [][]string{
-		{"fzf", "--reverse"},
+		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
 		{"/opt/herdr", "workspace", "list"},
 		{"/opt/herdr", "workspace", "create", "--cwd", dir, "--label", project.Name(dir), "--no-focus"},
@@ -402,7 +414,7 @@ func TestHerdrRelativeFileInRepository(t *testing.T) {
 	dir := t.TempDir()
 	subdir := filepath.Join(dir, "sub")
 	requireNoError(t, os.Mkdir(subdir, 0755))
-	file := createFile(t, subdir, "file.txt")
+	createFile(t, subdir, "file.txt")
 	t.Chdir(dir)
 	runner := &spy.SpyRunner{Responses: []spy.Response{
 		{OnRun: mock.WriteToStdout(dir)},
@@ -412,12 +424,12 @@ func TestHerdrRelativeFileInRepository(t *testing.T) {
 		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
 		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
 	}}
-	requireNoError(t, Ide([]string{"sub/file.txt"}, runner, mock.Path{Missing: []string{"tmux"}}))
+	requireNoError(t, run([]string{"sub/file.txt"}, "auto", runner, mock.Path{Missing: []string{"tmux"}}))
 	requireCalls(t, [][]string{
 		{"git", "-C", "sub", "rev-parse", "--show-toplevel"},
 		{"herdr", "workspace", "list"},
 		{"herdr", "workspace", "create", "--cwd", dir, "--label", project.Name(dir), "--no-focus"},
-		{"herdr", "pane", "run", "w1:p1", "'editor' '-R' '" + file + "'"},
+		{"herdr", "pane", "run", "w1:p1", "'editor' '-R' 'sub/file.txt'"},
 		{"herdr", "tab", "focus", "w1:t1"},
 		{"herdr", "workspace", "focus", "w1"},
 	}, runner.Calls)

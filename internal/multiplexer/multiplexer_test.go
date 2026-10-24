@@ -1,4 +1,4 @@
-package workspace
+package multiplexer
 
 import (
 	"errors"
@@ -13,37 +13,36 @@ import (
 
 func TestSelect(t *testing.T) {
 	for _, tt := range []struct {
-		name, backend, env, binary string
-		herdr                      bool
+		name, backend, env, tmux, binary string
+		herdr                            bool
 	}{
-		{"default", "auto", "", "", false},
-		{"inside herdr", "auto", "1", "", true},
-		{"explicit tmux", "tmux", "1", "", false},
-		{"explicit herdr", "herdr", "", "", true},
-		{"host binary", "herdr", "1", "/opt/herdr", true},
+		{"default", "auto", "", "", "", false},
+		{"inside tmux", "auto", "", "tmux", "", false},
+		{"inside herdr", "auto", "1", "", "", true},
+		{"herdr inside tmux", "auto", "1", "outer-tmux", "", true},
+		{"explicit tmux", "tmux", "1", "", "", false},
+		{"explicit herdr", "herdr", "", "tmux", "", true},
+		{"host binary", "herdr", "1", "", "/opt/herdr", true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("HERDR_ENV", tt.env)
 			t.Setenv("HERDR_BIN_PATH", tt.binary)
-			t.Setenv("TMUX", "outer-tmux")
-			host, fullscreen, err := Select(tt.backend, mock.Path{}, &spy.SpyRunner{})
+			t.Setenv("TMUX", tt.tmux)
+			mux, err := Select(tt.backend, mock.Path{}, &spy.SpyRunner{})
 			if err != nil {
 				t.Fatal(err)
 			}
-			if fullscreen != tt.herdr {
-				t.Fatal("incorrect picker mode")
-			}
 			if tt.herdr {
-				cmd, ok := host.(herdr.Cmd)
+				cmd, ok := mux.(herdr.Cmd)
 				want := tt.binary
 				if want == "" {
 					want = "herdr"
 				}
 				if !ok || cmd.Binary != want {
-					t.Fatalf("got %#v", host)
+					t.Fatalf("got %#v", mux)
 				}
-			} else if _, ok := host.(tmux.Cmd); !ok {
-				t.Fatalf("got %#v", host)
+			} else if _, ok := mux.(tmux.Cmd); !ok {
+				t.Fatalf("got %#v", mux)
 			}
 		})
 	}
@@ -52,13 +51,13 @@ func TestSelect(t *testing.T) {
 func TestInvalidOrMissingBackend(t *testing.T) {
 	t.Setenv("HERDR_BIN_PATH", "")
 	for _, name := range []string{"tmux", "herdr"} {
-		_, _, err := Select(name, mock.Path{Missing: []string{name}}, &spy.SpyRunner{})
+		_, err := Select(name, mock.Path{Missing: []string{name}}, &spy.SpyRunner{})
 		var missing shell.NotInstalledError
 		if !errors.As(err, &missing) || missing.Cmd != name {
 			t.Fatal(err)
 		}
 	}
-	if _, _, err := Select("invalid", mock.Path{}, &spy.SpyRunner{}); err == nil {
+	if _, err := Select("invalid", mock.Path{}, &spy.SpyRunner{}); err == nil {
 		t.Fatal("expected invalid backend error")
 	}
 }
