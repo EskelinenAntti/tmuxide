@@ -13,8 +13,8 @@ import (
 
 func TestSelect(t *testing.T) {
 	for _, tt := range []struct {
-		name, backend, env, tmux, binary string
-		herdr                            bool
+		name, mux, env, tmux, binary string
+		herdr                        bool
 	}{
 		{"default", "auto", "", "", "", false},
 		{"inside tmux", "auto", "", "tmux", "", false},
@@ -28,7 +28,7 @@ func TestSelect(t *testing.T) {
 			t.Setenv("HERDR_ENV", tt.env)
 			t.Setenv("HERDR_BIN_PATH", tt.binary)
 			t.Setenv("TMUX", tt.tmux)
-			mux, err := Select(tt.backend, mock.Path{}, &spy.SpyRunner{})
+			mux, err := Select(tt.mux, mock.Path{}, &spy.SpyRunner{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -48,7 +48,7 @@ func TestSelect(t *testing.T) {
 	}
 }
 
-func TestInvalidOrMissingBackend(t *testing.T) {
+func TestInvalidOrMissingMultiplexer(t *testing.T) {
 	t.Setenv("HERDR_BIN_PATH", "")
 	for _, name := range []string{"tmux", "herdr"} {
 		_, err := Select(name, mock.Path{Missing: []string{name}}, &spy.SpyRunner{})
@@ -58,6 +58,6 @@ func TestInvalidOrMissingBackend(t *testing.T) {
 		}
 	}
 	if _, err := Select("invalid", mock.Path{}, &spy.SpyRunner{}); err == nil {
-		t.Fatal("expected invalid backend error")
+		t.Fatal("expected invalid multiplexer error")
 	}
 }

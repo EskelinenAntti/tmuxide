@@ -29,11 +29,11 @@ When a file is selected or passed as an argument, tmuxide opens it in
 $EDITOR and creates the session for the repository root, or the file's
 directory if it is not inside a git repository.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		backend, err := cmd.Flags().GetString("backend")
+		mux, err := cmd.Flags().GetString("mux")
 		if err != nil {
 			return err
 		}
-		return run(args, backend, runner.CmdRunner{}, path.Path{})
+		return run(args, mux, runner.CmdRunner{}, path.Path{})
 	},
 }
 
@@ -52,8 +52,8 @@ brew install %[1]s`
 var ErrEditorNotInstalled = errors.New("editor not installed")
 var ErrEditorEnvNotSet = errors.New("editor not configured")
 
-func run(args []string, backend string, runner runner.Runner, path path.ShellPath) error {
-	mux, err := multiplexer.Select(backend, path, runner)
+func run(args []string, muxFlag string, runner runner.Runner, path path.ShellPath) error {
+	mux, err := multiplexer.Select(muxFlag, path, runner)
 	if err != nil {
 		return err
 	}
@@ -146,5 +146,5 @@ func editorCmd(path path.ShellPath) ([]string, error) {
 }
 
 func init() {
-	rootCmd.Flags().String("backend", "auto", "Terminal host override")
+	rootCmd.Flags().String("mux", "auto", "Terminal host override")
 }

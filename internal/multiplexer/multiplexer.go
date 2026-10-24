@@ -1,5 +1,3 @@
-// Package multiplexer selects a terminal host without exposing its lifecycle to
-// project selection or editor configuration.
 package multiplexer
 
 import (
@@ -38,7 +36,7 @@ func Select(name string, path path.ShellPath, runner runner.Runner) (ide.Multipl
 		}
 		mux = herdr.Cmd{Runner: runner, Binary: binary}
 	default:
-		return nil, fmt.Errorf("unknown backend %q (use auto, tmux, or herdr)", name)
+		return nil, fmt.Errorf("unknown multiplexer %q (use auto, tmux, or herdr)", name)
 	}
 	if !path.Contains(binary) {
 		return nil, shell.NotInstalledError{Cmd: binary}

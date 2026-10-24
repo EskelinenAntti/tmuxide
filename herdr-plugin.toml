@@ -20,4 +20,4 @@ title = "Open project or file"
 placement = "popup"
 width = "80%"
 height = "70%"
-command = ["./bin/ide", "--backend", "herdr"]
+command = ["./bin/ide", "--mux", "herdr"]

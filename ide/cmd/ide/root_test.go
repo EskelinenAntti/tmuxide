@@ -17,7 +17,7 @@ import (
 
 const editor string = "editor"
 
-func TestHelpDoesNotAdvertiseExperimentalBackend(t *testing.T) {
+func TestHelpDoesNotAdvertiseExperimentalMultiplexer(t *testing.T) {
 	var output bytes.Buffer
 	previous := rootCmd.OutOrStdout()
 	rootCmd.SetOut(&output)
@@ -28,13 +28,13 @@ func TestHelpDoesNotAdvertiseExperimentalBackend(t *testing.T) {
 			t.Fatalf("help advertises Herdr: %s", text)
 		}
 	}
-	flag := rootCmd.Flags().Lookup("backend")
+	flag := rootCmd.Flags().Lookup("mux")
 	if flag == nil || flag.Hidden || flag.DefValue != "auto" {
-		t.Fatal("backend override must remain available without special visibility handling")
+		t.Fatal("multiplexer override must remain available without special visibility handling")
 	}
 }
 
-func TestRunBackendOverride(t *testing.T) {
+func TestRunMuxOverride(t *testing.T) {
 	t.Setenv("HERDR_ENV", "1")
 	t.Setenv("HERDR_BIN_PATH", "herdr")
 	t.Setenv("EDITOR", editor)
@@ -43,7 +43,7 @@ func TestRunBackendOverride(t *testing.T) {
 	err := run([]string{dir}, "tmux", runner, mock.Path{Missing: []string{"tmux"}})
 	var missing shell.NotInstalledError
 	if !errors.As(err, &missing) || missing.Cmd != "tmux" {
-		t.Fatalf("explicit backend was not selected: %v", err)
+		t.Fatalf("explicit multiplexer was not selected: %v", err)
 	}
 	requireCalls(t, nil, runner.Calls)
 }
