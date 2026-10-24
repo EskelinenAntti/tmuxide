@@ -10,10 +10,9 @@ import (
 
 	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
-	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
 
-func Prompt(tmux tmux.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, error) {
+func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 	var buffer bytes.Buffer
 	fzfStdin, err := fzf.Fzf(&buffer)
 	if err != nil {

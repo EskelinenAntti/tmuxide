@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/ide"
@@ -12,22 +13,30 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/eskelinenantti/tmuxide/internal/shell/path"
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
+	"github.com/eskelinenantti/tmuxide/internal/workspace"
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
 	Use:   "ide [file|folder]",
-	Short: "tmuxide creates or switches to tmux sessions based on files and folders.",
-	Long: `tmuxide creates or switches to tmux sessions based on files and folders.
+	Short: "Open projects in tmux sessions or Herdr workspaces.",
+	Args:  cobra.MaximumNArgs(1),
+	Long: `tmuxide opens projects in tmux sessions or native Herdr workspaces.
 
-Run it without arguments to pick a location from a fuzzy finder. A tmux
-session will be created (or reused) for that location automatically.
+Run it without arguments to pick a location from a fuzzy finder. A project
+workspace will be created (or reused) for that location automatically.
+Inside Herdr, the Herdr backend is selected automatically; otherwise tmux
+is used. Use --backend to override this choice.
 
 When a file is selected or passed as an argument, tmuxide opens it in
-$EDITOR and creates the session for the repository root, or the file's
+$EDITOR and creates the workspace for the repository root, or the file's
 directory if it is not inside a git repository.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return Ide(args, runner.CmdRunner{}, path.Path{})
+		backend, err := cmd.Flags().GetString("backend")
+		if err != nil {
+			return err
+		}
+		return run(args, backend, runner.CmdRunner{}, path.Path{})
 	},
 }
 
@@ -47,6 +56,14 @@ var ErrEditorNotInstalled = errors.New("editor not installed")
 var ErrEditorEnvNotSet = errors.New("editor not configured")
 
 func Ide(args []string, runner runner.Runner, path path.ShellPath) error {
+	return run(args, "auto", runner, path)
+}
+
+func run(args []string, backend string, runner runner.Runner, path path.ShellPath) error {
+	host, fullscreen, err := workspace.Select(backend, path, runner)
+	if err != nil {
+		return err
+	}
 	shell, err := shell.Init(path, runner)
 	if err != nil {
 		return err
@@ -59,7 +76,8 @@ func Ide(args []string, runner runner.Runner, path path.ShellPath) error {
 
 	var target string
 	if len(args) == 0 {
-		target, err = picker.Prompt(shell.Tmux, shell.Fd, shell.Fzf)
+		shell.Fzf.Fullscreen = fullscreen
+		target, err = picker.Prompt(shell.Fd, shell.Fzf)
 	} else {
 		target = args[0]
 	}
@@ -86,10 +104,15 @@ func Ide(args []string, runner runner.Runner, path path.ShellPath) error {
 
 	var command []string
 	if !isDir {
+		// The editor starts in the project root, not the caller's directory.
+		target, err = filepath.Abs(target)
+		if err != nil {
+			return err
+		}
 		command = append(editorCmd, target)
 	}
 
-	return ide.Start(command, proj, shell.Tmux)
+	return ide.Start(command, proj, host)
 }
 
 func isDir(path string) (bool, error) {
@@ -136,4 +159,5 @@ func editorCmd(path path.ShellPath) ([]string, error) {
 }
 
 func init() {
+	rootCmd.Flags().String("backend", "auto", "Terminal host: auto, tmux, or herdr")
 }

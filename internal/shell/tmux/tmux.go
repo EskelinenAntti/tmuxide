@@ -4,11 +4,28 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 )
 
 type Cmd struct {
 	runner.Runner
+}
+
+func (t Cmd) Open(project project.Project, command []string) error {
+	var err error
+	if !t.HasSession(project.Name) {
+		err = t.New(project.Name, project.WorkingDir, command)
+	} else if len(command) > 0 {
+		err = t.NewWindow(project.Name, project.WorkingDir, command[0], command)
+	}
+	if err != nil {
+		return err
+	}
+	if _, attached := os.LookupEnv("TMUX"); attached {
+		return t.Switch(project.Name)
+	}
+	return t.Attach(project.Name)
 }
 
 func (t Cmd) HasSession(session string) bool {

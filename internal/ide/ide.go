@@ -1,34 +1,13 @@
 package ide
 
-import (
-	"os"
+import "github.com/eskelinenantti/tmuxide/internal/project"
 
-	"github.com/eskelinenantti/tmuxide/internal/project"
-	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
-)
-
-func Start(command []string, project project.Project, tmux tmux.Cmd) error {
-	var err error
-	sessionExists := tmux.HasSession(project.Name)
-
-	if !sessionExists {
-		err = tmux.New(project.Name, project.WorkingDir, command)
-	} else if len(command) > 0 {
-		err = tmux.NewWindow(project.Name, project.WorkingDir, command[0], command)
-	}
-
-	if err != nil {
-		return err
-	}
-
-	if isAttached() {
-		return tmux.Switch(project.Name)
-	}
-
-	return tmux.Attach(project.Name)
+// Workspace owns the host-specific create, reuse, and focus lifecycle.
+// Project discovery and editor selection do not depend on the terminal host.
+type Workspace interface {
+	Open(project.Project, []string) error
 }
 
-func isAttached() bool {
-	_, isAttached := os.LookupEnv("TMUX")
-	return isAttached
+func Start(command []string, project project.Project, workspace Workspace) error {
+	return workspace.Open(project, command)
 }

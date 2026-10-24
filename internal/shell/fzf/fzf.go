@@ -10,17 +10,15 @@ import (
 
 type Cmd struct {
 	runner.Runner
+	Fullscreen bool
 }
 
 func (f Cmd) Fzf(output io.Writer) (runner.WriteCloser, error) {
-	fzfCmd := exec.Command(
-		"fzf",
-		"--reverse",
-		"--height",
-		"70%",
-		"--tmux",
-		"70%",
-	)
+	args := []string{"--reverse"}
+	if !f.Fullscreen {
+		args = append(args, "--height", "70%", "--tmux", "70%")
+	}
+	fzfCmd := exec.Command("fzf", args...)
 	fzfCmd.Stdout = output
 	fzfCmd.Stderr = os.Stderr
 	waiter, err := f.Start(fzfCmd)
