@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/eskelinenantti/tmuxide/internal/ide"
+	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/eskelinenantti/tmuxide/internal/shell/herdr"
 	"github.com/eskelinenantti/tmuxide/internal/shell/path"
@@ -12,7 +12,11 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
 
-func Select(name string, path path.ShellPath, runner runner.Runner) (ide.Multiplexer, error) {
+type Multiplexer interface {
+	Open(project.Project, []string) error
+}
+
+func Select(name string, path path.ShellPath, runner runner.Runner) (Multiplexer, error) {
 	if name == "auto" {
 		switch {
 		case os.Getenv("HERDR_ENV") == "1":
@@ -23,7 +27,7 @@ func Select(name string, path path.ShellPath, runner runner.Runner) (ide.Multipl
 			name = "tmux"
 		}
 	}
-	var mux ide.Multiplexer
+	var mux Multiplexer
 	var binary string
 	switch name {
 	case "tmux":

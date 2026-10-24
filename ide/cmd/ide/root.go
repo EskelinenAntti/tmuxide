@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/eskelinenantti/tmuxide/internal/ide"
 	"github.com/eskelinenantti/tmuxide/internal/multiplexer"
 	"github.com/eskelinenantti/tmuxide/internal/picker"
 	"github.com/eskelinenantti/tmuxide/internal/project"
@@ -99,7 +98,7 @@ func Run(args []string, muxFlag string, runner runner.Runner, path path.ShellPat
 		command = append(editorCmd, target)
 	}
 
-	return ide.Start(command, proj, mux)
+	return mux.Open(proj, command)
 }
 
 func isDir(path string) (bool, error) {
