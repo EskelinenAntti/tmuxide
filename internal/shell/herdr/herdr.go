@@ -13,8 +13,6 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 )
 
-// Cmd controls native workspaces through Herdr's public CLI. The inherited
-// HERDR_SOCKET_PATH/HERDR_SESSION selects the same server as the calling pane.
 type Cmd struct {
 	runner.Runner
 	Binary string
