@@ -13,20 +13,18 @@ import (
 
 func TestSelect(t *testing.T) {
 	for _, tt := range []struct {
-		name, mux, env, tmux, binary string
-		herdr                        bool
+		name, mux, env, tmux string
+		herdr               bool
 	}{
-		{"default", "auto", "", "", "", false},
-		{"inside tmux", "auto", "", "tmux", "", false},
-		{"inside herdr", "auto", "1", "", "", true},
-		{"herdr inside tmux", "auto", "1", "outer-tmux", "", true},
-		{"explicit tmux", "tmux", "1", "", "", false},
-		{"explicit herdr", "herdr", "", "tmux", "", true},
-		{"host binary", "herdr", "1", "", "/opt/herdr", true},
+		{"default", "auto", "", "", false},
+		{"inside tmux", "auto", "", "tmux", false},
+		{"inside herdr", "auto", "1", "", true},
+		{"herdr inside tmux", "auto", "1", "outer-tmux", true},
+		{"explicit tmux", "tmux", "1", "", false},
+		{"explicit herdr", "herdr", "", "tmux", true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("HERDR_ENV", tt.env)
-			t.Setenv("HERDR_BIN_PATH", tt.binary)
 			t.Setenv("TMUX", tt.tmux)
 			mux, err := Select(tt.mux, mock.Path{}, &spy.SpyRunner{})
 			if err != nil {
@@ -34,11 +32,7 @@ func TestSelect(t *testing.T) {
 			}
 			if tt.herdr {
 				cmd, ok := mux.(herdr.Cmd)
-				want := tt.binary
-				if want == "" {
-					want = "herdr"
-				}
-				if !ok || cmd.Binary != want {
+				if !ok || cmd.Binary != "herdr" {
 					t.Fatalf("got %#v", mux)
 				}
 			} else if _, ok := mux.(tmux.Cmd); !ok {
@@ -49,7 +43,6 @@ func TestSelect(t *testing.T) {
 }
 
 func TestInvalidOrMissingMultiplexer(t *testing.T) {
-	t.Setenv("HERDR_BIN_PATH", "")
 	for _, name := range []string{"tmux", "herdr"} {
 		_, err := Select(name, mock.Path{Missing: []string{name}}, &spy.SpyRunner{})
 		var missing shell.NotInstalledError

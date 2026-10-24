@@ -17,7 +17,6 @@ const editor string = "editor"
 
 func TestRunMuxOverride(t *testing.T) {
 	t.Setenv("HERDR_ENV", "1")
-	t.Setenv("HERDR_BIN_PATH", "herdr")
 	t.Setenv("EDITOR", editor)
 	dir := t.TempDir()
 	runner := &spy.SpyRunner{}
@@ -364,7 +363,6 @@ func TestEditorNotInstalled(t *testing.T) {
 
 func TestHerdrFolderFromPrompt(t *testing.T) {
 	t.Setenv("HERDR_ENV", "1")
-	t.Setenv("HERDR_BIN_PATH", "/opt/herdr")
 	t.Setenv("TMUX", "outer-tmux")
 	t.Setenv("EDITOR", editor)
 	home := t.TempDir()
@@ -377,20 +375,19 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 		{OnRun: mock.WriteToStdout(`{"result":{"workspace":{"workspace_id":"w1"}}}`)},
 		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
 	}}
-	err := Run(nil, "auto", runner, mock.Path{Missing: []string{"tmux", "herdr"}})
+	err := Run(nil, "auto", runner, mock.Path{Missing: []string{"tmux"}})
 	requireNoError(t, err)
 	requireCalls(t, [][]string{
 		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-		{"/opt/herdr", "workspace", "list"},
-		{"/opt/herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
-		{"/opt/herdr", "workspace", "focus", "w1"},
+		{"herdr", "workspace", "list"},
+		{"herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
+		{"herdr", "workspace", "focus", "w1"},
 	}, runner.Calls)
 }
 
 func TestHerdrRelativeFileInRepository(t *testing.T) {
 	t.Setenv("HERDR_ENV", "1")
-	t.Setenv("HERDR_BIN_PATH", "herdr")
 	t.Setenv("EDITOR", "editor -R")
 	dir := t.TempDir()
 	subdir := filepath.Join(dir, "sub")
