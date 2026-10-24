@@ -9,11 +9,10 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell/git"
 	"github.com/eskelinenantti/tmuxide/internal/shell/path"
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
-	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 )
 
 var ErrCommandNotInstalled = errors.New("not installed")
-var dependencies = []string{"tmux", "fd", "fzf", "git"}
+var dependencies = []string{"fd", "fzf", "git"}
 
 type NotInstalledError struct {
 	Cmd string
@@ -28,10 +27,9 @@ func (e NotInstalledError) Unwrap() error {
 }
 
 type Shell struct {
-	Tmux tmux.Cmd
-	Fd   fd.Cmd
-	Fzf  fzf.Cmd
-	Git  git.Cmd
+	Fd  fd.Cmd
+	Fzf fzf.Cmd
+	Git git.Cmd
 }
 
 func Init(path path.ShellPath, runner runner.Runner) (Shell, error) {
@@ -42,10 +40,9 @@ func Init(path path.ShellPath, runner runner.Runner) (Shell, error) {
 	}
 
 	return Shell{
-		Tmux: tmux.Cmd{Runner: runner},
-		Fd:   fd.Cmd{Runner: runner},
-		Fzf:  fzf.Cmd{Runner: runner},
-		Git:  git.Cmd{Runner: runner},
+		Fd:  fd.Cmd{Runner: runner},
+		Fzf: fzf.Cmd{Runner: runner},
+		Git: git.Cmd{Runner: runner},
 	}, nil
 }
 

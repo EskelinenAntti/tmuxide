@@ -15,6 +15,19 @@ import (
 
 const editor string = "editor"
 
+func TestRunMuxOverride(t *testing.T) {
+	t.Setenv("HERDR_ENV", "1")
+	t.Setenv("EDITOR", editor)
+	dir := t.TempDir()
+	runner := &spy.SpyRunner{}
+	err := Run([]string{dir}, "tmux", runner, mock.Path{Missing: []string{"tmux"}})
+	var missing shell.NotInstalledError
+	if !errors.As(err, &missing) || missing.Cmd != "tmux" {
+		t.Fatalf("explicit multiplexer was not selected: %v", err)
+	}
+	requireCalls(t, nil, runner.Calls)
+}
+
 func unsetenv(t *testing.T, key string) {
 	t.Helper()
 	t.Setenv(key, "")
@@ -47,6 +60,7 @@ func createFile(t *testing.T, dir, name string) string {
 }
 
 func TestSelectFolderFromPrompt(t *testing.T) {
+	t.Setenv("HERDR_ENV", "")
 	tests := []struct {
 		name     string
 		attached bool
@@ -76,7 +90,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 					{OnRun: mock.WriteToStdout(folder)},
 				},
 			}
-			err := Ide([]string{}, spyRunner, mock.Path{})
+			err := Run([]string{}, "auto", spyRunner, mock.Path{})
 			requireNoError(t, err)
 
 			session := project.Name(filepath.Join(home, folder))
@@ -97,6 +111,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 }
 
 func TestFolderSessionWorkflow(t *testing.T) {
+	t.Setenv("HERDR_ENV", "")
 	tests := []struct {
 		name          string
 		attached      bool
@@ -130,7 +145,7 @@ func TestFolderSessionWorkflow(t *testing.T) {
 				spyRunner.Responses = []spy.Response{{OnRun: mock.SimulateError}}
 			}
 
-			err := Ide([]string{dir}, spyRunner, mock.Path{})
+			err := Run([]string{dir}, "auto", spyRunner, mock.Path{})
 			requireNoError(t, err)
 
 			expectedCalls := [][]string{
@@ -151,12 +166,13 @@ func TestFolderSessionWorkflow(t *testing.T) {
 }
 
 func TestTmuxNotInstalled(t *testing.T) {
+	t.Setenv("HERDR_ENV", "")
 	unsetenv(t, "TMUX")
 	t.Setenv("EDITOR", editor)
 
 	spyRunner := &spy.SpyRunner{}
 
-	err := Ide([]string{}, spyRunner, mock.Path{Missing: []string{"tmux"}})
+	err := Run([]string{}, "auto", spyRunner, mock.Path{Missing: []string{"tmux"}})
 
 	expectedError := shell.NotInstalledError{Cmd: "tmux"}
 	var cmdNotInstalledError shell.NotInstalledError
@@ -171,6 +187,7 @@ func TestTmuxNotInstalled(t *testing.T) {
 }
 
 func TestEditorSessionWorkflow(t *testing.T) {
+	t.Setenv("HERDR_ENV", "")
 	tests := []struct {
 		name          string
 		attached      bool
@@ -201,7 +218,7 @@ func TestEditorSessionWorkflow(t *testing.T) {
 			}
 			spyRunner := &spy.SpyRunner{Responses: responses}
 
-			err := Ide([]string{file}, spyRunner, mock.Path{})
+			err := Run([]string{file}, "auto", spyRunner, mock.Path{})
 			requireNoError(t, err)
 
 			expectedCalls := [][]string{
@@ -210,7 +227,7 @@ func TestEditorSessionWorkflow(t *testing.T) {
 			}
 			if tt.sessionExists {
 				expectedCalls = append(expectedCalls,
-					[]string{"tmux", "new-window", "-t", session + ":", "-c", dir, "-n", editor, editor, file},
+					[]string{"tmux", "new-window", "-t", session + ":", "-c", dir, editor, file},
 				)
 			} else {
 				expectedCalls = append(expectedCalls,
@@ -229,6 +246,7 @@ func TestEditorSessionWorkflow(t *testing.T) {
 }
 
 func TestRelativePathToFile(t *testing.T) {
+	t.Setenv("HERDR_ENV", "")
 	unsetenv(t, "TMUX")
 	t.Setenv("EDITOR", editor)
 
@@ -247,7 +265,7 @@ func TestRelativePathToFile(t *testing.T) {
 		},
 	}
 
-	err := Ide([]string{fileName}, spyRunner, mock.Path{})
+	err := Run([]string{fileName}, "auto", spyRunner, mock.Path{})
 	requireNoError(t, err)
 
 	expectedCalls := [][]string{
@@ -261,6 +279,7 @@ func TestRelativePathToFile(t *testing.T) {
 }
 
 func TestFileDoesNotExist(t *testing.T) {
+	t.Setenv("HERDR_ENV", "")
 	unsetenv(t, "TMUX")
 	t.Setenv("EDITOR", editor)
 
@@ -269,7 +288,7 @@ func TestFileDoesNotExist(t *testing.T) {
 
 	spyRunner := &spy.SpyRunner{}
 
-	err := Ide([]string{file}, spyRunner, mock.Path{})
+	err := Run([]string{file}, "auto", spyRunner, mock.Path{})
 
 	if !errors.Is(err, project.ErrInvalidPath) {
 		t.Fatalf("got=%v, want=%v", err, project.ErrInvalidPath)
@@ -279,6 +298,7 @@ func TestFileDoesNotExist(t *testing.T) {
 }
 
 func TestFileInRepository(t *testing.T) {
+	t.Setenv("HERDR_ENV", "")
 	unsetenv(t, "TMUX")
 	t.Setenv("EDITOR", editor)
 
@@ -294,7 +314,7 @@ func TestFileInRepository(t *testing.T) {
 		},
 	}
 
-	err := Ide([]string{file}, spyRunner, mock.Path{})
+	err := Run([]string{file}, "auto", spyRunner, mock.Path{})
 	requireNoError(t, err)
 
 	expectedCalls := [][]string{
@@ -308,6 +328,7 @@ func TestFileInRepository(t *testing.T) {
 }
 
 func TestEditorNotSet(t *testing.T) {
+	t.Setenv("HERDR_ENV", "")
 	unsetenv(t, "EDITOR")
 	unsetenv(t, "TMUX")
 
@@ -315,7 +336,7 @@ func TestEditorNotSet(t *testing.T) {
 
 	spyRunner := &spy.SpyRunner{}
 
-	err := Ide([]string{dir}, spyRunner, mock.Path{})
+	err := Run([]string{dir}, "auto", spyRunner, mock.Path{})
 
 	if !errors.Is(err, ErrEditorEnvNotSet) {
 		t.Fatalf("got=%v, want=%v", err, ErrEditorEnvNotSet)
@@ -324,6 +345,7 @@ func TestEditorNotSet(t *testing.T) {
 }
 
 func TestEditorNotInstalled(t *testing.T) {
+	t.Setenv("HERDR_ENV", "")
 	t.Setenv("EDITOR", editor)
 	unsetenv(t, "TMUX")
 
@@ -332,9 +354,61 @@ func TestEditorNotInstalled(t *testing.T) {
 
 	spyRunner := &spy.SpyRunner{}
 
-	err := Ide([]string{dir}, spyRunner, &mockPath)
+	err := Run([]string{dir}, "auto", spyRunner, &mockPath)
 	if !errors.Is(err, ErrEditorNotInstalled) {
 		t.Fatalf("got=%v, want=%v", err, ErrEditorNotInstalled)
 	}
 	requireCalls(t, nil, spyRunner.Calls)
+}
+
+func TestHerdrFolderFromPrompt(t *testing.T) {
+	t.Setenv("HERDR_ENV", "1")
+	t.Setenv("TMUX", "outer-tmux")
+	t.Setenv("EDITOR", editor)
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	dir := filepath.Join(home, "project")
+	requireNoError(t, os.Mkdir(dir, 0755))
+	runner := &spy.SpyRunner{Responses: []spy.Response{
+		{OnRun: mock.WriteToStdout("project")}, {},
+		{OnRun: mock.WriteToStdout(`{"result":{"type":"workspace_list","workspaces":[]}}`)},
+		{OnRun: mock.WriteToStdout(`{"result":{"workspace":{"workspace_id":"w1"}}}`)},
+		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
+	}}
+	err := Run(nil, "auto", runner, mock.Path{Missing: []string{"tmux"}})
+	requireNoError(t, err)
+	requireCalls(t, [][]string{
+		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
+		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
+		{"herdr", "workspace", "list"},
+		{"herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
+		{"herdr", "workspace", "focus", "w1"},
+	}, runner.Calls)
+}
+
+func TestHerdrRelativeFileInRepository(t *testing.T) {
+	t.Setenv("HERDR_ENV", "1")
+	t.Setenv("EDITOR", "editor -R")
+	dir := t.TempDir()
+	subdir := filepath.Join(dir, "sub")
+	requireNoError(t, os.Mkdir(subdir, 0755))
+	createFile(t, subdir, "file.txt")
+	t.Chdir(dir)
+	runner := &spy.SpyRunner{Responses: []spy.Response{
+		{OnRun: mock.WriteToStdout(dir)},
+		{OnRun: mock.WriteToStdout(`{"result":{"type":"workspace_list","workspaces":[]}}`)},
+		{OnRun: mock.WriteToStdout(`{"result":{"workspace":{"workspace_id":"w1"},"tab":{"tab_id":"w1:t1"},"root_pane":{"pane_id":"w1:p1"}}}`)},
+		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
+		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
+		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
+	}}
+	requireNoError(t, Run([]string{"sub/file.txt"}, "auto", runner, mock.Path{Missing: []string{"tmux"}}))
+	requireCalls(t, [][]string{
+		{"git", "-C", "sub", "rev-parse", "--show-toplevel"},
+		{"herdr", "workspace", "list"},
+		{"herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
+		{"herdr", "pane", "run", "w1:p1", "'editor' '-R' 'sub/file.txt'"},
+		{"herdr", "tab", "focus", "w1:t1"},
+		{"herdr", "workspace", "focus", "w1"},
+	}, runner.Calls)
 }

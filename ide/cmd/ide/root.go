@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/eskelinenantti/tmuxide/internal/ide"
+	"github.com/eskelinenantti/tmuxide/internal/multiplexer"
 	"github.com/eskelinenantti/tmuxide/internal/picker"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
@@ -18,6 +18,7 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "ide [file|folder]",
 	Short: "tmuxide creates or switches to tmux sessions based on files and folders.",
+	Args:  cobra.MaximumNArgs(1),
 	Long: `tmuxide creates or switches to tmux sessions based on files and folders.
 
 Run it without arguments to pick a location from a fuzzy finder. A tmux
@@ -27,7 +28,11 @@ When a file is selected or passed as an argument, tmuxide opens it in
 $EDITOR and creates the session for the repository root, or the file's
 directory if it is not inside a git repository.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return Ide(args, runner.CmdRunner{}, path.Path{})
+		mux, err := cmd.Flags().GetString("mux")
+		if err != nil {
+			return err
+		}
+		return Run(args, mux, runner.CmdRunner{}, path.Path{})
 	},
 }
 
@@ -46,7 +51,11 @@ brew install %[1]s`
 var ErrEditorNotInstalled = errors.New("editor not installed")
 var ErrEditorEnvNotSet = errors.New("editor not configured")
 
-func Ide(args []string, runner runner.Runner, path path.ShellPath) error {
+func Run(args []string, muxFlag string, runner runner.Runner, path path.ShellPath) error {
+	mux, err := multiplexer.Select(muxFlag, path, runner)
+	if err != nil {
+		return err
+	}
 	shell, err := shell.Init(path, runner)
 	if err != nil {
 		return err
@@ -59,7 +68,7 @@ func Ide(args []string, runner runner.Runner, path path.ShellPath) error {
 
 	var target string
 	if len(args) == 0 {
-		target, err = picker.Prompt(shell.Tmux, shell.Fd, shell.Fzf)
+		target, err = picker.Prompt(shell.Fd, shell.Fzf)
 	} else {
 		target = args[0]
 	}
@@ -89,7 +98,7 @@ func Ide(args []string, runner runner.Runner, path path.ShellPath) error {
 		command = append(editorCmd, target)
 	}
 
-	return ide.Start(command, proj, shell.Tmux)
+	return mux.Open(proj, command)
 }
 
 func isDir(path string) (bool, error) {
@@ -136,4 +145,5 @@ func editorCmd(path path.ShellPath) ([]string, error) {
 }
 
 func init() {
+	rootCmd.Flags().String("mux", "auto", "Terminal host override")
 }
