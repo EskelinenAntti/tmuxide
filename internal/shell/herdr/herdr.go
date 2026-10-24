@@ -91,8 +91,6 @@ func (h Cmd) Open(project project.Project, command []string) error {
 			break
 		}
 	}
-	// Labels are presentation, not directory identities. A manually opened or
-	// renamed workspace can already contain a pane in the selected directory.
 	if id == "" && len(list.Workspaces) > 0 && project.WorkingDir != "" {
 		panes, err := h.call("pane", "list")
 		if err != nil {
