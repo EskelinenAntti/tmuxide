@@ -402,7 +402,7 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
 		{"/opt/herdr", "workspace", "list"},
-		{"/opt/herdr", "workspace", "create", "--cwd", dir, "--label", project.Name(dir), "--no-focus"},
+		{"/opt/herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
 		{"/opt/herdr", "workspace", "focus", "w1"},
 	}, runner.Calls)
 }
@@ -428,7 +428,7 @@ func TestHerdrRelativeFileInRepository(t *testing.T) {
 	requireCalls(t, [][]string{
 		{"git", "-C", "sub", "rev-parse", "--show-toplevel"},
 		{"herdr", "workspace", "list"},
-		{"herdr", "workspace", "create", "--cwd", dir, "--label", project.Name(dir), "--no-focus"},
+		{"herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
 		{"herdr", "pane", "run", "w1:p1", "'editor' '-R' 'sub/file.txt'"},
 		{"herdr", "tab", "focus", "w1:t1"},
 		{"herdr", "workspace", "focus", "w1"},

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/project"
@@ -28,7 +29,11 @@ type result struct {
 	Type       string      `json:"type"`
 	Workspaces []workspace `json:"workspaces"`
 	Workspace  workspace   `json:"workspace"`
-	Tab        struct {
+	Panes      []struct {
+		WorkspaceID string `json:"workspace_id"`
+		Cwd         string `json:"cwd"`
+	} `json:"panes"`
+	Tab struct {
 		ID string `json:"tab_id"`
 	} `json:"tab"`
 	RootPane struct {
@@ -88,9 +93,34 @@ func (h Cmd) Open(project project.Project, command []string) error {
 			break
 		}
 	}
+	// Labels are presentation, not directory identities. A manually opened or
+	// renamed workspace can already contain a pane in the selected directory.
+	if id == "" && len(list.Workspaces) > 0 && project.WorkingDir != "" {
+		panes, err := h.call("pane", "list")
+		if err != nil {
+			return err
+		}
+		if panes.Type != "pane_list" || panes.Panes == nil {
+			return fmt.Errorf("invalid herdr pane list response")
+		}
+		for _, workspace := range list.Workspaces {
+			for _, pane := range panes.Panes {
+				if pane.WorkspaceID == workspace.ID && pane.Cwd != "" && filepath.Clean(pane.Cwd) == filepath.Clean(project.WorkingDir) {
+					id = workspace.ID
+					if id == "" {
+						return fmt.Errorf("herdr workspace has no id")
+					}
+					break
+				}
+			}
+			if id != "" {
+				break
+			}
+		}
+	}
 	var created result
 	if id == "" {
-		created, err = h.call("workspace", "create", "--cwd", project.WorkingDir, "--label", project.Name, "--no-focus")
+		created, err = h.call("workspace", "create", "--cwd", project.WorkingDir, "--label", filepath.Base(project.WorkingDir), "--no-focus")
 		if err != nil {
 			return err
 		}

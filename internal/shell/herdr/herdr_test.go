@@ -108,6 +108,94 @@ func TestFailuresStopWorkflow(t *testing.T) {
 	}
 }
 
+func TestWorkspaceDirectoryMatching(t *testing.T) {
+	const workspaces = `{"result":{"type":"workspace_list","workspaces":[{"workspace_id":"w2","label":"project"},{"workspace_id":"w1","label":"renamed"}]}}`
+	const noPanes = `{"result":{"type":"pane_list","panes":[]}}`
+	for _, tt := range []struct {
+		name  string
+		list  string
+		panes string
+		id    string
+	}{
+		{"manually opened", existing, `{"result":{"type":"pane_list","panes":[{"workspace_id":"w1","cwd":"/project"}]}}`, "w1"},
+		{"renamed workspace and second pane", workspaces, `{"result":{"type":"pane_list","panes":[{"workspace_id":"w1","cwd":"/elsewhere"},{"workspace_id":"w1","cwd":"/project/"}]}}`, "w1"},
+		{"same basename elsewhere", existing, `{"result":{"type":"pane_list","panes":[{"workspace_id":"w1","cwd":"/other/project"}]}}`, ""},
+		{"subdirectory is not exact match", existing, `{"result":{"type":"pane_list","panes":[{"workspace_id":"w1","cwd":"/project/sub"}]}}`, ""},
+		{"missing cwd", existing, `{"result":{"type":"pane_list","panes":[{"workspace_id":"w1"}]}}`, ""},
+		{"unknown workspace", existing, `{"result":{"type":"pane_list","panes":[{"workspace_id":"w2","cwd":"/project"}]}}`, ""},
+		{"no panes", existing, noPanes, ""},
+		{"legacy hashed label", `{"result":{"type":"workspace_list","workspaces":[{"workspace_id":"w1","label":"` + project.Name("/project") + `"}]}}`, "", "w1"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("HERDR_ENV", "1")
+			json := []string{tt.list}
+			calls := [][]string{{"herdr", "workspace", "list"}}
+			if tt.panes != "" {
+				json = append(json, tt.panes)
+				calls = append(calls, []string{"herdr", "pane", "list"})
+			}
+			if tt.id == "" {
+				json = append(json, created)
+				calls = append(calls, []string{"herdr", "workspace", "create", "--cwd", "/project", "--label", "project", "--no-focus"})
+			}
+			json = append(json, ok)
+			calls = append(calls, []string{"herdr", "workspace", "focus", "w1"})
+			runner := &spy.SpyRunner{Responses: responses(json...)}
+			p, err := project.ForDir("/project")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := (Cmd{Runner: runner, Binary: "herdr"}).Open(p, nil); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(calls, runner.Calls); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}
+
+func TestFileInManuallyOpenedWorkspace(t *testing.T) {
+	t.Setenv("HERDR_ENV", "1")
+	runner := &spy.SpyRunner{Responses: responses(existing,
+		`{"result":{"type":"pane_list","panes":[{"workspace_id":"w1","cwd":"/project"}]}}`,
+		tab, ok, ok, ok)}
+	p, err := project.ForDir("/project")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := (Cmd{Runner: runner, Binary: "herdr"}).Open(p, []string{"nvim", "file"}); err != nil {
+		t.Fatal(err)
+	}
+	want := [][]string{
+		{"herdr", "workspace", "list"},
+		{"herdr", "pane", "list"},
+		{"herdr", "tab", "create", "--workspace", "w1", "--cwd", "/project", "--label", "nvim", "--no-focus"},
+		{"herdr", "pane", "run", "w1:p2", "'nvim' 'file'"},
+		{"herdr", "tab", "focus", "w1:t2"},
+		{"herdr", "workspace", "focus", "w1"},
+	}
+	if diff := cmp.Diff(want, runner.Calls); diff != "" {
+		t.Fatal(diff)
+	}
+}
+
+func TestPaneLookupFailuresDoNotCreateWorkspace(t *testing.T) {
+	for _, text := range []string{ok, `{"result":{"type":"pane_list"}}`, `{"error":{"code":"not_found","message":"missing"}}`} {
+		runner := &spy.SpyRunner{Responses: responses(existing, text)}
+		err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{Name: "project-hash", WorkingDir: "/project"}, nil)
+		if err == nil || len(runner.Calls) != 2 {
+			t.Fatal(err, runner.Calls)
+		}
+	}
+	runner := &spy.SpyRunner{Responses: responses(existing, "")}
+	runner.Responses[1] = spy.Response{OnRun: mock.SimulateError}
+	err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{Name: "project-hash", WorkingDir: "/project"}, nil)
+	if err == nil || len(runner.Calls) != 2 {
+		t.Fatal(err, runner.Calls)
+	}
+}
+
 func TestMissingServerDoesNotCreateWorkspace(t *testing.T) {
 	runner := &spy.SpyRunner{Responses: []spy.Response{{OnRun: mock.SimulateError}}}
 	err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{}, nil)
