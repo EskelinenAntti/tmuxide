@@ -33,23 +33,20 @@ func ForPath(path string, git Git) (Target, error) {
 	if err != nil {
 		return Target{}, ErrInvalidPath
 	}
-	if info.IsDir() {
-		proj, err := ForDir(path)
-		return Target{Project: proj}, err
+	workingDir := path
+	file := ""
+	if !info.IsDir() {
+		file = path
+		workingDir = filepath.Dir(path)
+		if repository, err := git.RevParse(workingDir); err == nil {
+			workingDir = repository
+		}
 	}
-	proj, err := forWorkingDir(filepath.Dir(path), git)
+	proj, err := ForDir(workingDir)
 	if err != nil {
 		return Target{}, err
 	}
-	return Target{Project: proj, File: path}, nil
-}
-
-func forWorkingDir(workingDir string, git Git) (Project, error) {
-	if repository, err := git.RevParse(workingDir); err == nil {
-		workingDir = repository
-	}
-
-	return ForDir(workingDir)
+	return Target{Project: proj, File: file}, nil
 }
 
 func ForDir(directory string) (Project, error) {

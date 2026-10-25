@@ -76,6 +76,12 @@ func TestForPath(t *testing.T) {
 	if err := os.WriteFile(file, nil, 0644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.Symlink(directory, filepath.Join(root, "directory-link")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(file, filepath.Join(root, "file-link")); err != nil {
+		t.Fatal(err)
+	}
 	t.Chdir(root)
 	for _, tt := range []struct {
 		name   string
@@ -84,8 +90,10 @@ func TestForPath(t *testing.T) {
 	}{
 		{"directory", directory, false},
 		{"relative directory", "nested", false},
+		{"directory symlink", "directory-link", false},
 		{"file", file, true},
 		{"relative file", filepath.Join("nested", "file.txt"), true},
+		{"file symlink", "file-link", true},
 	} {
 		for _, inRepository := range []bool{true, false} {
 			repository := "outside repository"
@@ -101,10 +109,14 @@ func TestForPath(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
-				wantDir := directory
+				wantDir, err := filepath.Abs(tt.path)
+				if err != nil {
+					t.Fatal(err)
+				}
 				wantFile := ""
 				if tt.isFile {
 					wantFile = tt.path
+					wantDir = filepath.Dir(wantDir)
 					if inRepository {
 						wantDir = root
 					}
