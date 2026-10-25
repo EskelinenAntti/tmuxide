@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
+
+	"github.com/eskelinenantti/tmuxide/internal/project"
 )
 
 type workspace struct {
@@ -29,6 +32,34 @@ type result struct {
 	RootPane struct {
 		ID string `json:"pane_id"`
 	} `json:"root_pane"`
+}
+
+type commandTab struct {
+	tabID  string
+	paneID string
+}
+
+func (r result) commandTab() commandTab {
+	return commandTab{tabID: r.Tab.ID, paneID: r.RootPane.ID}
+}
+
+func (h Cmd) createWorkspace(project project.Project) (string, commandTab, error) {
+	created, err := h.call("workspace", "create", "--cwd", project.WorkingDir, "--label", filepath.Base(project.WorkingDir), "--no-focus")
+	if err != nil {
+		return "", commandTab{}, err
+	}
+	if created.Workspace.ID == "" {
+		return "", commandTab{}, fmt.Errorf("herdr workspace create response has no workspace id")
+	}
+	return created.Workspace.ID, created.commandTab(), nil
+}
+
+func (h Cmd) createTab(workspaceID, workingDir string) (commandTab, error) {
+	created, err := h.call("tab", "create", "--workspace", workspaceID, "--cwd", workingDir, "--no-focus")
+	if err != nil {
+		return commandTab{}, err
+	}
+	return created.commandTab(), nil
 }
 
 func (h Cmd) listWorkspaces() ([]workspace, error) {

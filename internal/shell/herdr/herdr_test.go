@@ -37,6 +37,11 @@ func TestOpen(t *testing.T) {
 			{"herdr", "workspace", "create", "--cwd", "/project", "--label", "project", "--no-focus"},
 			{"herdr", "workspace", "focus", "w1"},
 		}},
+		{"create folder without command tab", true, nil, []string{empty, `{"result":{"workspace":{"workspace_id":"w1"}}}`, ok}, [][]string{
+			{"herdr", "workspace", "list"},
+			{"herdr", "workspace", "create", "--cwd", "/project", "--label", "project", "--no-focus"},
+			{"herdr", "workspace", "focus", "w1"},
+		}},
 		{"reuse folder", true, nil, []string{existing, ok}, [][]string{
 			{"herdr", "workspace", "list"}, {"herdr", "workspace", "focus", "w1"},
 		}},

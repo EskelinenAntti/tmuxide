@@ -7,9 +7,68 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/test/spy"
 	"github.com/google/go-cmp/cmp"
 )
+
+func TestCreateWorkspace(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		json string
+		id   string
+		tab  commandTab
+		err  string
+	}{
+		{"created", created, "w1", commandTab{tabID: "w1:t1", paneID: "w1:p1"}, ""},
+		{"no command tab", `{"result":{"workspace":{"workspace_id":"w1"}}}`, "w1", commandTab{}, ""},
+		{"missing workspace id", ok, "", commandTab{}, "herdr workspace create response has no workspace id"},
+		{"API error", `{"error":{"code":"failed","message":"reason"}}`, "", commandTab{}, "herdr: failed: reason"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			runner := &spy.SpyRunner{Responses: responses(tt.json)}
+			id, tab, err := (Cmd{Runner: runner, Binary: "/custom/herdr"}).createWorkspace(project.Project{Name: "hashed-name", WorkingDir: "/projects/project"})
+			if (err != nil && err.Error() != tt.err) || (err == nil && tt.err != "") {
+				t.Fatalf("got error %v, want %q", err, tt.err)
+			}
+			if id != tt.id || tab != tt.tab {
+				t.Fatalf("got %q, %+v; want %q, %+v", id, tab, tt.id, tt.tab)
+			}
+			want := [][]string{{"/custom/herdr", "workspace", "create", "--cwd", "/projects/project", "--label", "project", "--no-focus"}}
+			if diff := cmp.Diff(want, runner.Calls); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}
+
+func TestCreateTab(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		json string
+		tab  commandTab
+		err  string
+	}{
+		{"created", tab, commandTab{tabID: "w1:t2", paneID: "w1:p2"}, ""},
+		{"missing identifiers", ok, commandTab{}, ""},
+		{"API error", `{"error":{"code":"failed","message":"reason"}}`, commandTab{}, "herdr: failed: reason"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			runner := &spy.SpyRunner{Responses: responses(tt.json)}
+			tab, err := (Cmd{Runner: runner, Binary: "/custom/herdr"}).createTab("w1", "/project")
+			if (err != nil && err.Error() != tt.err) || (err == nil && tt.err != "") {
+				t.Fatalf("got error %v, want %q", err, tt.err)
+			}
+			if tab != tt.tab {
+				t.Fatalf("got %+v, want %+v", tab, tt.tab)
+			}
+			want := [][]string{{"/custom/herdr", "tab", "create", "--workspace", "w1", "--cwd", "/project", "--no-focus"}}
+			if diff := cmp.Diff(want, runner.Calls); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}
 
 func TestOutput(t *testing.T) {
 	failure := errors.New("command failed")

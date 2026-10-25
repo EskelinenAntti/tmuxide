@@ -63,24 +63,20 @@ func (h Cmd) Open(project project.Project, command []string) error {
 	if err != nil {
 		return err
 	}
-	var created result
+	var tab commandTab
 	if id == "" {
-		created, err = h.call("workspace", "create", "--cwd", project.WorkingDir, "--label", filepath.Base(project.WorkingDir), "--no-focus")
+		id, tab, err = h.createWorkspace(project)
 		if err != nil {
 			return err
 		}
-		id = created.Workspace.ID
-		if id == "" {
-			return fmt.Errorf("herdr workspace create response has no workspace id")
-		}
 	} else if len(command) > 0 {
-		created, err = h.call("tab", "create", "--workspace", id, "--cwd", project.WorkingDir, "--no-focus")
+		tab, err = h.createTab(id, project.WorkingDir)
 		if err != nil {
 			return err
 		}
 	}
 	if len(command) > 0 {
-		if err := h.runInTab(created, command); err != nil {
+		if err := h.runInTab(tab, command); err != nil {
 			return err
 		}
 	}
@@ -95,14 +91,14 @@ func (h Cmd) Open(project project.Project, command []string) error {
 	return h.Run(cmd)
 }
 
-func (h Cmd) runInTab(created result, command []string) error {
-	if created.RootPane.ID == "" || created.Tab.ID == "" {
+func (h Cmd) runInTab(tab commandTab, command []string) error {
+	if tab.paneID == "" || tab.tabID == "" {
 		return fmt.Errorf("herdr create response has no root pane or tab id")
 	}
 	// pane run is quiet on success, unlike the JSON-returning create APIs.
-	if _, err := h.output("pane", "run", created.RootPane.ID, shellCommand(command)); err != nil {
+	if _, err := h.output("pane", "run", tab.paneID, shellCommand(command)); err != nil {
 		return err
 	}
-	_, err := h.output("tab", "focus", created.Tab.ID)
+	_, err := h.output("tab", "focus", tab.tabID)
 	return err
 }
