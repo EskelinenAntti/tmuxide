@@ -15,7 +15,6 @@ import (
 
 type Cmd struct {
 	runner.Runner
-	Binary string
 }
 
 type workspace struct {
@@ -41,7 +40,7 @@ type result struct {
 
 func (h Cmd) output(args ...string) ([]byte, error) {
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command(h.Binary, args...)
+	cmd := exec.Command("herdr", args...)
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	if err := h.Run(cmd); err != nil {
 		return nil, fmt.Errorf("herdr %s: %w: %s", strings.Join(args, " "), err, strings.TrimSpace(stderr.String()))
@@ -154,7 +153,7 @@ func (h Cmd) Open(project project.Project, command []string) error {
 	if os.Getenv("HERDR_ENV") == "1" {
 		return nil
 	}
-	cmd := exec.Command(h.Binary)
+	cmd := exec.Command("herdr")
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	return h.Run(cmd)
 }

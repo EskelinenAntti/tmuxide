@@ -34,11 +34,8 @@ func Select(name string, path path.ShellPath, runner runner.Runner) (Multiplexer
 		binary = "tmux"
 		mux = tmux.Cmd{Runner: runner}
 	case "herdr":
-		binary = os.Getenv("HERDR_BIN_PATH")
-		if binary == "" {
-			return nil, fmt.Errorf("HERDR_BIN_PATH is required for the Herdr multiplexer")
-		}
-		mux = herdr.Cmd{Runner: runner, Binary: binary}
+		binary = "herdr"
+		mux = herdr.Cmd{Runner: runner}
 	default:
 		return nil, fmt.Errorf("unknown multiplexer %q (use auto, tmux, or herdr)", name)
 	}
