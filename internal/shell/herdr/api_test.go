@@ -5,7 +5,6 @@ import (
 	"os/exec"
 	"testing"
 
-	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/test/spy"
 	"github.com/google/go-cmp/cmp"
 )
@@ -25,7 +24,7 @@ func TestCreateWorkspace(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			runner := &spy.SpyRunner{Responses: responses(tt.json)}
-			id, tab, err := (Cmd{Runner: runner, Binary: "/custom/herdr"}).createWorkspace(project.Project{Name: "hashed-name", WorkingDir: "/projects/project"})
+			id, tab, err := (Cmd{Runner: runner, Binary: "/custom/herdr"}).createWorkspace("/projects/project")
 			if (err != nil && err.Error() != tt.err) || (err == nil && tt.err != "") {
 				t.Fatalf("got error %v, want %q", err, tt.err)
 			}
@@ -33,6 +32,33 @@ func TestCreateWorkspace(t *testing.T) {
 				t.Fatalf("got %q, %+v; want %q, %+v", id, tab, tt.id, tt.tab)
 			}
 			want := [][]string{{"/custom/herdr", "workspace", "create", "--cwd", "/projects/project", "--label", "project", "--no-focus"}}
+			if diff := cmp.Diff(want, runner.Calls); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}
+
+func TestCreateWorkspaceDirectory(t *testing.T) {
+	for _, tt := range []struct {
+		name       string
+		workingDir string
+		label      string
+	}{
+		{"absolute", "/projects/project", "project"},
+		{"trailing slash", "/projects/project/", "project"},
+		{"spaces", "/projects/my project", "my project"},
+		{"relative", "projects/project", "project"},
+		{"root", "/", "/"},
+		{"empty", "", "."},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			runner := &spy.SpyRunner{Responses: responses(created)}
+			_, _, err := (Cmd{Runner: runner, Binary: "herdr"}).createWorkspace(tt.workingDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := [][]string{{"herdr", "workspace", "create", "--cwd", tt.workingDir, "--label", tt.label, "--no-focus"}}
 			if diff := cmp.Diff(want, runner.Calls); diff != "" {
 				t.Fatal(diff)
 			}

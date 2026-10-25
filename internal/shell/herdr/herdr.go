@@ -19,7 +19,7 @@ func (h Cmd) Open(project project.Project, command []string) error {
 	}
 	var tab commandTab
 	if id == "" {
-		id, tab, err = h.createWorkspace(project)
+		id, tab, err = h.createWorkspace(project.WorkingDir)
 		if err != nil {
 			return err
 		}

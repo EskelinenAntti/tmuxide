@@ -3,8 +3,6 @@ package herdr
 import (
 	"fmt"
 	"path/filepath"
-
-	"github.com/eskelinenantti/tmuxide/internal/project"
 )
 
 type workspace struct {
@@ -63,11 +61,11 @@ func (h Cmd) listPanes() ([]pane, error) {
 	return list.Panes, nil
 }
 
-func (h Cmd) createWorkspace(project project.Project) (string, commandTab, error) {
+func (h Cmd) createWorkspace(workingDir string) (string, commandTab, error) {
 	created, err := call[struct {
 		commandTabResult
 		Workspace workspace `json:"workspace"`
-	}](h, "workspace", "create", "--cwd", project.WorkingDir, "--label", filepath.Base(project.WorkingDir), "--no-focus")
+	}](h, "workspace", "create", "--cwd", workingDir, "--label", filepath.Base(workingDir), "--no-focus")
 	if err != nil {
 		return "", commandTab{}, err
 	}
