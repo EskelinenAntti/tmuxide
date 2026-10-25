@@ -232,6 +232,33 @@ func TestCreationCommand(t *testing.T) {
 	}
 }
 
+func TestCreationCommandPreservesArguments(t *testing.T) {
+	for _, exists := range []bool{false, true} {
+		name := "new session"
+		if exists {
+			name = "new window"
+		}
+		t.Run(name, func(t *testing.T) {
+			command := []string{"nvim", "", "a'b; $(touch unwanted)", "--"}
+			original := append([]string(nil), command...)
+			p := project.Project{Name: "project", WorkingDir: "/a'b directory"}
+			cmd := creationCommand(p, command, exists)
+			want := []string{"tmux", "new-session", "-c", p.WorkingDir, "-d", "-s", p.Name}
+			if exists {
+				want = []string{"tmux", "new-window", "-t", p.Name + ":", "-c", p.WorkingDir}
+			}
+			want = append(want, original...)
+			if diff := cmp.Diff(want, cmd.Args); diff != "" {
+				t.Fatal(diff)
+			}
+			cmd.Args[len(cmd.Args)-1] = "changed"
+			if diff := cmp.Diff(original, command); diff != "" {
+				t.Fatalf("creation command modified its input: %s", diff)
+			}
+		})
+	}
+}
+
 func TestAttachUsesTerminalStreams(t *testing.T) {
 	t.Setenv("TMUX", "")
 	if err := os.Unsetenv("TMUX"); err != nil {
