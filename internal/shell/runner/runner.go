@@ -19,8 +19,8 @@ type Starter interface {
 
 type CmdRunner struct{}
 type CmdWriteCloser struct {
-	cmd   *exec.Cmd
-	stdin io.WriteCloser
+	io.WriteCloser
+	cmd *exec.Cmd
 }
 
 func (c CmdRunner) Run(cmd *exec.Cmd) error {
@@ -44,15 +44,11 @@ func (c CmdRunner) Start(cmd *exec.Cmd) (io.WriteCloser, error) {
 		return nil, commandError(cmd, err)
 	}
 
-	return CmdWriteCloser{cmd: cmd, stdin: stdin}, nil
-}
-
-func (c CmdWriteCloser) Write(p []byte) (n int, err error) {
-	return c.stdin.Write(p)
+	return CmdWriteCloser{cmd: cmd, WriteCloser: stdin}, nil
 }
 
 func (c CmdWriteCloser) Close() error {
-	err := c.stdin.Close()
+	err := c.WriteCloser.Close()
 	if err != nil {
 		return err
 	}

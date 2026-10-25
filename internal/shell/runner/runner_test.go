@@ -120,3 +120,33 @@ func TestRunExitFailure(t *testing.T) {
 		t.Fatalf("got exit code %d, want 7", exitErr.ExitCode())
 	}
 }
+
+func TestStartCloseExitFailure(t *testing.T) {
+	cmd := exec.Command(os.Args[0], "-test.run=^TestRunnerProcess$")
+	cmd.Env = append(os.Environ(), "TMUXIDE_RUNNER_PROCESS=failure")
+	writer, err := (CmdRunner{}).Start(cmd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = writer.Close()
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 7 {
+		t.Fatalf("got %v, want exit code 7", err)
+	}
+}
+
+func TestWriteAfterClose(t *testing.T) {
+	cmd := exec.Command(os.Args[0], "-test.run=^TestRunnerProcess$")
+	cmd.Env = append(os.Environ(), "TMUXIDE_RUNNER_PROCESS=echo")
+	writer, err := (CmdRunner{}).Start(cmd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	n, err := writer.Write([]byte("candidate"))
+	if n != 0 || !errors.Is(err, os.ErrClosed) {
+		t.Fatalf("wrote %d bytes: %v, want a closed pipe error", n, err)
+	}
+}
