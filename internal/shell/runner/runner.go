@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 )
 
@@ -21,6 +22,12 @@ type CmdRunner struct{}
 type CmdWriteCloser struct {
 	io.WriteCloser
 	cmd *exec.Cmd
+}
+
+// RunInteractive connects the command to the current terminal's standard streams.
+func RunInteractive(runner Runner, cmd *exec.Cmd) error {
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
+	return runner.Run(cmd)
 }
 
 func (c CmdRunner) Run(cmd *exec.Cmd) error {

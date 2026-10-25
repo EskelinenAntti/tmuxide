@@ -1,7 +1,6 @@
 package herdr
 
 import (
-	"os"
 	"os/exec"
 
 	"github.com/eskelinenantti/tmuxide/internal/project"
@@ -41,7 +40,5 @@ func (h Cmd) Open(project project.Project, command []string) error {
 	if InSession() {
 		return nil
 	}
-	cmd := exec.Command(h.Binary)
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
-	return h.Run(cmd)
+	return runner.RunInteractive(h.Runner, exec.Command(h.Binary))
 }

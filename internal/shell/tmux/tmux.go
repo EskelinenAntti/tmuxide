@@ -22,11 +22,7 @@ func (t Cmd) Open(project project.Project, command []string) error {
 	if _, attached := os.LookupEnv("TMUX"); attached {
 		return t.Run(sessionCommand("switch-client", project.Name))
 	}
-	tmuxCmd := sessionCommand("attach", project.Name)
-	tmuxCmd.Stdin = os.Stdin
-	tmuxCmd.Stdout = os.Stdout
-	tmuxCmd.Stderr = os.Stderr
-	return t.Run(tmuxCmd)
+	return runner.RunInteractive(t.Runner, sessionCommand("attach", project.Name))
 }
 
 func creationCommand(project project.Project, command []string, sessionExists bool) *exec.Cmd {

@@ -9,7 +9,37 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/eskelinenantti/tmuxide/internal/test/spy"
 )
+
+func TestRunInteractive(t *testing.T) {
+	failure := errors.New("command failed")
+	for _, wantErr := range []error{nil, failure} {
+		name := "success"
+		if wantErr != nil {
+			name = "failure"
+		}
+		t.Run(name, func(t *testing.T) {
+			cmd := exec.Command("interactive", "argument")
+			runner := &spy.SpyRunner{Responses: []spy.Response{{OnRun: func(got *exec.Cmd) error {
+				if got != cmd {
+					t.Fatal("runner received a different command")
+				}
+				if got.Stdin != os.Stdin || got.Stdout != os.Stdout || got.Stderr != os.Stderr {
+					t.Fatal("command is not connected to the terminal's standard streams")
+				}
+				return wantErr
+			}}}}
+			if err := RunInteractive(runner, cmd); err != wantErr {
+				t.Fatalf("got %v, want %v", err, wantErr)
+			}
+			if len(runner.Calls) != 1 {
+				t.Fatalf("ran %d commands, want 1", len(runner.Calls))
+			}
+		})
+	}
+}
 
 func TestCommandFailures(t *testing.T) {
 	for _, start := range []bool{false, true} {
