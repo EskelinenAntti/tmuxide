@@ -77,37 +77,20 @@ func Run(args []string, muxFlag string, runner runner.Runner, path path.ShellPat
 		return err
 	}
 
-	isDir, err := isDir(target)
+	resolved, err := project.ForPath(target, shell.Git)
 	if err != nil {
-		return err
-	}
-
-	var proj project.Project
-	if isDir {
-		proj, err = project.ForDir(target)
-	} else {
-		proj, err = project.ForFile(target, shell.Git)
-	}
-
-	if err != nil {
+		if errors.Is(err, project.ErrInvalidPath) {
+			return err
+		}
 		return fmt.Errorf("could not edit %s: %w", target, err)
 	}
 
 	var command []string
-	if !isDir {
-		command = append(editorCmd, target)
+	if resolved.File != "" {
+		command = append(editorCmd, resolved.File)
 	}
 
-	return mux.Open(proj, command)
-}
-
-func isDir(path string) (bool, error) {
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		return false, project.ErrInvalidPath
-	}
-
-	return fileInfo.IsDir(), nil
+	return mux.Open(resolved.Project, command)
 }
 
 func Execute() {
