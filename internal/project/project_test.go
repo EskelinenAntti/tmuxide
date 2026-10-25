@@ -69,15 +69,28 @@ func TestForFile(t *testing.T) {
 }
 
 func TestForFileInvalidPath(t *testing.T) {
-	git := &gitStub{}
-	got, err := ForFile(filepath.Join(t.TempDir(), "missing"), git)
-	if !errors.Is(err, ErrInvalidPath) {
-		t.Fatalf("got %v, want %v", err, ErrInvalidPath)
+	root := t.TempDir()
+	file := filepath.Join(root, "file.txt")
+	if err := os.WriteFile(file, nil, 0644); err != nil {
+		t.Fatal(err)
 	}
-	if got != (Project{}) {
-		t.Fatalf("got %+v, want an empty project", got)
+	dangling := filepath.Join(root, "dangling")
+	if err := os.Symlink(filepath.Join(root, "missing"), dangling); err != nil {
+		t.Fatal(err)
 	}
-	if len(git.calls) != 0 {
-		t.Fatalf("git called for invalid path: %v", git.calls)
+	for _, target := range []string{filepath.Join(root, "missing"), filepath.Join(file, "child"), dangling} {
+		t.Run(filepath.Base(target), func(t *testing.T) {
+			git := &gitStub{}
+			got, err := ForFile(target, git)
+			if !errors.Is(err, ErrInvalidPath) {
+				t.Fatalf("got %v, want %v", err, ErrInvalidPath)
+			}
+			if got != (Project{}) {
+				t.Fatalf("got %+v, want an empty project", got)
+			}
+			if len(git.calls) != 0 {
+				t.Fatalf("git called for invalid path: %v", git.calls)
+			}
+		})
 	}
 }

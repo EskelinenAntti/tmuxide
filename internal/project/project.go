@@ -21,9 +21,13 @@ type Git interface {
 }
 
 func ForFile(file string, git Git) (Project, error) {
-	workingDir, err := dir(file)
+	fileInfo, err := os.Stat(file)
 	if err != nil {
-		return Project{}, err
+		return Project{}, ErrInvalidPath
+	}
+	workingDir := file
+	if !fileInfo.IsDir() {
+		workingDir = filepath.Dir(file)
 	}
 	if repository, err := git.RevParse(workingDir); err == nil {
 		workingDir = repository
@@ -48,19 +52,6 @@ func Name(path string) string {
 	basename := filepath.Base(path)
 	sessionPrefix := strings.ReplaceAll(basename, ".", "_")
 	return strings.Join([]string{sessionPrefix, hash(path)}, "-")
-}
-
-func dir(target string) (string, error) {
-	fileInfo, err := os.Stat(target)
-	if err != nil {
-		return "", ErrInvalidPath
-	}
-
-	if !fileInfo.IsDir() {
-		return filepath.Dir(target), nil
-	}
-
-	return target, nil
 }
 
 func hash(path string) string {
