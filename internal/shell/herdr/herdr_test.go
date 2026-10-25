@@ -178,6 +178,48 @@ func TestWorkspaceDirectoryMatching(t *testing.T) {
 	}
 }
 
+func TestExistingWorkspaceSelection(t *testing.T) {
+	const workspaces = `{"result":{"type":"workspace_list","workspaces":[{"workspace_id":"w2","label":"other"},{"workspace_id":"w1","label":"project"}]}}`
+	const panes = `{"result":{"type":"pane_list","panes":[{"workspace_id":"w1","cwd":"/project"},{"workspace_id":"w2","cwd":"/project"}]}}`
+	const missingID = `{"result":{"type":"workspace_list","workspaces":[{"label":"project"}]}}`
+	for _, tt := range []struct {
+		name    string
+		project project.Project
+		json    []string
+		id      string
+		wantErr string
+	}{
+		{"label takes priority", project.Project{Name: "project", WorkingDir: "/project"}, []string{workspaces}, "w1", ""},
+		{"workspace order takes priority over pane order", project.Project{Name: "project-hash", WorkingDir: "/project"}, []string{workspaces, panes}, "w2", ""},
+		{"empty working directory skips panes", project.Project{Name: "project-hash"}, []string{workspaces}, "", ""},
+		{"empty workspace list skips panes", project.Project{WorkingDir: "/project"}, []string{empty}, "", ""},
+		{"label match without id fails", project.Project{Name: "project", WorkingDir: "/project"}, []string{missingID}, "", "herdr workspace has no id"},
+		{"directory match without id fails", project.Project{Name: "project-hash", WorkingDir: "/project"}, []string{missingID, `{"result":{"type":"pane_list","panes":[{"cwd":"/project"}]}}`}, "", "herdr workspace has no id"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			runner := &spy.SpyRunner{Responses: responses(tt.json...)}
+			id, err := (Cmd{Runner: runner, Binary: "herdr"}).existingWorkspace(tt.project)
+			if tt.wantErr != "" {
+				if err == nil || err.Error() != tt.wantErr {
+					t.Fatalf("got error %v, want %q", err, tt.wantErr)
+				}
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			if id != tt.id {
+				t.Fatalf("got workspace %q, want %q", id, tt.id)
+			}
+			calls := [][]string{{"herdr", "workspace", "list"}}
+			if len(tt.json) == 2 {
+				calls = append(calls, []string{"herdr", "pane", "list"})
+			}
+			if diff := cmp.Diff(calls, runner.Calls); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}
+
 func TestFileInManuallyOpenedWorkspace(t *testing.T) {
 	t.Setenv("HERDR_ENV", "1")
 	runner := &spy.SpyRunner{Responses: responses(existing,

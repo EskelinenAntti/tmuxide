@@ -73,46 +73,50 @@ func (h Cmd) call(args ...string) (result, error) {
 	return *response.Result, nil
 }
 
-func (h Cmd) Open(project project.Project, command []string) error {
+func (h Cmd) existingWorkspace(project project.Project) (string, error) {
 	list, err := h.call("workspace", "list")
 	if err != nil {
-		return fmt.Errorf("cannot list workspaces; start a Herdr session first: %w", err)
+		return "", fmt.Errorf("cannot list workspaces; start a Herdr session first: %w", err)
 	}
 	if list.Type != "workspace_list" || list.Workspaces == nil {
-		return fmt.Errorf("invalid herdr workspace list response")
+		return "", fmt.Errorf("invalid herdr workspace list response")
 	}
-	var id string
 	for _, workspace := range list.Workspaces {
 		if workspace.Label == project.Name {
-			id = workspace.ID
-			if id == "" {
-				return fmt.Errorf("herdr workspace has no id")
+			if workspace.ID == "" {
+				return "", fmt.Errorf("herdr workspace has no id")
 			}
-			break
+			return workspace.ID, nil
 		}
 	}
-	if id == "" && len(list.Workspaces) > 0 && project.WorkingDir != "" {
-		panes, err := h.call("pane", "list")
-		if err != nil {
-			return err
-		}
-		if panes.Type != "pane_list" || panes.Panes == nil {
-			return fmt.Errorf("invalid herdr pane list response")
-		}
-		for _, workspace := range list.Workspaces {
-			for _, pane := range panes.Panes {
-				if pane.WorkspaceID == workspace.ID && pane.Cwd != "" && filepath.Clean(pane.Cwd) == filepath.Clean(project.WorkingDir) {
-					id = workspace.ID
-					if id == "" {
-						return fmt.Errorf("herdr workspace has no id")
-					}
-					break
+	if len(list.Workspaces) == 0 || project.WorkingDir == "" {
+		return "", nil
+	}
+	panes, err := h.call("pane", "list")
+	if err != nil {
+		return "", err
+	}
+	if panes.Type != "pane_list" || panes.Panes == nil {
+		return "", fmt.Errorf("invalid herdr pane list response")
+	}
+	workingDir := filepath.Clean(project.WorkingDir)
+	for _, workspace := range list.Workspaces {
+		for _, pane := range panes.Panes {
+			if pane.WorkspaceID == workspace.ID && pane.Cwd != "" && filepath.Clean(pane.Cwd) == workingDir {
+				if workspace.ID == "" {
+					return "", fmt.Errorf("herdr workspace has no id")
 				}
-			}
-			if id != "" {
-				break
+				return workspace.ID, nil
 			}
 		}
+	}
+	return "", nil
+}
+
+func (h Cmd) Open(project project.Project, command []string) error {
+	id, err := h.existingWorkspace(project)
+	if err != nil {
+		return err
 	}
 	var created result
 	if id == "" {
