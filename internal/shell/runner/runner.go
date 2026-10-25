@@ -9,17 +9,12 @@ import (
 
 var ErrCommandFailed = errors.New("command failed")
 
-type WriteCloser interface {
-	Close() error
-	Write(p []byte) (n int, err error)
-}
-
 type Runner interface {
 	Run(cmd *exec.Cmd) error
 }
 
 type Starter interface {
-	Start(cmd *exec.Cmd) (WriteCloser, error)
+	Start(cmd *exec.Cmd) (io.WriteCloser, error)
 }
 
 type CmdRunner struct{}
@@ -39,7 +34,7 @@ func commandError(cmd *exec.Cmd, err error) error {
 	return nil
 }
 
-func (c CmdRunner) Start(cmd *exec.Cmd) (WriteCloser, error) {
+func (c CmdRunner) Start(cmd *exec.Cmd) (io.WriteCloser, error) {
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
 		return nil, err

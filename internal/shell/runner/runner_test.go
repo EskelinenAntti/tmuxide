@@ -1,8 +1,10 @@
 package runner
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,7 +22,7 @@ func TestCommandFailures(t *testing.T) {
 			runner := CmdRunner{}
 			var err error
 			if start {
-				var writer WriteCloser
+				var writer io.WriteCloser
 				writer, err = runner.Start(cmd)
 				if writer != nil {
 					t.Fatal("failed start returned a writer")
@@ -74,6 +76,35 @@ func TestRunnerProcess(t *testing.T) {
 		os.Exit(0)
 	case "failure":
 		os.Exit(7)
+	case "echo":
+		if _, err := io.Copy(os.Stdout, os.Stdin); err != nil {
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+}
+
+func TestStartWriteClose(t *testing.T) {
+	cmd := exec.Command(os.Args[0], "-test.run=^TestRunnerProcess$")
+	cmd.Env = append(os.Environ(), "TMUXIDE_RUNNER_PROCESS=echo")
+	var output bytes.Buffer
+	cmd.Stdout = &output
+	var starter Starter = CmdRunner{}
+	writer, err := starter.Start(cmd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	const input = "candidate one\ncandidate two\n"
+	n, writeErr := io.WriteString(writer, input)
+	closeErr := writer.Close()
+	if writeErr != nil || n != len(input) {
+		t.Fatalf("wrote %d bytes: %v", n, writeErr)
+	}
+	if closeErr != nil {
+		t.Fatal(closeErr)
+	}
+	if output.String() != input {
+		t.Fatalf("got %q, want %q", output.String(), input)
 	}
 }
 

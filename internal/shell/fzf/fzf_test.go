@@ -82,10 +82,10 @@ func TestFzfNeedsOnlyStart(t *testing.T) {
 }
 
 type selectStarter struct {
-	start func(*exec.Cmd) (runner.WriteCloser, error)
+	start func(*exec.Cmd) (io.WriteCloser, error)
 }
 
-func (s selectStarter) Start(cmd *exec.Cmd) (runner.WriteCloser, error) {
+func (s selectStarter) Start(cmd *exec.Cmd) (io.WriteCloser, error) {
 	return s.start(cmd)
 }
 
@@ -124,7 +124,7 @@ func TestSelect(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			input := &selectionInput{err: tt.closeErr}
-			starter := selectStarter{start: func(cmd *exec.Cmd) (runner.WriteCloser, error) {
+			starter := selectStarter{start: func(cmd *exec.Cmd) (io.WriteCloser, error) {
 				if tt.startErr != nil {
 					return nil, tt.startErr
 				}

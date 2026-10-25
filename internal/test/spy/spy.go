@@ -1,9 +1,8 @@
 package spy
 
 import (
+	"io"
 	"os/exec"
-
-	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 )
 
 type RunFunc func(cmd *exec.Cmd) error
@@ -42,6 +41,6 @@ func (t *SpyRunner) Run(cmd *exec.Cmd) error {
 	return response.OnRun(cmd)
 }
 
-func (t *SpyRunner) Start(cmd *exec.Cmd) (runner.WriteCloser, error) {
+func (t *SpyRunner) Start(cmd *exec.Cmd) (io.WriteCloser, error) {
 	return FakeWriteCloser{}, t.Run(cmd)
 }
