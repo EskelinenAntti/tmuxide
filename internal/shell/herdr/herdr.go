@@ -90,15 +90,3 @@ func (h Cmd) Open(project project.Project, command []string) error {
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	return h.Run(cmd)
 }
-
-func (h Cmd) runInTab(tab commandTab, command []string) error {
-	if tab.paneID == "" || tab.tabID == "" {
-		return fmt.Errorf("herdr create response has no root pane or tab id")
-	}
-	// pane run is quiet on success, unlike the JSON-returning create APIs.
-	if _, err := h.output("pane", "run", tab.paneID, shellCommand(command)); err != nil {
-		return err
-	}
-	_, err := h.output("tab", "focus", tab.tabID)
-	return err
-}

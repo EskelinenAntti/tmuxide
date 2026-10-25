@@ -62,6 +62,18 @@ func (h Cmd) createTab(workspaceID, workingDir string) (commandTab, error) {
 	return created.commandTab(), nil
 }
 
+func (h Cmd) runInTab(tab commandTab, command []string) error {
+	if tab.paneID == "" || tab.tabID == "" {
+		return fmt.Errorf("herdr create response has no root pane or tab id")
+	}
+	// pane run is quiet on success, unlike the JSON-returning create APIs.
+	if _, err := h.output("pane", "run", tab.paneID, shellCommand(command)); err != nil {
+		return err
+	}
+	_, err := h.output("tab", "focus", tab.tabID)
+	return err
+}
+
 func (h Cmd) listWorkspaces() ([]workspace, error) {
 	list, err := h.call("workspace", "list")
 	if err != nil {

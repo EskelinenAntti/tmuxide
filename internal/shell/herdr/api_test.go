@@ -70,6 +70,55 @@ func TestCreateTab(t *testing.T) {
 	}
 }
 
+func TestRunInTab(t *testing.T) {
+	failure := errors.New("command failed")
+	for _, tt := range []struct {
+		name   string
+		tab    commandTab
+		failAt int
+		calls  int
+	}{
+		{"run then focus", commandTab{tabID: "w1:t2", paneID: "w1:p2"}, -1, 2},
+		{"missing pane", commandTab{tabID: "w1:t2"}, -1, 0},
+		{"missing tab", commandTab{paneID: "w1:p2"}, -1, 0},
+		{"missing both identifiers", commandTab{}, -1, 0},
+		{"run failure skips focus", commandTab{tabID: "w1:t2", paneID: "w1:p2"}, 0, 1},
+		{"focus failure", commandTab{tabID: "w1:t2", paneID: "w1:p2"}, 1, 2},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			runner := &spy.SpyRunner{}
+			if tt.failAt >= 0 {
+				runner.Responses = make([]spy.Response, tt.failAt+1)
+				runner.Responses[tt.failAt].OnRun = func(*exec.Cmd) error { return failure }
+			}
+			err := (Cmd{Runner: runner, Binary: "/custom/herdr"}).runInTab(tt.tab, []string{"nvim", "a'b"})
+			if tt.calls == 0 {
+				if err == nil || err.Error() != "herdr create response has no root pane or tab id" {
+					t.Fatalf("got error %v, want missing identifiers error", err)
+				}
+			} else if tt.failAt >= 0 {
+				if !errors.Is(err, failure) {
+					t.Fatalf("got error %v, want %v", err, failure)
+				}
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			want := [][]string{
+				{"/custom/herdr", "pane", "run", "w1:p2", "'nvim' 'a'\"'\"'b'"},
+				{"/custom/herdr", "tab", "focus", "w1:t2"},
+			}
+			if len(runner.Calls) != tt.calls {
+				t.Fatalf("got calls %v, want %d calls", runner.Calls, tt.calls)
+			}
+			if tt.calls > 0 {
+				if diff := cmp.Diff(want[:tt.calls], runner.Calls); diff != "" {
+					t.Fatal(diff)
+				}
+			}
+		})
+	}
+}
+
 func TestOutput(t *testing.T) {
 	failure := errors.New("command failed")
 	for _, tt := range []struct {
