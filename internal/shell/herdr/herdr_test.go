@@ -191,6 +191,9 @@ func TestExistingWorkspaceSelection(t *testing.T) {
 	}{
 		{"label takes priority", project.Project{Name: "project", WorkingDir: "/project"}, []string{workspaces}, "w1", ""},
 		{"workspace order takes priority over pane order", project.Project{Name: "project-hash", WorkingDir: "/project"}, []string{workspaces, panes}, "w2", ""},
+		{"normalizes project and pane directories", project.Project{Name: "project-hash", WorkingDir: "/project/sub/.."}, []string{workspaces, `{"result":{"type":"pane_list","panes":[{"workspace_id":"w1","cwd":"/project/"}]}}`}, "w1", ""},
+		{"ignores unknown workspace before valid match", project.Project{Name: "project-hash", WorkingDir: "/project"}, []string{workspaces, `{"result":{"type":"pane_list","panes":[{"workspace_id":"stale","cwd":"/project"},{"workspace_id":"w1","cwd":"/project"}]}}`}, "w1", ""},
+		{"empty pane directory does not match dot", project.Project{Name: "project-hash", WorkingDir: "."}, []string{workspaces, `{"result":{"type":"pane_list","panes":[{"workspace_id":"w2","cwd":""},{"workspace_id":"w1","cwd":"./"}]}}`}, "w1", ""},
 		{"empty working directory skips panes", project.Project{Name: "project-hash"}, []string{workspaces}, "", ""},
 		{"empty workspace list skips panes", project.Project{WorkingDir: "/project"}, []string{empty}, "", ""},
 		{"label match without id fails", project.Project{Name: "project", WorkingDir: "/project"}, []string{missingID}, "", "herdr workspace has no id"},

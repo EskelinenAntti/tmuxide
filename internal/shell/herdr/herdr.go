@@ -100,15 +100,20 @@ func (h Cmd) existingWorkspace(project project.Project) (string, error) {
 		return "", fmt.Errorf("invalid herdr pane list response")
 	}
 	workingDir := filepath.Clean(project.WorkingDir)
-	for _, workspace := range list.Workspaces {
-		for _, pane := range panes.Panes {
-			if pane.WorkspaceID == workspace.ID && pane.Cwd != "" && filepath.Clean(pane.Cwd) == workingDir {
-				if workspace.ID == "" {
-					return "", fmt.Errorf("herdr workspace has no id")
-				}
-				return workspace.ID, nil
-			}
+	matchingWorkspaces := make(map[string]bool)
+	for _, pane := range panes.Panes {
+		if pane.Cwd != "" && filepath.Clean(pane.Cwd) == workingDir {
+			matchingWorkspaces[pane.WorkspaceID] = true
 		}
+	}
+	for _, workspace := range list.Workspaces {
+		if !matchingWorkspaces[workspace.ID] {
+			continue
+		}
+		if workspace.ID == "" {
+			return "", fmt.Errorf("herdr workspace has no id")
+		}
+		return workspace.ID, nil
 	}
 	return "", nil
 }
