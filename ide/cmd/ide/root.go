@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
+	editorconfig "github.com/eskelinenantti/tmuxide/internal/editor"
 	"github.com/eskelinenantti/tmuxide/internal/multiplexer"
 	"github.com/eskelinenantti/tmuxide/internal/picker"
 	"github.com/eskelinenantti/tmuxide/internal/project"
@@ -48,9 +48,6 @@ Did not find %s, which is a required dependency for ide command.
 You can install %[1]s e.g. via homebrew by running:
 brew install %[1]s`
 
-var ErrEditorNotInstalled = errors.New("editor not installed")
-var ErrEditorEnvNotSet = errors.New("editor not configured")
-
 func Run(args []string, muxFlag string, runner shell.Runner, path path.ShellPath) error {
 	mux, err := multiplexer.Select(muxFlag, path, runner)
 	if err != nil {
@@ -61,7 +58,7 @@ func Run(args []string, muxFlag string, runner shell.Runner, path path.ShellPath
 		return err
 	}
 
-	editorCmd, err := editorCmd(path)
+	editorCmd, err := editorconfig.Command(path)
 	if err != nil {
 		return err
 	}
@@ -102,7 +99,7 @@ func Execute() {
 		return
 	}
 
-	if errors.Is(err, ErrEditorEnvNotSet) {
+	if errors.Is(err, editorconfig.ErrNotConfigured) {
 		rootCmd.PrintErrln(helpNoEditorConfigured)
 	}
 
@@ -112,19 +109,6 @@ func Execute() {
 	}
 
 	os.Exit(1)
-}
-
-func editorCmd(path path.ShellPath) ([]string, error) {
-	editorCmd := strings.Fields(os.Getenv("EDITOR"))
-
-	if len(editorCmd) == 0 {
-		return nil, ErrEditorEnvNotSet
-	}
-
-	if !path.Contains(editorCmd[0]) {
-		return nil, ErrEditorNotInstalled
-	}
-	return editorCmd, nil
 }
 
 func init() {

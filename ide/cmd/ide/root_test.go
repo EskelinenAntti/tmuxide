@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	editorconfig "github.com/eskelinenantti/tmuxide/internal/editor"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/eskelinenantti/tmuxide/internal/test/mock"
@@ -338,8 +339,8 @@ func TestEditorNotSet(t *testing.T) {
 
 	err := Run([]string{dir}, "auto", spyRunner, mock.Path{})
 
-	if !errors.Is(err, ErrEditorEnvNotSet) {
-		t.Fatalf("got=%v, want=%v", err, ErrEditorEnvNotSet)
+	if !errors.Is(err, editorconfig.ErrNotConfigured) {
+		t.Fatalf("got=%v, want=%v", err, editorconfig.ErrNotConfigured)
 	}
 	requireCalls(t, nil, spyRunner.Calls)
 }
@@ -355,8 +356,8 @@ func TestEditorNotInstalled(t *testing.T) {
 	spyRunner := &spy.SpyRunner{}
 
 	err := Run([]string{dir}, "auto", spyRunner, &mockPath)
-	if !errors.Is(err, ErrEditorNotInstalled) {
-		t.Fatalf("got=%v, want=%v", err, ErrEditorNotInstalled)
+	if !errors.Is(err, editorconfig.ErrNotInstalled) {
+		t.Fatalf("got=%v, want=%v", err, editorconfig.ErrNotInstalled)
 	}
 	requireCalls(t, nil, spyRunner.Calls)
 }
