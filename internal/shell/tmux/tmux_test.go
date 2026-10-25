@@ -42,7 +42,7 @@ func TestOpen(t *testing.T) {
 			responses: []spy.Response{{OnRun: func(*exec.Cmd) error { return failure }}},
 			want: [][]string{
 				{"tmux", "has-session", "-t", "project:"},
-				{"tmux", "new-session", "-c", "/project", "-d", "-s", "project"},
+				{"tmux", "new-session", "-d", "-s", "project", "-c", "/project"},
 				{"tmux", "switch-client", "-t", "project:"},
 			},
 		},
@@ -52,7 +52,7 @@ func TestOpen(t *testing.T) {
 			responses: []spy.Response{{OnRun: func(*exec.Cmd) error { return failure }}},
 			want: [][]string{
 				{"tmux", "has-session", "-t", "project:"},
-				{"tmux", "new-session", "-c", "/project", "-d", "-s", "project", "nvim", "a file"},
+				{"tmux", "new-session", "-d", "-s", "project", "-c", "/project", "nvim", "a file"},
 				{"tmux", "attach", "-t", "project:"},
 			},
 		},
@@ -64,9 +64,18 @@ func TestOpen(t *testing.T) {
 			},
 			want: [][]string{
 				{"tmux", "has-session", "-t", "project:"},
-				{"tmux", "new-session", "-c", "/project", "-d", "-s", "project"},
+				{"tmux", "new-session", "-d", "-s", "project", "-c", "/project"},
 			},
 			wantErr: failure,
+		},
+		{
+			name:    "open editor in existing session",
+			command: []string{"nvim", "a file"},
+			want: [][]string{
+				{"tmux", "has-session", "-t", "project:"},
+				{"tmux", "new-window", "-t", "project:", "-c", "/project", "nvim", "a file"},
+				{"tmux", "attach", "-t", "project:"},
+			},
 		},
 		{
 			name:      "window creation fails",
@@ -159,7 +168,7 @@ func TestCreationCommand(t *testing.T) {
 			name:    "create named session in directory",
 			project: project.Project{Name: "project", WorkingDir: "/a directory"},
 			command: []string{"nvim", "-R", "a file"},
-			want:    []string{"tmux", "new-session", "-c", "/a directory", "-d", "-s", "project", "nvim", "-R", "a file"},
+			want:    []string{"tmux", "new-session", "-d", "-s", "project", "-c", "/a directory", "nvim", "-R", "a file"},
 		},
 		{
 			name:    "create named session with default directory",
@@ -169,13 +178,13 @@ func TestCreationCommand(t *testing.T) {
 		{
 			name:    "create unnamed session in directory",
 			project: project.Project{WorkingDir: "/project"},
-			want:    []string{"tmux", "new-session", "-c", "/project", "-d"},
+			want:    []string{"tmux", "new-session", "-d", "-c", "/project"},
 		},
 		{
 			name:    "create unnamed session in directory with command",
 			project: project.Project{WorkingDir: "/a directory"},
 			command: []string{"nvim", "-R", "a file"},
-			want:    []string{"tmux", "new-session", "-c", "/a directory", "-d", "nvim", "-R", "a file"},
+			want:    []string{"tmux", "new-session", "-d", "-c", "/a directory", "nvim", "-R", "a file"},
 		},
 		{
 			name:          "create window in named session",
@@ -188,7 +197,7 @@ func TestCreationCommand(t *testing.T) {
 			name:    "session options precede option-like command arguments",
 			project: project.Project{Name: "project", WorkingDir: "/a directory"},
 			command: []string{"nvim", "-c", "set number", "-s", "a file"},
-			want:    []string{"tmux", "new-session", "-c", "/a directory", "-d", "-s", "project", "nvim", "-c", "set number", "-s", "a file"},
+			want:    []string{"tmux", "new-session", "-d", "-s", "project", "-c", "/a directory", "nvim", "-c", "set number", "-s", "a file"},
 		},
 		{
 			name:          "window options precede option-like command arguments",
@@ -243,7 +252,7 @@ func TestCreationCommandPreservesArguments(t *testing.T) {
 			original := append([]string(nil), command...)
 			p := project.Project{Name: "project", WorkingDir: "/a'b directory"}
 			cmd := creationCommand(p, command, exists)
-			want := []string{"tmux", "new-session", "-c", p.WorkingDir, "-d", "-s", p.Name}
+			want := []string{"tmux", "new-session", "-d", "-s", p.Name, "-c", p.WorkingDir}
 			if exists {
 				want = []string{"tmux", "new-window", "-t", p.Name + ":", "-c", p.WorkingDir}
 			}

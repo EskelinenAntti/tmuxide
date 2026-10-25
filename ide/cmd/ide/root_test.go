@@ -153,7 +153,7 @@ func TestFolderSessionWorkflow(t *testing.T) {
 				{"tmux", "has-session", "-t", session + ":"},
 			}
 			if !tt.sessionExists {
-				expectedCalls = append(expectedCalls, []string{"tmux", "new-session", "-c", dir, "-d", "-s", session})
+				expectedCalls = append(expectedCalls, []string{"tmux", "new-session", "-d", "-s", session, "-c", dir})
 			}
 			if tt.attached {
 				expectedCalls = append(expectedCalls, []string{"tmux", "switch-client", "-t", session + ":"})
@@ -232,7 +232,7 @@ func TestEditorSessionWorkflow(t *testing.T) {
 				)
 			} else {
 				expectedCalls = append(expectedCalls,
-					[]string{"tmux", "new-session", "-c", dir, "-d", "-s", session, editor, file},
+					[]string{"tmux", "new-session", "-d", "-s", session, "-c", dir, editor, file},
 				)
 			}
 			if tt.attached {
@@ -272,7 +272,7 @@ func TestRelativePathToFile(t *testing.T) {
 	expectedCalls := [][]string{
 		{"git", "-C", ".", "rev-parse", "--show-toplevel"},
 		{"tmux", "has-session", "-t", session + ":"},
-		{"tmux", "new-session", "-c", dir, "-d", "-s", session, editor, fileName},
+		{"tmux", "new-session", "-d", "-s", session, "-c", dir, editor, fileName},
 		{"tmux", "attach", "-t", session + ":"},
 	}
 
@@ -321,7 +321,7 @@ func TestFileInRepository(t *testing.T) {
 	expectedCalls := [][]string{
 		{"git", "-C", repository, "rev-parse", "--show-toplevel"},
 		{"tmux", "has-session", "-t", session + ":"},
-		{"tmux", "new-session", "-c", repository, "-d", "-s", session, editor, file},
+		{"tmux", "new-session", "-d", "-s", session, "-c", repository, editor, file},
 		{"tmux", "attach", "-t", session + ":"},
 	}
 
