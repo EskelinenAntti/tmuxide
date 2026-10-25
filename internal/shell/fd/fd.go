@@ -27,14 +27,13 @@ func (f Cmd) StreamCandidates(baseDir string, output io.Writer) error {
 	fdCmd.Stdout = output
 
 	err := f.Run(fdCmd)
-
 	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
-		if exitErr.ExitCode() == 1 {
-			// This error occurs if fzf closes the pipe before the command is completed
-			return nil
-		}
-		return err
+	if !errors.As(err, &exitErr) {
+		return nil
 	}
-	return nil
+	// This error occurs if fzf closes the pipe before the command is completed.
+	if exitErr.ExitCode() == 1 {
+		return nil
+	}
+	return err
 }
