@@ -79,12 +79,6 @@ func ForDir(directory string) (Project, error) {
 func Name(path string) string {
 	basename := filepath.Base(path)
 	sessionPrefix := strings.ReplaceAll(basename, ".", "_")
-	return strings.Join([]string{sessionPrefix, hash(path)}, "-")
-}
-
-func hash(path string) string {
-	hash := sha1.New()
-	hash.Write([]byte(path))
-	hashByteSlice := hash.Sum(nil)
-	return fmt.Sprintf("%x", hashByteSlice)[:4]
+	digest := sha1.Sum([]byte(path))
+	return fmt.Sprintf("%s-%x", sessionPrefix, digest[:2])
 }

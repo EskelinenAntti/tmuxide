@@ -18,6 +18,27 @@ func (g *gitStub) RevParse(cwd string) (string, error) {
 	return g.root, g.err
 }
 
+func TestName(t *testing.T) {
+	for _, tt := range []struct {
+		path string
+		want string
+	}{
+		{"/home/user/project", "project-b28d"},
+		{"/other/project", "project-6a86"},
+		{"/home/user/my.project", "my_project-4f89"},
+		{"relative/project", "project-7bef"},
+		{"/", "/-4209"},
+		{"", "_-da39"},
+		{"/home/user/プロジェクト", "プロジェクト-8b12"},
+	} {
+		t.Run(tt.path, func(t *testing.T) {
+			if got := Name(tt.path); got != tt.want {
+				t.Fatalf("Name(%q) = %q, want %q", tt.path, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestForFile(t *testing.T) {
 	root := t.TempDir()
 	directory := filepath.Join(root, "nested")
