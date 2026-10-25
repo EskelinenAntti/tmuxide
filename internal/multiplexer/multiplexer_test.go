@@ -16,7 +16,7 @@ import (
 )
 
 func TestSelect(t *testing.T) {
-	t.Setenv("HERDR_BIN_PATH", "/injected/herdr")
+	t.Setenv("HERDR_BIN_PATH", "/path/to/herdr")
 	for _, tt := range []struct {
 		name, mux, env, tmux string
 		herdr                bool
@@ -37,7 +37,7 @@ func TestSelect(t *testing.T) {
 			}
 			if tt.herdr {
 				cmd, ok := mux.(herdr.Cmd)
-				if !ok || cmd.Binary != "/injected/herdr" {
+				if !ok || cmd.Binary != "/path/to/herdr" {
 					t.Fatalf("got %#v", mux)
 				}
 			} else if _, ok := mux.(tmux.Cmd); !ok {
@@ -48,11 +48,11 @@ func TestSelect(t *testing.T) {
 }
 
 func TestInvalidOrMissingMultiplexer(t *testing.T) {
-	t.Setenv("HERDR_BIN_PATH", "/injected/herdr")
+	t.Setenv("HERDR_BIN_PATH", "/path/to/herdr")
 	for _, name := range []string{"tmux", "herdr"} {
-		_, err := Select(name, mock.Path{Missing: []string{name, "/injected/herdr"}}, &spy.SpyRunner{})
+		_, err := Select(name, mock.Path{Missing: []string{name, "/path/to/herdr"}}, &spy.SpyRunner{})
 		var missing shell.NotInstalledError
-		if !errors.As(err, &missing) || missing.Cmd != map[string]string{"tmux": "tmux", "herdr": "/injected/herdr"}[name] {
+		if !errors.As(err, &missing) || missing.Cmd != map[string]string{"tmux": "tmux", "herdr": "/path/to/herdr"}[name] {
 			t.Fatal(err)
 		}
 	}
@@ -61,7 +61,7 @@ func TestInvalidOrMissingMultiplexer(t *testing.T) {
 	}
 }
 
-func TestSelectHerdrUsesInjectedBinaryWithoutPATH(t *testing.T) {
+func TestSelectHerdrUsesConfiguredBinaryWithoutPATH(t *testing.T) {
 	binary := filepath.Join(t.TempDir(), "herdr with spaces")
 	if err := os.WriteFile(binary, []byte("#!/bin/sh\nexit 0\n"), 0755); err != nil {
 		t.Fatal(err)
@@ -76,22 +76,22 @@ func TestSelectHerdrUsesInjectedBinaryWithoutPATH(t *testing.T) {
 		}
 		cmd, ok := mux.(herdr.Cmd)
 		if !ok || cmd.Binary != binary {
-			t.Fatalf("got %#v, want injected binary %q", mux, binary)
+			t.Fatalf("got %#v, want configured binary %q", mux, binary)
 		}
 	}
 }
 
-func TestSelectHerdrReportsMissingInjectedBinary(t *testing.T) {
+func TestSelectHerdrReportsMissingConfiguredBinary(t *testing.T) {
 	binary := filepath.Join(t.TempDir(), "missing-herdr")
 	t.Setenv("HERDR_BIN_PATH", binary)
 	_, err := Select("herdr", path.Path{}, &spy.SpyRunner{})
 	var missing shell.NotInstalledError
 	if !errors.As(err, &missing) || missing.Cmd != binary {
-		t.Fatalf("got %v, want missing injected binary %q", err, binary)
+		t.Fatalf("got %v, want missing configured binary %q", err, binary)
 	}
 }
 
-func TestSelectHerdrRequiresInjectedBinary(t *testing.T) {
+func TestSelectHerdrRequiresConfiguredBinary(t *testing.T) {
 	t.Setenv("HERDR_BIN_PATH", "")
 	_, err := Select("herdr", mock.Path{}, &spy.SpyRunner{})
 	if err == nil || !strings.Contains(err.Error(), "HERDR_BIN_PATH is required") {

@@ -362,7 +362,7 @@ func TestEditorNotInstalled(t *testing.T) {
 }
 
 func TestHerdrFolderFromPrompt(t *testing.T) {
-	t.Setenv("HERDR_BIN_PATH", "/injected/herdr")
+	t.Setenv("HERDR_BIN_PATH", "/path/to/herdr")
 	t.Setenv("HERDR_ENV", "1")
 	t.Setenv("TMUX", "outer-tmux")
 	t.Setenv("EDITOR", editor)
@@ -381,14 +381,14 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 	requireCalls(t, [][]string{
 		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-		{"/injected/herdr", "workspace", "list"},
-		{"/injected/herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
-		{"/injected/herdr", "workspace", "focus", "w1"},
+		{"/path/to/herdr", "workspace", "list"},
+		{"/path/to/herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
+		{"/path/to/herdr", "workspace", "focus", "w1"},
 	}, runner.Calls)
 }
 
 func TestHerdrRelativeFileInRepository(t *testing.T) {
-	t.Setenv("HERDR_BIN_PATH", "/injected/herdr")
+	t.Setenv("HERDR_BIN_PATH", "/path/to/herdr")
 	t.Setenv("HERDR_ENV", "1")
 	t.Setenv("EDITOR", "editor -R")
 	dir := t.TempDir()
@@ -407,10 +407,10 @@ func TestHerdrRelativeFileInRepository(t *testing.T) {
 	requireNoError(t, Run([]string{"sub/file.txt"}, "auto", runner, mock.Path{Missing: []string{"tmux"}}))
 	requireCalls(t, [][]string{
 		{"git", "-C", "sub", "rev-parse", "--show-toplevel"},
-		{"/injected/herdr", "workspace", "list"},
-		{"/injected/herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
-		{"/injected/herdr", "pane", "run", "w1:p1", "'editor' '-R' 'sub/file.txt'"},
-		{"/injected/herdr", "tab", "focus", "w1:t1"},
-		{"/injected/herdr", "workspace", "focus", "w1"},
+		{"/path/to/herdr", "workspace", "list"},
+		{"/path/to/herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
+		{"/path/to/herdr", "pane", "run", "w1:p1", "'editor' '-R' 'sub/file.txt'"},
+		{"/path/to/herdr", "tab", "focus", "w1:t1"},
+		{"/path/to/herdr", "workspace", "focus", "w1"},
 	}, runner.Calls)
 }
