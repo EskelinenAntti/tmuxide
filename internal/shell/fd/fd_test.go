@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestFdUsesProvidedBaseDirectory(t *testing.T) {
+func TestStreamCandidatesUsesProvidedBaseDirectory(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	baseDir := t.TempDir()
 	var outputWasSet bool
@@ -17,7 +17,7 @@ func TestFdUsesProvidedBaseDirectory(t *testing.T) {
 		outputWasSet = cmd.Stdout == io.Discard
 		return nil
 	}}}}
-	if err := (Cmd{Runner: process}).Fd(baseDir, io.Discard); err != nil {
+	if err := (Cmd{Runner: process}).StreamCandidates(baseDir, io.Discard); err != nil {
 		t.Fatal(err)
 	}
 	want := [][]string{{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", baseDir}}

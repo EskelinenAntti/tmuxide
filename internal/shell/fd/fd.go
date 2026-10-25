@@ -12,7 +12,8 @@ type Cmd struct {
 	runner.Runner
 }
 
-func (f Cmd) Fd(baseDir string, output io.Writer) error {
+// StreamCandidates writes file and directory paths relative to baseDir to output.
+func (f Cmd) StreamCandidates(baseDir string, output io.Writer) error {
 	args := []string{
 		"--follow",
 		"--hidden",
