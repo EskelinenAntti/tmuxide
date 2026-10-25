@@ -1,0 +1,83 @@
+package project
+
+import (
+	"errors"
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+type gitStub struct {
+	root  string
+	err   error
+	calls []string
+}
+
+func (g *gitStub) RevParse(cwd string) (string, error) {
+	g.calls = append(g.calls, cwd)
+	return g.root, g.err
+}
+
+func TestForFile(t *testing.T) {
+	root := t.TempDir()
+	directory := filepath.Join(root, "nested")
+	if err := os.Mkdir(directory, 0755); err != nil {
+		t.Fatal(err)
+	}
+	file := filepath.Join(directory, "file.txt")
+	if err := os.WriteFile(file, nil, 0644); err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(root)
+
+	for _, tt := range []struct {
+		name   string
+		target string
+		cwd    string
+	}{
+		{"file", file, directory},
+		{"directory", directory, directory},
+		{"relative file", filepath.Join("nested", "file.txt"), "nested"},
+		{"relative directory", "nested", "nested"},
+	} {
+		for _, inRepository := range []bool{true, false} {
+			name := "outside repository"
+			if inRepository {
+				name = "inside repository"
+			}
+			t.Run(tt.name+"/"+name, func(t *testing.T) {
+				git := &gitStub{root: root}
+				wantDir := root
+				if !inRepository {
+					git.err = errors.New("not a repository")
+					wantDir = directory
+				}
+				got, err := ForFile(tt.target, git)
+				if err != nil {
+					t.Fatal(err)
+				}
+				want := Project{Name: Name(wantDir), WorkingDir: wantDir}
+				if got != want {
+					t.Fatalf("got %+v, want %+v", got, want)
+				}
+				if len(git.calls) != 1 || git.calls[0] != tt.cwd {
+					t.Fatalf("git calls = %v, want [%s]", git.calls, tt.cwd)
+				}
+			})
+		}
+	}
+}
+
+func TestForFileInvalidPath(t *testing.T) {
+	git := &gitStub{}
+	got, err := ForFile(filepath.Join(t.TempDir(), "missing"), git)
+	if !errors.Is(err, ErrInvalidPath) {
+		t.Fatalf("got %v, want %v", err, ErrInvalidPath)
+	}
+	if got != (Project{}) {
+		t.Fatalf("got %+v, want an empty project", got)
+	}
+	if len(git.calls) != 0 {
+		t.Fatalf("git called for invalid path: %v", git.calls)
+	}
+}
