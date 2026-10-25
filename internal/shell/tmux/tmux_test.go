@@ -17,7 +17,7 @@ func TestOpen(t *testing.T) {
 		name      string
 		attached  bool
 		command   []string
-		responses []spy.Response
+		responses []spy.RunFunc
 		want      [][]string
 		wantErr   error
 	}{
@@ -39,7 +39,7 @@ func TestOpen(t *testing.T) {
 		{
 			name:      "create session without command",
 			attached:  true,
-			responses: []spy.Response{{OnRun: func(*exec.Cmd) error { return failure }}},
+			responses: []spy.RunFunc{func(*exec.Cmd) error { return failure }},
 			want: [][]string{
 				{"tmux", "has-session", "-t", "project:"},
 				{"tmux", "new-session", "-d", "-s", "project", "-c", "/project"},
@@ -49,7 +49,7 @@ func TestOpen(t *testing.T) {
 		{
 			name:      "create session with command",
 			command:   []string{"nvim", "a file"},
-			responses: []spy.Response{{OnRun: func(*exec.Cmd) error { return failure }}},
+			responses: []spy.RunFunc{func(*exec.Cmd) error { return failure }},
 			want: [][]string{
 				{"tmux", "has-session", "-t", "project:"},
 				{"tmux", "new-session", "-d", "-s", "project", "-c", "/project", "nvim", "a file"},
@@ -58,9 +58,9 @@ func TestOpen(t *testing.T) {
 		},
 		{
 			name: "session creation fails",
-			responses: []spy.Response{
-				{OnRun: func(*exec.Cmd) error { return failure }},
-				{OnRun: func(*exec.Cmd) error { return failure }},
+			responses: []spy.RunFunc{
+				func(*exec.Cmd) error { return failure },
+				func(*exec.Cmd) error { return failure },
 			},
 			want: [][]string{
 				{"tmux", "has-session", "-t", "project:"},
@@ -80,7 +80,7 @@ func TestOpen(t *testing.T) {
 		{
 			name:      "window creation fails",
 			command:   []string{"nvim", "file"},
-			responses: []spy.Response{{}, {OnRun: func(*exec.Cmd) error { return failure }}},
+			responses: []spy.RunFunc{nil, func(*exec.Cmd) error { return failure }},
 			want: [][]string{
 				{"tmux", "has-session", "-t", "project:"},
 				{"tmux", "new-window", "-t", "project:", "-c", "/project", "nvim", "file"},
@@ -89,7 +89,7 @@ func TestOpen(t *testing.T) {
 		},
 		{
 			name:      "attach fails",
-			responses: []spy.Response{{}, {OnRun: func(*exec.Cmd) error { return failure }}},
+			responses: []spy.RunFunc{nil, func(*exec.Cmd) error { return failure }},
 			want: [][]string{
 				{"tmux", "has-session", "-t", "project:"},
 				{"tmux", "attach", "-t", "project:"},
@@ -99,7 +99,7 @@ func TestOpen(t *testing.T) {
 		{
 			name:      "switch fails",
 			attached:  true,
-			responses: []spy.Response{{}, {OnRun: func(*exec.Cmd) error { return failure }}},
+			responses: []spy.RunFunc{nil, func(*exec.Cmd) error { return failure }},
 			want: [][]string{
 				{"tmux", "has-session", "-t", "project:"},
 				{"tmux", "switch-client", "-t", "project:"},
@@ -273,12 +273,12 @@ func TestAttachUsesTerminalStreams(t *testing.T) {
 	if err := os.Unsetenv("TMUX"); err != nil {
 		t.Fatal(err)
 	}
-	runner := &spy.SpyRunner{Responses: []spy.Response{{}, {OnRun: func(cmd *exec.Cmd) error {
+	runner := &spy.SpyRunner{Responses: []spy.RunFunc{nil, func(cmd *exec.Cmd) error {
 		if cmd.Stdin != os.Stdin || cmd.Stdout != os.Stdout || cmd.Stderr != os.Stderr {
 			t.Error("attach must use the terminal's standard streams")
 		}
 		return nil
-	}}}}
+	}}}
 	if err := (Cmd{Runner: runner}).Open(project.Project{Name: "project", WorkingDir: "/project"}, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -290,7 +290,7 @@ func TestOpenOmitsEmptyProjectOptions(t *testing.T) {
 		runner := &spy.SpyRunner{}
 		wantCreate := []string{"tmux", "new-window", "nvim"}
 		if !exists {
-			runner.Responses = []spy.Response{{OnRun: func(*exec.Cmd) error { return errors.New("no session") }}}
+			runner.Responses = []spy.RunFunc{func(*exec.Cmd) error { return errors.New("no session") }}
 			wantCreate = []string{"tmux", "new-session", "-d", "nvim"}
 		}
 		if err := (Cmd{Runner: runner}).Open(project.Project{}, []string{"nvim"}); err != nil {

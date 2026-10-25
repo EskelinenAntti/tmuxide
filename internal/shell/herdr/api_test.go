@@ -112,8 +112,8 @@ func TestRunInTab(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			runner := &spy.SpyRunner{}
 			if tt.failAt >= 0 {
-				runner.Responses = make([]spy.Response, tt.failAt+1)
-				runner.Responses[tt.failAt].OnRun = func(*exec.Cmd) error { return failure }
+				runner.Responses = make([]spy.RunFunc, tt.failAt+1)
+				runner.Responses[tt.failAt] = func(*exec.Cmd) error { return failure }
 			}
 			err := (Cmd{Runner: runner, Binary: "/custom/herdr"}).runInTab(tt.tab, []string{"nvim", "a'b"})
 			if tt.calls == 0 {

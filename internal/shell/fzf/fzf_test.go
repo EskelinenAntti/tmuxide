@@ -62,12 +62,12 @@ func TestFzfNeedsOnlyStart(t *testing.T) {
 		{"failure", errors.New("start failed")},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			process := &spy.SpyRunner{Responses: []spy.Response{{OnRun: func(cmd *exec.Cmd) error {
+			process := &spy.SpyRunner{Responses: []spy.RunFunc{func(cmd *exec.Cmd) error {
 				if cmd.Stdout == nil || cmd.Stderr != os.Stderr {
 					t.Error("fzf must collect output and use terminal stderr")
 				}
 				return tt.err
-			}}}}
+			}}}
 			startOnly := struct{ runner.Starter }{process}
 			_, err := (Cmd{Starter: startOnly}).Select(func(io.Writer) error { return nil })
 			if !errors.Is(err, tt.err) {

@@ -36,9 +36,9 @@ func TestStreamCandidatesErrors(t *testing.T) {
 		{name: "non-exit error", err: errors.New("cannot start command")},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			process := &spy.SpyRunner{Responses: []spy.Response{{OnRun: func(*exec.Cmd) error {
+			process := &spy.SpyRunner{Responses: []spy.RunFunc{func(*exec.Cmd) error {
 				return tt.err
-			}}}}
+			}}}
 			err := (Cmd{Runner: process}).StreamCandidates("/project", io.Discard)
 			if !errors.Is(err, tt.want) {
 				t.Fatalf("got %v, want %v", err, tt.want)
@@ -54,10 +54,10 @@ func TestStreamCandidatesUsesProvidedBaseDirectory(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	baseDir := t.TempDir()
 	var outputWasSet bool
-	process := &spy.SpyRunner{Responses: []spy.Response{{OnRun: func(cmd *exec.Cmd) error {
+	process := &spy.SpyRunner{Responses: []spy.RunFunc{func(cmd *exec.Cmd) error {
 		outputWasSet = cmd.Stdout == io.Discard
 		return nil
-	}}}}
+	}}}
 	if err := (Cmd{Runner: process}).StreamCandidates(baseDir, io.Discard); err != nil {
 		t.Fatal(err)
 	}

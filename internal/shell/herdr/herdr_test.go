@@ -16,10 +16,10 @@ const created = `{"result":{"type":"workspace_created","workspace":{"workspace_i
 const tab = `{"result":{"type":"tab_created","tab":{"tab_id":"w1:t2"},"root_pane":{"pane_id":"w1:p2"}}}`
 const ok = `{"result":{"type":"ok"}}`
 
-func responses(json ...string) []spy.Response {
-	var result []spy.Response
+func responses(json ...string) []spy.RunFunc {
+	var result []spy.RunFunc
 	for _, text := range json {
-		result = append(result, spy.Response{OnRun: mock.WriteToStdout(text)})
+		result = append(result, mock.WriteToStdout(text))
 	}
 	return result
 }
@@ -135,7 +135,7 @@ func TestFailuresStopWorkflow(t *testing.T) {
 	} {
 		for i := range json {
 			runner := &spy.SpyRunner{Responses: responses(json...)}
-			runner.Responses[i] = spy.Response{OnRun: mock.SimulateError}
+			runner.Responses[i] = mock.SimulateError
 			err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{Name: "project"}, []string{"editor", "file"})
 			if err == nil || len(runner.Calls) != i+1 {
 				t.Fatalf("failure %d with %s: %v, %v", i, json[0], err, runner.Calls)
@@ -272,7 +272,7 @@ func TestPaneLookupFailuresDoNotCreateWorkspace(t *testing.T) {
 		}
 	}
 	runner := &spy.SpyRunner{Responses: responses(existing, "")}
-	runner.Responses[1] = spy.Response{OnRun: mock.SimulateError}
+	runner.Responses[1] = mock.SimulateError
 	err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{Name: "project-hash", WorkingDir: "/project"}, nil)
 	if err == nil || len(runner.Calls) != 2 {
 		t.Fatal(err, runner.Calls)
@@ -280,7 +280,7 @@ func TestPaneLookupFailuresDoNotCreateWorkspace(t *testing.T) {
 }
 
 func TestMissingServerDoesNotCreateWorkspace(t *testing.T) {
-	runner := &spy.SpyRunner{Responses: []spy.Response{{OnRun: mock.SimulateError}}}
+	runner := &spy.SpyRunner{Responses: []spy.RunFunc{mock.SimulateError}}
 	err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{}, nil)
 	if err == nil || !strings.Contains(err.Error(), "start a Herdr session first") || len(runner.Calls) != 1 {
 		t.Fatal(err, runner.Calls)

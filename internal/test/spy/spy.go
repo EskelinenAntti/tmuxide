@@ -7,13 +7,9 @@ import (
 
 type RunFunc func(cmd *exec.Cmd) error
 
-type Response struct {
-	OnRun RunFunc
-}
-
 type SpyRunner struct {
 	Calls     [][]string
-	Responses []Response
+	Responses []RunFunc
 }
 
 type FakeWriteCloser struct{}
@@ -35,10 +31,10 @@ func (t *SpyRunner) Run(cmd *exec.Cmd) error {
 
 	response := t.Responses[0]
 	t.Responses = t.Responses[1:]
-	if response.OnRun == nil {
+	if response == nil {
 		return nil
 	}
-	return response.OnRun(cmd)
+	return response(cmd)
 }
 
 func (t *SpyRunner) Start(cmd *exec.Cmd) (io.WriteCloser, error) {

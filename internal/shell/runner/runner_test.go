@@ -22,7 +22,7 @@ func TestRunInteractive(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			cmd := exec.Command("interactive", "argument")
-			runner := &spy.SpyRunner{Responses: []spy.Response{{OnRun: func(got *exec.Cmd) error {
+			runner := &spy.SpyRunner{Responses: []spy.RunFunc{func(got *exec.Cmd) error {
 				if got != cmd {
 					t.Fatal("runner received a different command")
 				}
@@ -30,7 +30,7 @@ func TestRunInteractive(t *testing.T) {
 					t.Fatal("command is not connected to the terminal's standard streams")
 				}
 				return wantErr
-			}}}}
+			}}}
 			if err := RunInteractive(runner, cmd); err != wantErr {
 				t.Fatalf("got %v, want %v", err, wantErr)
 			}

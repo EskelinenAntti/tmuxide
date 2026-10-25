@@ -87,8 +87,8 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 			}
 
 			spyRunner := &spy.SpyRunner{
-				Responses: []spy.Response{
-					{OnRun: mock.WriteToStdout(folder)},
+				Responses: []spy.RunFunc{
+					mock.WriteToStdout(folder),
 				},
 			}
 			err := Run([]string{}, "auto", spyRunner, mock.Path{})
@@ -143,7 +143,7 @@ func TestFolderSessionWorkflow(t *testing.T) {
 
 			spyRunner := &spy.SpyRunner{}
 			if !tt.sessionExists {
-				spyRunner.Responses = []spy.Response{{OnRun: mock.SimulateError}}
+				spyRunner.Responses = []spy.RunFunc{mock.SimulateError}
 			}
 
 			err := Run([]string{dir}, "auto", spyRunner, mock.Path{})
@@ -213,9 +213,9 @@ func TestEditorSessionWorkflow(t *testing.T) {
 			file := createFile(t, dir, "file.txt")
 			session := project.Name(dir)
 
-			responses := []spy.Response{{OnRun: mock.SimulateError}}
+			responses := []spy.RunFunc{mock.SimulateError}
 			if !tt.sessionExists {
-				responses = append(responses, spy.Response{OnRun: mock.SimulateError})
+				responses = append(responses, mock.SimulateError)
 			}
 			spyRunner := &spy.SpyRunner{Responses: responses}
 
@@ -260,9 +260,9 @@ func TestRelativePathToFile(t *testing.T) {
 	session := project.Name(dir)
 
 	spyRunner := &spy.SpyRunner{
-		Responses: []spy.Response{
-			{OnRun: mock.SimulateError},
-			{OnRun: mock.SimulateError},
+		Responses: []spy.RunFunc{
+			mock.SimulateError,
+			mock.SimulateError,
 		},
 	}
 
@@ -309,9 +309,9 @@ func TestFileInRepository(t *testing.T) {
 	session := project.Name(repository)
 
 	spyRunner := &spy.SpyRunner{
-		Responses: []spy.Response{
-			{OnRun: mock.WriteToStdout(repository)},
-			{OnRun: mock.SimulateError},
+		Responses: []spy.RunFunc{
+			mock.WriteToStdout(repository),
+			mock.SimulateError,
 		},
 	}
 
@@ -371,11 +371,11 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 	t.Setenv("HOME", home)
 	dir := filepath.Join(home, "project")
 	requireNoError(t, os.Mkdir(dir, 0755))
-	runner := &spy.SpyRunner{Responses: []spy.Response{
-		{OnRun: mock.WriteToStdout("project")}, {},
-		{OnRun: mock.WriteToStdout(`{"result":{"type":"workspace_list","workspaces":[]}}`)},
-		{OnRun: mock.WriteToStdout(`{"result":{"workspace":{"workspace_id":"w1"}}}`)},
-		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
+	runner := &spy.SpyRunner{Responses: []spy.RunFunc{
+		mock.WriteToStdout("project"), nil,
+		mock.WriteToStdout(`{"result":{"type":"workspace_list","workspaces":[]}}`),
+		mock.WriteToStdout(`{"result":{"workspace":{"workspace_id":"w1"}}}`),
+		mock.WriteToStdout(`{"result":{"type":"ok"}}`),
 	}}
 	err := Run(nil, "auto", runner, mock.Path{Missing: []string{"tmux"}})
 	requireNoError(t, err)
@@ -397,13 +397,13 @@ func TestHerdrRelativeFileInRepository(t *testing.T) {
 	requireNoError(t, os.Mkdir(subdir, 0755))
 	createFile(t, subdir, "file.txt")
 	t.Chdir(dir)
-	runner := &spy.SpyRunner{Responses: []spy.Response{
-		{OnRun: mock.WriteToStdout(dir)},
-		{OnRun: mock.WriteToStdout(`{"result":{"type":"workspace_list","workspaces":[]}}`)},
-		{OnRun: mock.WriteToStdout(`{"result":{"workspace":{"workspace_id":"w1"},"tab":{"tab_id":"w1:t1"},"root_pane":{"pane_id":"w1:p1"}}}`)},
-		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
-		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
-		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
+	runner := &spy.SpyRunner{Responses: []spy.RunFunc{
+		mock.WriteToStdout(dir),
+		mock.WriteToStdout(`{"result":{"type":"workspace_list","workspaces":[]}}`),
+		mock.WriteToStdout(`{"result":{"workspace":{"workspace_id":"w1"},"tab":{"tab_id":"w1:t1"},"root_pane":{"pane_id":"w1:p1"}}}`),
+		mock.WriteToStdout(`{"result":{"type":"ok"}}`),
+		mock.WriteToStdout(`{"result":{"type":"ok"}}`),
+		mock.WriteToStdout(`{"result":{"type":"ok"}}`),
 	}}
 	requireNoError(t, Run([]string{"sub/file.txt"}, "auto", runner, mock.Path{Missing: []string{"tmux"}}))
 	requireCalls(t, [][]string{

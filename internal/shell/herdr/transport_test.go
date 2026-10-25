@@ -21,11 +21,11 @@ func TestOutput(t *testing.T) {
 		{"failure", failure},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			runner := &spy.SpyRunner{Responses: []spy.Response{{OnRun: func(cmd *exec.Cmd) error {
+			runner := &spy.SpyRunner{Responses: []spy.RunFunc{func(cmd *exec.Cmd) error {
 				_, _ = cmd.Stdout.Write([]byte("response\n"))
 				_, _ = cmd.Stderr.Write([]byte("  diagnostic\n"))
 				return tt.err
-			}}}}
+			}}}
 			output, err := (Cmd{Runner: runner, Binary: "/custom/herdr"}).output("workspace", "list")
 			if tt.err == nil {
 				if err != nil || string(output) != "response\n" {
