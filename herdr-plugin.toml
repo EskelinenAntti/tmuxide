@@ -18,6 +18,4 @@ command = ["/bin/sh", "-c", 'exec "${HERDR_BIN_PATH:?HERDR_BIN_PATH is required}
 id = "picker"
 title = "Open project or file"
 placement = "popup"
-width = "80%"
-height = "70%"
-command = ["./bin/ide", "--mux", "herdr"]
+command = ["/bin/sh", "./herdr.sh"]
