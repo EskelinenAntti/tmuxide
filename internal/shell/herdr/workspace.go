@@ -61,7 +61,10 @@ func workspaceID(workspaces []workspace, matches func(workspace) bool) (string, 
 }
 
 func (h Cmd) listWorkspaces() ([]workspace, error) {
-	list, err := h.call("workspace", "list")
+	list, err := call[struct {
+		Type       string      `json:"type"`
+		Workspaces []workspace `json:"workspaces"`
+	}](h, "workspace", "list")
 	if err != nil {
 		return nil, fmt.Errorf("cannot list workspaces; start a Herdr session first: %w", err)
 	}
@@ -72,7 +75,10 @@ func (h Cmd) listWorkspaces() ([]workspace, error) {
 }
 
 func (h Cmd) listPanes() ([]pane, error) {
-	list, err := h.call("pane", "list")
+	list, err := call[struct {
+		Type  string `json:"type"`
+		Panes []pane `json:"panes"`
+	}](h, "pane", "list")
 	if err != nil {
 		return nil, err
 	}

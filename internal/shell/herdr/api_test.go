@@ -150,22 +150,27 @@ func TestOutput(t *testing.T) {
 }
 
 func TestCall(t *testing.T) {
+	type result struct {
+		Value string `json:"value"`
+	}
 	for _, tt := range []struct {
 		name string
 		json string
 		want result
 		err  string
 	}{
-		{"result", `{"result":{"type":"workspace_created","workspace":{"workspace_id":"w1"}}}`, result{Type: "workspace_created", Workspace: workspace{ID: "w1"}}, ""},
+		{"result", `{"result":{"value":"decoded"}}`, result{Value: "decoded"}, ""},
+		{"unknown fields", `{"result":{"value":"decoded","unknown":true}}`, result{Value: "decoded"}, ""},
 		{"empty result", `{"result":{}}`, result{}, ""},
 		{"missing result", `{}`, result{}, "herdr response has no result"},
 		{"null result", `{"result":null}`, result{}, "herdr response has no result"},
 		{"API error takes priority", `{"result":{},"error":{"code":"failed","message":"reason"}}`, result{}, "herdr: failed: reason"},
 		{"invalid JSON", `not json`, result{}, "decode herdr response:"},
+		{"invalid result type", `{"result":{"value":123}}`, result{}, "decode herdr response:"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			runner := &spy.SpyRunner{Responses: responses(tt.json)}
-			got, err := (Cmd{Runner: runner, Binary: "herdr"}).call("workspace", "create")
+			got, err := call[result](Cmd{Runner: runner, Binary: "herdr"}, "workspace", "create")
 			if tt.err == "" {
 				if err != nil {
 					t.Fatal(err)
@@ -177,6 +182,12 @@ func TestCall(t *testing.T) {
 				var syntaxError *json.SyntaxError
 				if !errors.As(err, &syntaxError) {
 					t.Fatalf("JSON error not preserved: %v", err)
+				}
+			}
+			if tt.name == "invalid result type" {
+				var typeError *json.UnmarshalTypeError
+				if !errors.As(err, &typeError) {
+					t.Fatalf("JSON type error not preserved: %v", err)
 				}
 			}
 			if diff := cmp.Diff(tt.want, got); diff != "" {

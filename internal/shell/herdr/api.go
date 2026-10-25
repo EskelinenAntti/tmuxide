@@ -11,12 +11,8 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/project"
 )
 
-type result struct {
-	Type       string      `json:"type"`
-	Workspaces []workspace `json:"workspaces"`
-	Workspace  workspace   `json:"workspace"`
-	Panes      []pane      `json:"panes"`
-	Tab        struct {
+type commandTabResult struct {
+	Tab struct {
 		ID string `json:"tab_id"`
 	} `json:"tab"`
 	RootPane struct {
@@ -29,12 +25,15 @@ type commandTab struct {
 	paneID string
 }
 
-func (r result) commandTab() commandTab {
+func (r commandTabResult) commandTab() commandTab {
 	return commandTab{tabID: r.Tab.ID, paneID: r.RootPane.ID}
 }
 
 func (h Cmd) createWorkspace(project project.Project) (string, commandTab, error) {
-	created, err := h.call("workspace", "create", "--cwd", project.WorkingDir, "--label", filepath.Base(project.WorkingDir), "--no-focus")
+	created, err := call[struct {
+		commandTabResult
+		Workspace workspace `json:"workspace"`
+	}](h, "workspace", "create", "--cwd", project.WorkingDir, "--label", filepath.Base(project.WorkingDir), "--no-focus")
 	if err != nil {
 		return "", commandTab{}, err
 	}
@@ -45,7 +44,7 @@ func (h Cmd) createWorkspace(project project.Project) (string, commandTab, error
 }
 
 func (h Cmd) createTab(workspaceID, workingDir string) (commandTab, error) {
-	created, err := h.call("tab", "create", "--workspace", workspaceID, "--cwd", workingDir, "--no-focus")
+	created, err := call[commandTabResult](h, "tab", "create", "--workspace", workspaceID, "--cwd", workingDir, "--no-focus")
 	if err != nil {
 		return commandTab{}, err
 	}
@@ -74,26 +73,27 @@ func (h Cmd) output(args ...string) ([]byte, error) {
 	return stdout.Bytes(), nil
 }
 
-func (h Cmd) call(args ...string) (result, error) {
+func call[T any](h Cmd, args ...string) (T, error) {
+	var zero T
 	stdout, err := h.output(args...)
 	if err != nil {
-		return result{}, err
+		return zero, err
 	}
 	var response struct {
-		Result *result `json:"result"`
+		Result *T `json:"result"`
 		Error  *struct {
 			Code    string `json:"code"`
 			Message string `json:"message"`
 		} `json:"error"`
 	}
 	if err := json.Unmarshal(stdout, &response); err != nil {
-		return result{}, fmt.Errorf("decode herdr response: %w", err)
+		return zero, fmt.Errorf("decode herdr response: %w", err)
 	}
 	if response.Error != nil {
-		return result{}, fmt.Errorf("herdr: %s: %s", response.Error.Code, response.Error.Message)
+		return zero, fmt.Errorf("herdr: %s: %s", response.Error.Code, response.Error.Message)
 	}
 	if response.Result == nil {
-		return result{}, fmt.Errorf("herdr response has no result")
+		return zero, fmt.Errorf("herdr response has no result")
 	}
 	return *response.Result, nil
 }
