@@ -147,7 +147,7 @@ func (h Cmd) Open(project project.Project, command []string) error {
 	if _, err := h.output("workspace", "focus", id); err != nil {
 		return err
 	}
-	if os.Getenv("HERDR_ENV") == "1" {
+	if InSession() {
 		return nil
 	}
 	cmd := exec.Command(h.Binary)

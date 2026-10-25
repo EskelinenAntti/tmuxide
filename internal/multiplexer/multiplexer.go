@@ -19,7 +19,7 @@ type Multiplexer interface {
 func Select(name string, path path.ShellPath, runner runner.Runner) (Multiplexer, error) {
 	if name == "auto" {
 		name = "tmux"
-		if os.Getenv("HERDR_ENV") == "1" {
+		if herdr.InSession() {
 			name = "herdr"
 		}
 	}
