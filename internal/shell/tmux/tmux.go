@@ -34,21 +34,23 @@ func creationCommand(project project.Project, command []string, sessionExists bo
 		return nil
 	}
 
-	var cmd *exec.Cmd
-	if sessionExists {
-		cmd = sessionCommand("new-window", project.Name)
-	} else {
-		cmd = exec.Command("tmux", "new-session")
+	var directoryArgs []string
+	if project.WorkingDir != "" {
+		directoryArgs = []string{"-c", project.WorkingDir}
 	}
 
-	if project.WorkingDir != "" {
-		cmd.Args = append(cmd.Args, "-c", project.WorkingDir)
+	if sessionExists {
+		cmd := sessionCommand("new-window", project.Name)
+		cmd.Args = append(cmd.Args, directoryArgs...)
+		cmd.Args = append(cmd.Args, command...)
+		return cmd
 	}
-	if !sessionExists {
-		cmd.Args = append(cmd.Args, "-d")
-		if project.Name != "" {
-			cmd.Args = append(cmd.Args, "-s", project.Name)
-		}
+
+	cmd := exec.Command("tmux", "new-session")
+	cmd.Args = append(cmd.Args, directoryArgs...)
+	cmd.Args = append(cmd.Args, "-d")
+	if project.Name != "" {
+		cmd.Args = append(cmd.Args, "-s", project.Name)
 	}
 	cmd.Args = append(cmd.Args, command...)
 	return cmd
