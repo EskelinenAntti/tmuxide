@@ -82,8 +82,7 @@ func TestCommandSuccess(t *testing.T) {
 			name = "Start"
 		}
 		t.Run(name, func(t *testing.T) {
-			cmd := exec.Command(os.Args[0], "-test.run=^TestRunnerProcess$")
-			cmd.Env = append(os.Environ(), "TMUXIDE_RUNNER_PROCESS=1")
+			cmd := runnerProcess("1")
 			runner := CmdRunner{}
 			if start {
 				writer, err := runner.Start(cmd)
@@ -98,6 +97,12 @@ func TestCommandSuccess(t *testing.T) {
 			}
 		})
 	}
+}
+
+func runnerProcess(mode string) *exec.Cmd {
+	cmd := exec.Command(os.Args[0], "-test.run=^TestRunnerProcess$")
+	cmd.Env = append(os.Environ(), "TMUXIDE_RUNNER_PROCESS="+mode)
+	return cmd
 }
 
 func TestRunnerProcess(t *testing.T) {
@@ -115,8 +120,7 @@ func TestRunnerProcess(t *testing.T) {
 }
 
 func TestStartWriteClose(t *testing.T) {
-	cmd := exec.Command(os.Args[0], "-test.run=^TestRunnerProcess$")
-	cmd.Env = append(os.Environ(), "TMUXIDE_RUNNER_PROCESS=echo")
+	cmd := runnerProcess("echo")
 	var output bytes.Buffer
 	cmd.Stdout = &output
 	var starter Starter = CmdRunner{}
@@ -139,8 +143,7 @@ func TestStartWriteClose(t *testing.T) {
 }
 
 func TestRunExitFailure(t *testing.T) {
-	cmd := exec.Command(os.Args[0], "-test.run=^TestRunnerProcess$")
-	cmd.Env = append(os.Environ(), "TMUXIDE_RUNNER_PROCESS=failure")
+	cmd := runnerProcess("failure")
 	err := (CmdRunner{}).Run(cmd)
 	var exitErr *exec.ExitError
 	if !errors.Is(err, ErrCommandFailed) || !errors.As(err, &exitErr) {
@@ -152,8 +155,7 @@ func TestRunExitFailure(t *testing.T) {
 }
 
 func TestStartCloseExitFailure(t *testing.T) {
-	cmd := exec.Command(os.Args[0], "-test.run=^TestRunnerProcess$")
-	cmd.Env = append(os.Environ(), "TMUXIDE_RUNNER_PROCESS=failure")
+	cmd := runnerProcess("failure")
 	writer, err := (CmdRunner{}).Start(cmd)
 	if err != nil {
 		t.Fatal(err)
@@ -166,8 +168,7 @@ func TestStartCloseExitFailure(t *testing.T) {
 }
 
 func TestWriteAfterClose(t *testing.T) {
-	cmd := exec.Command(os.Args[0], "-test.run=^TestRunnerProcess$")
-	cmd.Env = append(os.Environ(), "TMUXIDE_RUNNER_PROCESS=echo")
+	cmd := runnerProcess("echo")
 	writer, err := (CmdRunner{}).Start(cmd)
 	if err != nil {
 		t.Fatal(err)
