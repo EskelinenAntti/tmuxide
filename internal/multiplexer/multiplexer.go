@@ -18,13 +18,9 @@ type Multiplexer interface {
 
 func Select(name string, path path.ShellPath, runner runner.Runner) (Multiplexer, error) {
 	if name == "auto" {
-		switch {
-		case os.Getenv("HERDR_ENV") == "1":
+		name = "tmux"
+		if os.Getenv("HERDR_ENV") == "1" {
 			name = "herdr"
-		case os.Getenv("TMUX") != "":
-			name = "tmux"
-		default:
-			name = "tmux"
 		}
 	}
 	var mux Multiplexer

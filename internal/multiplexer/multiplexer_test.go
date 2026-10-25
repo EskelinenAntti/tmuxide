@@ -23,9 +23,13 @@ func TestSelect(t *testing.T) {
 	}{
 		{"default", "auto", "", "", false},
 		{"inside tmux", "auto", "", "tmux", false},
+		{"inactive herdr", "auto", "0", "", false},
+		{"inactive herdr inside tmux", "auto", "0", "tmux", false},
+		{"noncanonical herdr flag", "auto", "true", "", false},
 		{"inside herdr", "auto", "1", "", true},
 		{"herdr inside tmux", "auto", "1", "outer-tmux", true},
 		{"explicit tmux", "tmux", "1", "", false},
+		{"explicit tmux inside nested hosts", "tmux", "1", "outer-tmux", false},
 		{"explicit herdr", "herdr", "", "tmux", true},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
