@@ -132,6 +132,11 @@ func TestCreationCommand(t *testing.T) {
 			sessionExists: true,
 		},
 		{
+			name:          "reuse named session without creating a window",
+			project:       project.Project{Name: "project", WorkingDir: "/a directory"},
+			sessionExists: true,
+		},
+		{
 			name: "create default session without command",
 			want: []string{"tmux", "new-session", "-d"},
 		},
@@ -163,6 +168,20 @@ func TestCreationCommand(t *testing.T) {
 			command:       []string{"nvim"},
 			sessionExists: true,
 			want:          []string{"tmux", "new-window", "nvim"},
+		},
+		{
+			name:          "create window in named session with default directory",
+			project:       project.Project{Name: "project"},
+			command:       []string{"nvim"},
+			sessionExists: true,
+			want:          []string{"tmux", "new-window", "-t", "project:", "nvim"},
+		},
+		{
+			name:          "create window in default session with directory",
+			project:       project.Project{WorkingDir: "/a directory"},
+			command:       []string{"nvim", "a file"},
+			sessionExists: true,
+			want:          []string{"tmux", "new-window", "-c", "/a directory", "nvim", "a file"},
 		},
 	}
 	for _, tt := range tests {
