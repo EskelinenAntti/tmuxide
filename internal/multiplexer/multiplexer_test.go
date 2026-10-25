@@ -10,6 +10,7 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/eskelinenantti/tmuxide/internal/shell/herdr"
 	"github.com/eskelinenantti/tmuxide/internal/shell/path"
+	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 	"github.com/eskelinenantti/tmuxide/internal/shell/tmux"
 	"github.com/eskelinenantti/tmuxide/internal/test/mock"
 	"github.com/eskelinenantti/tmuxide/internal/test/spy"
@@ -35,7 +36,8 @@ func TestSelect(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("HERDR_ENV", tt.env)
 			t.Setenv("TMUX", tt.tmux)
-			mux, err := Select(tt.mux, mock.Path{}, &spy.SpyRunner{})
+			runOnly := struct{ runner.Runner }{&spy.SpyRunner{}}
+			mux, err := Select(tt.mux, mock.Path{}, runOnly)
 			if err != nil {
 				t.Fatal(err)
 			}

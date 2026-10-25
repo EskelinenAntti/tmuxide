@@ -32,7 +32,13 @@ type Shell struct {
 	Git git.Cmd
 }
 
-func Init(path path.ShellPath, runner runner.Runner) (Shell, error) {
+// Runner provides both command capabilities needed to initialize the shell.
+type Runner interface {
+	runner.Runner
+	runner.Starter
+}
+
+func Init(path path.ShellPath, runner Runner) (Shell, error) {
 	for _, dependency := range dependencies {
 		if err := assertInstalled(dependency, path); err != nil {
 			return Shell{}, err
@@ -41,7 +47,7 @@ func Init(path path.ShellPath, runner runner.Runner) (Shell, error) {
 
 	return Shell{
 		Fd:  fd.Cmd{Runner: runner},
-		Fzf: fzf.Cmd{Runner: runner},
+		Fzf: fzf.Cmd{Starter: runner},
 		Git: git.Cmd{Runner: runner},
 	}, nil
 }

@@ -16,6 +16,9 @@ type WriteCloser interface {
 
 type Runner interface {
 	Run(cmd *exec.Cmd) error
+}
+
+type Starter interface {
 	Start(cmd *exec.Cmd) (WriteCloser, error)
 }
 

@@ -51,7 +51,7 @@ brew install %[1]s`
 var ErrEditorNotInstalled = errors.New("editor not installed")
 var ErrEditorEnvNotSet = errors.New("editor not configured")
 
-func Run(args []string, muxFlag string, runner runner.Runner, path path.ShellPath) error {
+func Run(args []string, muxFlag string, runner shell.Runner, path path.ShellPath) error {
 	mux, err := multiplexer.Select(muxFlag, path, runner)
 	if err != nil {
 		return err

@@ -9,7 +9,7 @@ import (
 )
 
 type Cmd struct {
-	runner.Runner
+	runner.Starter
 }
 
 func (f Cmd) Fzf(output io.Writer) (runner.WriteCloser, error) {
