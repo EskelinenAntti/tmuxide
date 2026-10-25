@@ -40,8 +40,8 @@ type Runner interface {
 
 func Init(path path.ShellPath, runner Runner) (Shell, error) {
 	for _, dependency := range dependencies {
-		if err := assertInstalled(dependency, path); err != nil {
-			return Shell{}, err
+		if !path.Contains(dependency) {
+			return Shell{}, NotInstalledError{Cmd: dependency}
 		}
 	}
 
@@ -50,11 +50,4 @@ func Init(path path.ShellPath, runner Runner) (Shell, error) {
 		Fzf: fzf.Cmd{Starter: runner},
 		Git: git.Cmd{Runner: runner},
 	}, nil
-}
-
-func assertInstalled(command string, path path.ShellPath) error {
-	if !path.Contains(command) {
-		return NotInstalledError{Cmd: command}
-	}
-	return nil
 }
