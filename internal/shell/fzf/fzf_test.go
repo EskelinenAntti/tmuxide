@@ -1,12 +1,13 @@
 package fzf
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
@@ -29,15 +30,15 @@ func TestIsCancelled(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := code == 130
-			if got := IsCancelled(err); got != want {
+			if got := isCancelled(err); got != want {
 				t.Fatalf("IsCancelled(%v) = %v, want %v", err, got, want)
 			}
-			if err != nil && IsCancelled(fmt.Errorf("command failed: %w", err)) != want {
+			if err != nil && isCancelled(fmt.Errorf("command failed: %w", err)) != want {
 				t.Fatal("wrapping changed cancellation detection")
 			}
 		})
 	}
-	if IsCancelled(errors.New("exit status 130")) {
+	if isCancelled(errors.New("exit status 130")) {
 		t.Fatal("an ordinary error is not cancellation")
 	}
 }
@@ -61,24 +62,100 @@ func TestFzfNeedsOnlyStart(t *testing.T) {
 		{"failure", errors.New("start failed")},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			var output bytes.Buffer
 			process := &spy.SpyRunner{Responses: []spy.Response{{OnRun: func(cmd *exec.Cmd) error {
-				if cmd.Stdout != &output || cmd.Stderr != os.Stderr {
-					t.Error("fzf must use the supplied output and terminal stderr")
+				if cmd.Stdout == nil || cmd.Stderr != os.Stderr {
+					t.Error("fzf must collect output and use terminal stderr")
 				}
 				return tt.err
 			}}}}
 			startOnly := struct{ runner.Starter }{process}
-			writer, err := (Cmd{Starter: startOnly}).Fzf(&output)
+			_, err := (Cmd{Starter: startOnly}).Select(func(io.Writer) error { return nil })
 			if !errors.Is(err, tt.err) {
 				t.Fatalf("got %v, want %v", err, tt.err)
-			}
-			if tt.err == nil && writer == nil {
-				t.Fatal("successful start returned no writer")
 			}
 			want := [][]string{{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"}}
 			if diff := cmp.Diff(want, process.Calls); diff != "" {
 				t.Fatal(diff)
+			}
+		})
+	}
+}
+
+type selectStarter struct {
+	start func(*exec.Cmd) (runner.WriteCloser, error)
+}
+
+func (s selectStarter) Start(cmd *exec.Cmd) (runner.WriteCloser, error) {
+	return s.start(cmd)
+}
+
+type selectionInput struct {
+	strings.Builder
+	closed bool
+	err    error
+}
+
+func (i *selectionInput) Close() error {
+	i.closed = true
+	return i.err
+}
+
+func TestSelect(t *testing.T) {
+	failure := errors.New("failed")
+	cancel := exec.Command(os.Args[0], "-test.run=^TestFzfExitProcess$")
+	cancel.Env = append(os.Environ(), "TMUXIDE_FZF_EXIT_CODE=130")
+	cancelled := cancel.Run()
+	if !isCancelled(cancelled) {
+		t.Fatalf("expected cancellation error, got %v", cancelled)
+	}
+	for _, tt := range []struct {
+		name        string
+		startErr    error
+		producerErr error
+		closeErr    error
+		want        string
+		wantErr     error
+	}{
+		{name: "selection", want: "folder/file"},
+		{name: "start failure", startErr: failure, wantErr: failure},
+		{name: "candidate failure", producerErr: failure, wantErr: failure},
+		{name: "wait failure", closeErr: failure, wantErr: failure},
+		{name: "cancelled", closeErr: fmt.Errorf("wrapped: %w", cancelled)},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			input := &selectionInput{err: tt.closeErr}
+			starter := selectStarter{start: func(cmd *exec.Cmd) (runner.WriteCloser, error) {
+				if tt.startErr != nil {
+					return nil, tt.startErr
+				}
+				_, err := io.WriteString(cmd.Stdout, "  folder/file\n")
+				if err != nil {
+					t.Fatal(err)
+				}
+				return input, nil
+			}}
+			produced := false
+			got, err := (Cmd{Starter: starter}).Select(func(output io.Writer) error {
+				produced = true
+				if input.closed {
+					t.Fatal("input closed before candidates were produced")
+				}
+				if _, err := io.WriteString(output, "folder/file\n"); err != nil {
+					t.Fatal(err)
+				}
+				return tt.producerErr
+			})
+			if got != tt.want || !errors.Is(err, tt.wantErr) {
+				t.Fatalf("got %q, %v; want %q, %v", got, err, tt.want, tt.wantErr)
+			}
+			if produced != (tt.startErr == nil) {
+				t.Fatal("candidates must only be produced after a successful start")
+			}
+			if input.closed != (tt.startErr == nil && tt.producerErr == nil) {
+				t.Fatal("must wait after producing candidates successfully")
+			}
+			if produced && input.String() != "folder/file\n" {
+				t.Fatalf("candidate stream lost: %q", input.String())
 			}
 		})
 	}
