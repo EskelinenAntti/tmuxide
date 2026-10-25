@@ -26,7 +26,10 @@ type CmdWriteCloser struct {
 }
 
 func (c CmdRunner) Run(cmd *exec.Cmd) error {
-	err := cmd.Run()
+	return commandError(cmd, cmd.Run())
+}
+
+func commandError(cmd *exec.Cmd, err error) error {
 	if err != nil {
 		return fmt.Errorf("'%v' %w: %w", cmd.Args, ErrCommandFailed, err)
 	}
@@ -40,7 +43,7 @@ func (c CmdRunner) Start(cmd *exec.Cmd) (WriteCloser, error) {
 	}
 	err = cmd.Start()
 	if err != nil {
-		return nil, fmt.Errorf("'%v' %w: %w", cmd.Args, ErrCommandFailed, err)
+		return nil, commandError(cmd, err)
 	}
 
 	return CmdWriteCloser{cmd: cmd, stdin: stdin}, nil
