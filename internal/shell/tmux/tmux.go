@@ -30,25 +30,25 @@ func (t Cmd) Open(project project.Project, command []string) error {
 }
 
 func creationCommand(project project.Project, command []string, sessionExists bool) *exec.Cmd {
-	if sessionExists && len(command) == 0 {
-		return nil
+	var options []string
+	if project.WorkingDir != "" {
+		options = append(options, "-c", project.WorkingDir)
 	}
 
 	var cmd *exec.Cmd
-	if sessionExists {
-		cmd = sessionCommand("new-window", project.Name)
-	} else {
+	switch {
+	case !sessionExists:
 		cmd = exec.Command("tmux", "new-session")
-	}
-	if project.WorkingDir != "" {
-		cmd.Args = append(cmd.Args, "-c", project.WorkingDir)
-	}
-	if !sessionExists {
-		cmd.Args = append(cmd.Args, "-d")
+		options = append(options, "-d")
 		if project.Name != "" {
-			cmd.Args = append(cmd.Args, "-s", project.Name)
+			options = append(options, "-s", project.Name)
 		}
+	case len(command) > 0:
+		cmd = sessionCommand("new-window", project.Name)
+	default:
+		return nil
 	}
+	cmd.Args = append(cmd.Args, options...)
 	cmd.Args = append(cmd.Args, command...)
 	return cmd
 }

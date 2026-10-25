@@ -141,6 +141,11 @@ func TestCreationCommand(t *testing.T) {
 			want: []string{"tmux", "new-session", "-d"},
 		},
 		{
+			name:    "create default session with command",
+			command: []string{"nvim", "-R", "a file"},
+			want:    []string{"tmux", "new-session", "-d", "nvim", "-R", "a file"},
+		},
+		{
 			name:    "create named session in directory",
 			project: project.Project{Name: "project", WorkingDir: "/a directory"},
 			command: []string{"nvim", "-R", "a file"},
@@ -155,6 +160,12 @@ func TestCreationCommand(t *testing.T) {
 			name:    "create unnamed session in directory",
 			project: project.Project{WorkingDir: "/project"},
 			want:    []string{"tmux", "new-session", "-c", "/project", "-d"},
+		},
+		{
+			name:    "create unnamed session in directory with command",
+			project: project.Project{WorkingDir: "/a directory"},
+			command: []string{"nvim", "-R", "a file"},
+			want:    []string{"tmux", "new-session", "-c", "/a directory", "-d", "nvim", "-R", "a file"},
 		},
 		{
 			name:          "create window in named session",
