@@ -138,14 +138,8 @@ func (h Cmd) Open(project project.Project, command []string) error {
 		if created.RootPane.ID == "" || created.Tab.ID == "" {
 			return fmt.Errorf("herdr create response has no root pane or tab id")
 		}
-		// pane run submits one shell command atomically. Quote every argv element
-		// so paths and editor flags cannot become shell syntax.
-		quoted := make([]string, len(command))
-		for i, arg := range command {
-			quoted[i] = "'" + strings.ReplaceAll(arg, "'", "'\"'\"'") + "'"
-		}
 		// pane run is quiet on success, unlike the JSON-returning create APIs.
-		if _, err = h.output("pane", "run", created.RootPane.ID, strings.Join(quoted, " ")); err != nil {
+		if _, err = h.output("pane", "run", created.RootPane.ID, shellCommand(command)); err != nil {
 			return err
 		}
 		if _, err = h.output("tab", "focus", created.Tab.ID); err != nil {
