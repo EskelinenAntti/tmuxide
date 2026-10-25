@@ -11,16 +11,6 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/project"
 )
 
-type workspace struct {
-	ID    string `json:"workspace_id"`
-	Label string `json:"label"`
-}
-
-type pane struct {
-	WorkspaceID string `json:"workspace_id"`
-	Cwd         string `json:"cwd"`
-}
-
 type result struct {
 	Type       string      `json:"type"`
 	Workspaces []workspace `json:"workspaces"`
@@ -72,28 +62,6 @@ func (h Cmd) runInTab(tab commandTab, command []string) error {
 	}
 	_, err := h.output("tab", "focus", tab.tabID)
 	return err
-}
-
-func (h Cmd) listWorkspaces() ([]workspace, error) {
-	list, err := h.call("workspace", "list")
-	if err != nil {
-		return nil, fmt.Errorf("cannot list workspaces; start a Herdr session first: %w", err)
-	}
-	if list.Type != "workspace_list" || list.Workspaces == nil {
-		return nil, fmt.Errorf("invalid herdr workspace list response")
-	}
-	return list.Workspaces, nil
-}
-
-func (h Cmd) listPanes() ([]pane, error) {
-	list, err := h.call("pane", "list")
-	if err != nil {
-		return nil, err
-	}
-	if list.Type != "pane_list" || list.Panes == nil {
-		return nil, fmt.Errorf("invalid herdr pane list response")
-	}
-	return list.Panes, nil
 }
 
 func (h Cmd) output(args ...string) ([]byte, error) {
