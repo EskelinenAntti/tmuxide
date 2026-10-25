@@ -164,6 +164,19 @@ func TestCreationCommand(t *testing.T) {
 			want:          []string{"tmux", "new-window", "-t", "project:", "-c", "/a directory", "nvim", "-R", "a file"},
 		},
 		{
+			name:    "session options precede option-like command arguments",
+			project: project.Project{Name: "project", WorkingDir: "/a directory"},
+			command: []string{"nvim", "-c", "set number", "-s", "a file"},
+			want:    []string{"tmux", "new-session", "-c", "/a directory", "-d", "-s", "project", "nvim", "-c", "set number", "-s", "a file"},
+		},
+		{
+			name:          "window options precede option-like command arguments",
+			project:       project.Project{Name: "project", WorkingDir: "/a directory"},
+			command:       []string{"nvim", "-c", "set number", "-s", "a file"},
+			sessionExists: true,
+			want:          []string{"tmux", "new-window", "-t", "project:", "-c", "/a directory", "nvim", "-c", "set number", "-s", "a file"},
+		},
+		{
 			name:          "create window with default session and directory",
 			command:       []string{"nvim"},
 			sessionExists: true,
