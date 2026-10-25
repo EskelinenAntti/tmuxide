@@ -3,7 +3,6 @@ package fd
 import (
 	"errors"
 	"io"
-	"os"
 	"os/exec"
 
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
@@ -13,14 +12,14 @@ type Cmd struct {
 	runner.Runner
 }
 
-func (f Cmd) Fd(output io.Writer) error {
+func (f Cmd) Fd(baseDir string, output io.Writer) error {
 	args := []string{
 		"--follow",
 		"--hidden",
 		"--exclude", "{.git,node_modules,Library}",
 		".",
 		"--base-directory",
-		os.Getenv("HOME"),
+		baseDir,
 	}
 
 	fdCmd := exec.Command("fd", args...)

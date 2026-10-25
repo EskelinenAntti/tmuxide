@@ -1,6 +1,7 @@
 package picker
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 
@@ -9,10 +10,13 @@ import (
 )
 
 func Prompt(fd fd.Cmd, finder fzf.Cmd) (string, error) {
-	selection, err := finder.Select(fd.Fd)
+	baseDir := os.Getenv("HOME")
+	selection, err := finder.Select(func(output io.Writer) error {
+		return fd.Fd(baseDir, output)
+	})
 	if err != nil || selection == "" {
 		return "", err
 	}
 
-	return filepath.Join(os.Getenv("HOME"), selection), nil
+	return filepath.Join(baseDir, selection), nil
 }
