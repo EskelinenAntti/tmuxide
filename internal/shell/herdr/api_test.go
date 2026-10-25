@@ -77,3 +77,51 @@ func TestCall(t *testing.T) {
 		})
 	}
 }
+
+func TestListResponses(t *testing.T) {
+	for _, tt := range []struct {
+		name string
+		kind string
+		json string
+		want any
+		err  string
+	}{
+		{"workspaces", "workspace", existing, []workspace{{ID: "w1", Label: "project"}}, ""},
+		{"empty workspaces", "workspace", empty, []workspace{}, ""},
+		{"wrong workspace type", "workspace", `{"result":{"type":"ok","workspaces":[]}}`, []workspace(nil), "invalid herdr workspace list response"},
+		{"missing workspaces", "workspace", `{"result":{"type":"workspace_list"}}`, []workspace(nil), "invalid herdr workspace list response"},
+		{"null workspaces", "workspace", `{"result":{"type":"workspace_list","workspaces":null}}`, []workspace(nil), "invalid herdr workspace list response"},
+		{"workspace API error", "workspace", `{"error":{"code":"failed","message":"reason"}}`, []workspace(nil), "cannot list workspaces; start a Herdr session first: herdr: failed: reason"},
+		{"panes", "pane", `{"result":{"type":"pane_list","panes":[{"workspace_id":"w1","cwd":"/project"}]}}`, []pane{{WorkspaceID: "w1", Cwd: "/project"}}, ""},
+		{"empty panes", "pane", `{"result":{"type":"pane_list","panes":[]}}`, []pane{}, ""},
+		{"wrong pane type", "pane", `{"result":{"type":"ok","panes":[]}}`, []pane(nil), "invalid herdr pane list response"},
+		{"missing panes", "pane", `{"result":{"type":"pane_list"}}`, []pane(nil), "invalid herdr pane list response"},
+		{"null panes", "pane", `{"result":{"type":"pane_list","panes":null}}`, []pane(nil), "invalid herdr pane list response"},
+		{"pane API error", "pane", `{"error":{"code":"failed","message":"reason"}}`, []pane(nil), "herdr: failed: reason"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			runner := &spy.SpyRunner{Responses: responses(tt.json)}
+			cmd := Cmd{Runner: runner, Binary: "herdr"}
+			var got any
+			var err error
+			if tt.kind == "workspace" {
+				got, err = cmd.listWorkspaces()
+			} else {
+				got, err = cmd.listPanes()
+			}
+			if tt.err == "" {
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else if err == nil || err.Error() != tt.err {
+				t.Fatalf("got error %v, want %q", err, tt.err)
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Fatal(diff)
+			}
+			if diff := cmp.Diff([][]string{{"herdr", tt.kind, "list"}}, runner.Calls); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}

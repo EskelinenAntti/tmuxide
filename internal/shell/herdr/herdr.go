@@ -16,37 +16,31 @@ type Cmd struct {
 }
 
 func (h Cmd) existingWorkspace(project project.Project) (string, error) {
-	list, err := h.call("workspace", "list")
+	workspaces, err := h.listWorkspaces()
 	if err != nil {
-		return "", fmt.Errorf("cannot list workspaces; start a Herdr session first: %w", err)
+		return "", err
 	}
-	if list.Type != "workspace_list" || list.Workspaces == nil {
-		return "", fmt.Errorf("invalid herdr workspace list response")
-	}
-	id, err := workspaceID(list.Workspaces, func(w workspace) bool {
+	id, err := workspaceID(workspaces, func(w workspace) bool {
 		return w.Label == project.Name
 	})
 	if id != "" || err != nil {
 		return id, err
 	}
-	if len(list.Workspaces) == 0 || project.WorkingDir == "" {
+	if len(workspaces) == 0 || project.WorkingDir == "" {
 		return "", nil
 	}
-	panes, err := h.call("pane", "list")
+	panes, err := h.listPanes()
 	if err != nil {
 		return "", err
 	}
-	if panes.Type != "pane_list" || panes.Panes == nil {
-		return "", fmt.Errorf("invalid herdr pane list response")
-	}
 	workingDir := filepath.Clean(project.WorkingDir)
 	matchingWorkspaces := make(map[string]bool)
-	for _, pane := range panes.Panes {
+	for _, pane := range panes {
 		if pane.Cwd != "" && filepath.Clean(pane.Cwd) == workingDir {
 			matchingWorkspaces[pane.WorkspaceID] = true
 		}
 	}
-	return workspaceID(list.Workspaces, func(w workspace) bool {
+	return workspaceID(workspaces, func(w workspace) bool {
 		return matchingWorkspaces[w.ID]
 	})
 }
