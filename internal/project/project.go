@@ -44,18 +44,6 @@ func ForPath(path string, git Git) (Target, error) {
 	return Target{Project: proj, File: path}, nil
 }
 
-func ForFile(file string, git Git) (Project, error) {
-	fileInfo, err := os.Stat(file)
-	if err != nil {
-		return Project{}, ErrInvalidPath
-	}
-	workingDir := file
-	if !fileInfo.IsDir() {
-		workingDir = filepath.Dir(file)
-	}
-	return forWorkingDir(workingDir, git)
-}
-
 func forWorkingDir(workingDir string, git Git) (Project, error) {
 	if repository, err := git.RevParse(workingDir); err == nil {
 		workingDir = repository
