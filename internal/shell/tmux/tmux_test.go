@@ -119,6 +119,66 @@ func TestOpen(t *testing.T) {
 	}
 }
 
+func TestCreationCommand(t *testing.T) {
+	tests := []struct {
+		name          string
+		project       project.Project
+		command       []string
+		sessionExists bool
+		want          []string
+	}{
+		{
+			name:          "reuse session without creating a window",
+			sessionExists: true,
+		},
+		{
+			name: "create default session without command",
+			want: []string{"tmux", "new-session", "-d"},
+		},
+		{
+			name:    "create named session in directory",
+			project: project.Project{Name: "project", WorkingDir: "/a directory"},
+			command: []string{"nvim", "-R", "a file"},
+			want:    []string{"tmux", "new-session", "-c", "/a directory", "-d", "-s", "project", "nvim", "-R", "a file"},
+		},
+		{
+			name:    "create named session with default directory",
+			project: project.Project{Name: "project"},
+			want:    []string{"tmux", "new-session", "-d", "-s", "project"},
+		},
+		{
+			name:    "create unnamed session in directory",
+			project: project.Project{WorkingDir: "/project"},
+			want:    []string{"tmux", "new-session", "-c", "/project", "-d"},
+		},
+		{
+			name:          "create window in named session",
+			project:       project.Project{Name: "project", WorkingDir: "/a directory"},
+			command:       []string{"nvim", "-R", "a file"},
+			sessionExists: true,
+			want:          []string{"tmux", "new-window", "-t", "project:", "-c", "/a directory", "nvim", "-R", "a file"},
+		},
+		{
+			name:          "create window with default session and directory",
+			command:       []string{"nvim"},
+			sessionExists: true,
+			want:          []string{"tmux", "new-window", "nvim"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := creationCommand(tt.project, tt.command, tt.sessionExists)
+			var args []string
+			if cmd != nil {
+				args = cmd.Args
+			}
+			if diff := cmp.Diff(tt.want, args); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}
+
 func TestAttachUsesTerminalStreams(t *testing.T) {
 	t.Setenv("TMUX", "")
 	if err := os.Unsetenv("TMUX"); err != nil {

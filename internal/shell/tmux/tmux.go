@@ -13,24 +13,8 @@ type Cmd struct {
 }
 
 func (t Cmd) Open(project project.Project, command []string) error {
-	var create *exec.Cmd
 	sessionExists := t.Run(sessionCommand("has-session", project.Name)) == nil
-	if !sessionExists {
-		create = exec.Command("tmux", "new-session")
-	} else if len(command) > 0 {
-		create = sessionCommand("new-window", project.Name)
-	}
-	if create != nil {
-		if project.WorkingDir != "" {
-			create.Args = append(create.Args, "-c", project.WorkingDir)
-		}
-		if !sessionExists {
-			create.Args = append(create.Args, "-d")
-			if project.Name != "" {
-				create.Args = append(create.Args, "-s", project.Name)
-			}
-		}
-		create.Args = append(create.Args, command...)
+	if create := creationCommand(project, command, sessionExists); create != nil {
 		if err := t.Run(create); err != nil {
 			return err
 		}
@@ -43,6 +27,30 @@ func (t Cmd) Open(project project.Project, command []string) error {
 	tmuxCmd.Stdout = os.Stdout
 	tmuxCmd.Stderr = os.Stderr
 	return t.Run(tmuxCmd)
+}
+
+func creationCommand(project project.Project, command []string, sessionExists bool) *exec.Cmd {
+	if sessionExists && len(command) == 0 {
+		return nil
+	}
+
+	var create *exec.Cmd
+	if sessionExists {
+		create = sessionCommand("new-window", project.Name)
+	} else {
+		create = exec.Command("tmux", "new-session")
+	}
+	if project.WorkingDir != "" {
+		create.Args = append(create.Args, "-c", project.WorkingDir)
+	}
+	if !sessionExists {
+		create.Args = append(create.Args, "-d")
+		if project.Name != "" {
+			create.Args = append(create.Args, "-s", project.Name)
+		}
+	}
+	create.Args = append(create.Args, command...)
+	return create
 }
 
 func sessionCommand(subCommand, session string) *exec.Cmd {
