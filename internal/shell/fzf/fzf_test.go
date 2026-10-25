@@ -3,14 +3,54 @@ package fzf
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"testing"
 
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 	"github.com/eskelinenantti/tmuxide/internal/test/spy"
 	"github.com/google/go-cmp/cmp"
 )
+
+func TestIsCancelled(t *testing.T) {
+	for _, code := range []int{0, 1, 2, 130} {
+		t.Run(strconv.Itoa(code), func(t *testing.T) {
+			cmd := exec.Command(os.Args[0], "-test.run=^TestFzfExitProcess$")
+			cmd.Env = append(os.Environ(), "TMUXIDE_FZF_EXIT_CODE="+strconv.Itoa(code))
+			err := cmd.Run()
+			if code != 0 {
+				var exitErr *exec.ExitError
+				if !errors.As(err, &exitErr) || exitErr.ExitCode() != code {
+					t.Fatalf("got %v, want exit code %d", err, code)
+				}
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			want := code == 130
+			if got := IsCancelled(err); got != want {
+				t.Fatalf("IsCancelled(%v) = %v, want %v", err, got, want)
+			}
+			if err != nil && IsCancelled(fmt.Errorf("command failed: %w", err)) != want {
+				t.Fatal("wrapping changed cancellation detection")
+			}
+		})
+	}
+	if IsCancelled(errors.New("exit status 130")) {
+		t.Fatal("an ordinary error is not cancellation")
+	}
+}
+
+func TestFzfExitProcess(t *testing.T) {
+	if value := os.Getenv("TMUXIDE_FZF_EXIT_CODE"); value != "" {
+		code, err := strconv.Atoi(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		os.Exit(code)
+	}
+}
 
 func TestFzfNeedsOnlyStart(t *testing.T) {
 	for _, tt := range []struct {

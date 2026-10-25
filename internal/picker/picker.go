@@ -2,9 +2,7 @@ package picker
 
 import (
 	"bytes"
-	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -12,9 +10,9 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
 )
 
-func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
+func Prompt(fd fd.Cmd, finder fzf.Cmd) (string, error) {
 	var buffer bytes.Buffer
-	fzfStdin, err := fzf.Fzf(&buffer)
+	fzfStdin, err := finder.Fzf(&buffer)
 	if err != nil {
 		return "", err
 	}
@@ -26,7 +24,7 @@ func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 
 	err = fzfStdin.Close()
 	if err != nil {
-		if IsUserCancelledErr(err) {
+		if fzf.IsCancelled(err) {
 			return "", nil
 		}
 		return "", err
@@ -34,13 +32,4 @@ func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 
 	selection := strings.TrimSpace(buffer.String())
 	return filepath.Join(os.Getenv("HOME"), selection), nil
-}
-
-func IsUserCancelledErr(err error) bool {
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
-		exitCode := exitErr.ExitCode()
-		return exitCode == 130
-	}
-	return false
 }

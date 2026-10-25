@@ -1,6 +1,7 @@
 package fzf
 
 import (
+	"errors"
 	"io"
 	"os"
 	"os/exec"
@@ -10,6 +11,12 @@ import (
 
 type Cmd struct {
 	runner.Starter
+}
+
+// IsCancelled reports whether fzf exited because the user cancelled selection.
+func IsCancelled(err error) bool {
+	var exitErr *exec.ExitError
+	return errors.As(err, &exitErr) && exitErr.ExitCode() == 130
 }
 
 func (f Cmd) Fzf(output io.Writer) (runner.WriteCloser, error) {
