@@ -132,6 +132,11 @@ func TestCreationCommand(t *testing.T) {
 			sessionExists: true,
 		},
 		{
+			name:          "reuse session with empty command slice",
+			command:       []string{},
+			sessionExists: true,
+		},
+		{
 			name:          "reuse named session without creating a window",
 			project:       project.Project{Name: "project", WorkingDir: "/a directory"},
 			sessionExists: true,
@@ -139,6 +144,11 @@ func TestCreationCommand(t *testing.T) {
 		{
 			name: "create default session without command",
 			want: []string{"tmux", "new-session", "-d"},
+		},
+		{
+			name:    "create default session with empty command slice",
+			command: []string{},
+			want:    []string{"tmux", "new-session", "-d"},
 		},
 		{
 			name:    "create default session with command",
