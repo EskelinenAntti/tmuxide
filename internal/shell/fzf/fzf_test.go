@@ -18,17 +18,7 @@ import (
 func TestIsCancelled(t *testing.T) {
 	for _, code := range []int{0, 1, 2, 130} {
 		t.Run(strconv.Itoa(code), func(t *testing.T) {
-			cmd := exec.Command(os.Args[0], "-test.run=^TestFzfExitProcess$")
-			cmd.Env = append(os.Environ(), "TMUXIDE_FZF_EXIT_CODE="+strconv.Itoa(code))
-			err := cmd.Run()
-			if code != 0 {
-				var exitErr *exec.ExitError
-				if !errors.As(err, &exitErr) || exitErr.ExitCode() != code {
-					t.Fatalf("got %v, want exit code %d", err, code)
-				}
-			} else if err != nil {
-				t.Fatal(err)
-			}
+			err := fzfExitError(t, code)
 			want := code == 130
 			if got := isCancelled(err); got != want {
 				t.Fatalf("IsCancelled(%v) = %v, want %v", err, got, want)
@@ -41,6 +31,24 @@ func TestIsCancelled(t *testing.T) {
 	if isCancelled(errors.New("exit status 130")) {
 		t.Fatal("an ordinary error is not cancellation")
 	}
+}
+
+func fzfExitError(t *testing.T, code int) error {
+	t.Helper()
+	cmd := exec.Command(os.Args[0], "-test.run=^TestFzfExitProcess$")
+	cmd.Env = append(os.Environ(), "TMUXIDE_FZF_EXIT_CODE="+strconv.Itoa(code))
+	err := cmd.Run()
+	if code == 0 {
+		if err != nil {
+			t.Fatal(err)
+		}
+		return nil
+	}
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != code {
+		t.Fatalf("got %v, want exit code %d", err, code)
+	}
+	return err
 }
 
 func TestFzfExitProcess(t *testing.T) {
@@ -102,12 +110,7 @@ func (i *selectionInput) Close() error {
 
 func TestSelect(t *testing.T) {
 	failure := errors.New("failed")
-	cancel := exec.Command(os.Args[0], "-test.run=^TestFzfExitProcess$")
-	cancel.Env = append(os.Environ(), "TMUXIDE_FZF_EXIT_CODE=130")
-	cancelled := cancel.Run()
-	if !isCancelled(cancelled) {
-		t.Fatalf("expected cancellation error, got %v", cancelled)
-	}
+	cancelled := fzfExitError(t, 130)
 	for _, tt := range []struct {
 		name        string
 		startErr    error
