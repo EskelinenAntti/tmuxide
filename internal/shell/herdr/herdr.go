@@ -23,13 +23,11 @@ func (h Cmd) existingWorkspace(project project.Project) (string, error) {
 	if list.Type != "workspace_list" || list.Workspaces == nil {
 		return "", fmt.Errorf("invalid herdr workspace list response")
 	}
-	for _, workspace := range list.Workspaces {
-		if workspace.Label == project.Name {
-			if workspace.ID == "" {
-				return "", fmt.Errorf("herdr workspace has no id")
-			}
-			return workspace.ID, nil
-		}
+	id, err := workspaceID(list.Workspaces, func(w workspace) bool {
+		return w.Label == project.Name
+	})
+	if id != "" || err != nil {
+		return id, err
 	}
 	if len(list.Workspaces) == 0 || project.WorkingDir == "" {
 		return "", nil
@@ -48,8 +46,14 @@ func (h Cmd) existingWorkspace(project project.Project) (string, error) {
 			matchingWorkspaces[pane.WorkspaceID] = true
 		}
 	}
-	for _, workspace := range list.Workspaces {
-		if !matchingWorkspaces[workspace.ID] {
+	return workspaceID(list.Workspaces, func(w workspace) bool {
+		return matchingWorkspaces[w.ID]
+	})
+}
+
+func workspaceID(workspaces []workspace, matches func(workspace) bool) (string, error) {
+	for _, workspace := range workspaces {
+		if !matches(workspace) {
 			continue
 		}
 		if workspace.ID == "" {

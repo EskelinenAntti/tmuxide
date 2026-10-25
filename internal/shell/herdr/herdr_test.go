@@ -205,7 +205,9 @@ func TestExistingWorkspaceSelection(t *testing.T) {
 		{"empty working directory skips panes", project.Project{Name: "project-hash"}, []string{workspaces}, "", ""},
 		{"empty workspace list skips panes", project.Project{WorkingDir: "/project"}, []string{empty}, "", ""},
 		{"label match without id fails", project.Project{Name: "project", WorkingDir: "/project"}, []string{missingID}, "", "herdr workspace has no id"},
+		{"invalid first label match does not fall through", project.Project{Name: "project", WorkingDir: "/project"}, []string{`{"result":{"type":"workspace_list","workspaces":[{"label":"project"},{"workspace_id":"w1","label":"project"}]}}`}, "", "herdr workspace has no id"},
 		{"directory match without id fails", project.Project{Name: "project-hash", WorkingDir: "/project"}, []string{missingID, `{"result":{"type":"pane_list","panes":[{"cwd":"/project"}]}}`}, "", "herdr workspace has no id"},
+		{"invalid first directory match does not fall through", project.Project{Name: "project-hash", WorkingDir: "/project"}, []string{`{"result":{"type":"workspace_list","workspaces":[{"label":"other"},{"workspace_id":"w1","label":"project"}]}}`, `{"result":{"type":"pane_list","panes":[{"workspace_id":"w1","cwd":"/project"},{"cwd":"/project"}]}}`}, "", "herdr workspace has no id"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			runner := &spy.SpyRunner{Responses: responses(tt.json...)}
