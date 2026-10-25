@@ -140,18 +140,11 @@ func (h Cmd) Open(project project.Project, command []string) error {
 		}
 	}
 	if len(command) > 0 {
-		if created.RootPane.ID == "" || created.Tab.ID == "" {
-			return fmt.Errorf("herdr create response has no root pane or tab id")
-		}
-		// pane run is quiet on success, unlike the JSON-returning create APIs.
-		if _, err = h.output("pane", "run", created.RootPane.ID, shellCommand(command)); err != nil {
-			return err
-		}
-		if _, err = h.output("tab", "focus", created.Tab.ID); err != nil {
+		if err := h.runInTab(created, command); err != nil {
 			return err
 		}
 	}
-	if _, err = h.output("workspace", "focus", id); err != nil {
+	if _, err := h.output("workspace", "focus", id); err != nil {
 		return err
 	}
 	if os.Getenv("HERDR_ENV") == "1" {
@@ -160,4 +153,16 @@ func (h Cmd) Open(project project.Project, command []string) error {
 	cmd := exec.Command(h.Binary)
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	return h.Run(cmd)
+}
+
+func (h Cmd) runInTab(created result, command []string) error {
+	if created.RootPane.ID == "" || created.Tab.ID == "" {
+		return fmt.Errorf("herdr create response has no root pane or tab id")
+	}
+	// pane run is quiet on success, unlike the JSON-returning create APIs.
+	if _, err := h.output("pane", "run", created.RootPane.ID, shellCommand(command)); err != nil {
+		return err
+	}
+	_, err := h.output("tab", "focus", created.Tab.ID)
+	return err
 }

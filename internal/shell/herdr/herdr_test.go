@@ -109,6 +109,9 @@ func TestFailuresStopWorkflow(t *testing.T) {
 		{"invalid list", []string{ok}, "invalid herdr workspace list"},
 		{"missing workspace id", []string{empty, ok}, "no workspace id"},
 		{"missing pane", []string{existing, ok}, "no root pane or tab id"},
+		{"missing root pane", []string{existing, `{"result":{"tab":{"tab_id":"w1:t2"}}}`}, "no root pane or tab id"},
+		{"missing tab", []string{existing, `{"result":{"root_pane":{"pane_id":"w1:p2"}}}`}, "no root pane or tab id"},
+		{"new workspace missing tab", []string{empty, `{"result":{"workspace":{"workspace_id":"w1"},"root_pane":{"pane_id":"w1:p1"}}}`}, "no root pane or tab id"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			runner := &spy.SpyRunner{Responses: responses(tt.json...)}
@@ -121,12 +124,17 @@ func TestFailuresStopWorkflow(t *testing.T) {
 			}
 		})
 	}
-	for i := 0; i < 5; i++ {
-		runner := &spy.SpyRunner{Responses: responses(empty, created, ok, ok, ok)}
-		runner.Responses[i] = spy.Response{OnRun: mock.SimulateError}
-		err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{Name: "project"}, []string{"editor", "file"})
-		if err == nil || len(runner.Calls) != i+1 {
-			t.Fatalf("failure %d: %v, %v", i, err, runner.Calls)
+	for _, json := range [][]string{
+		{empty, created, ok, ok, ok},
+		{existing, tab, ok, ok, ok},
+	} {
+		for i := range json {
+			runner := &spy.SpyRunner{Responses: responses(json...)}
+			runner.Responses[i] = spy.Response{OnRun: mock.SimulateError}
+			err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{Name: "project"}, []string{"editor", "file"})
+			if err == nil || len(runner.Calls) != i+1 {
+				t.Fatalf("failure %d with %s: %v, %v", i, json[0], err, runner.Calls)
+			}
 		}
 	}
 }
