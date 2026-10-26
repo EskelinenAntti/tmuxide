@@ -62,7 +62,7 @@ func TestOpen(t *testing.T) {
 				t.Setenv("HERDR_ENV", "1")
 			}
 			runner := &spy.SpyRunner{Responses: responses(tt.json...)}
-			err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{Name: "project", WorkingDir: "/project"}, tt.command)
+			err := (Cmd{Runner: runner}).Open(project.Project{Name: "project", WorkingDir: "/project"}, tt.command)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -76,7 +76,7 @@ func TestOpen(t *testing.T) {
 func TestEachEditorRequestCreatesUnnamedTab(t *testing.T) {
 	t.Setenv("HERDR_ENV", "1")
 	runner := &spy.SpyRunner{Responses: responses(existing, tab, ok, ok, ok, existing, tab, ok, ok, ok)}
-	mux := Cmd{Runner: runner, Binary: "herdr"}
+	mux := Cmd{Runner: runner}
 	p := project.Project{Name: "project", WorkingDir: "/project"}
 	var want [][]string
 	for range 2 {
@@ -112,7 +112,7 @@ func TestFailuresStopWorkflow(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			runner := &spy.SpyRunner{Responses: responses(tt.json...)}
-			err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{Name: "project"}, []string{"editor", "file"})
+			err := (Cmd{Runner: runner}).Open(project.Project{Name: "project"}, []string{"editor", "file"})
 			if err == nil || !strings.Contains(err.Error(), tt.want) {
 				t.Fatalf("got %v, want %s", err, tt.want)
 			}
@@ -124,7 +124,7 @@ func TestFailuresStopWorkflow(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		runner := &spy.SpyRunner{Responses: responses(empty, created, ok, ok, ok)}
 		runner.Responses[i] = spy.Response{OnRun: mock.SimulateError}
-		err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{Name: "project"}, []string{"editor", "file"})
+		err := (Cmd{Runner: runner}).Open(project.Project{Name: "project"}, []string{"editor", "file"})
 		if err == nil || len(runner.Calls) != i+1 {
 			t.Fatalf("failure %d: %v, %v", i, err, runner.Calls)
 		}
@@ -168,7 +168,7 @@ func TestWorkspaceDirectoryMatching(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if err := (Cmd{Runner: runner, Binary: "herdr"}).Open(p, nil); err != nil {
+			if err := (Cmd{Runner: runner}).Open(p, nil); err != nil {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(calls, runner.Calls); diff != "" {
@@ -187,7 +187,7 @@ func TestFileInManuallyOpenedWorkspace(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := (Cmd{Runner: runner, Binary: "herdr"}).Open(p, []string{"nvim", "file"}); err != nil {
+	if err := (Cmd{Runner: runner}).Open(p, []string{"nvim", "file"}); err != nil {
 		t.Fatal(err)
 	}
 	want := [][]string{
@@ -206,14 +206,14 @@ func TestFileInManuallyOpenedWorkspace(t *testing.T) {
 func TestPaneLookupFailuresDoNotCreateWorkspace(t *testing.T) {
 	for _, text := range []string{ok, `{"result":{"type":"pane_list"}}`, `{"error":{"code":"not_found","message":"missing"}}`} {
 		runner := &spy.SpyRunner{Responses: responses(existing, text)}
-		err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{Name: "project-hash", WorkingDir: "/project"}, nil)
+		err := (Cmd{Runner: runner}).Open(project.Project{Name: "project-hash", WorkingDir: "/project"}, nil)
 		if err == nil || len(runner.Calls) != 2 {
 			t.Fatal(err, runner.Calls)
 		}
 	}
 	runner := &spy.SpyRunner{Responses: responses(existing, "")}
 	runner.Responses[1] = spy.Response{OnRun: mock.SimulateError}
-	err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{Name: "project-hash", WorkingDir: "/project"}, nil)
+	err := (Cmd{Runner: runner}).Open(project.Project{Name: "project-hash", WorkingDir: "/project"}, nil)
 	if err == nil || len(runner.Calls) != 2 {
 		t.Fatal(err, runner.Calls)
 	}
@@ -221,7 +221,7 @@ func TestPaneLookupFailuresDoNotCreateWorkspace(t *testing.T) {
 
 func TestMissingServerDoesNotCreateWorkspace(t *testing.T) {
 	runner := &spy.SpyRunner{Responses: []spy.Response{{OnRun: mock.SimulateError}}}
-	err := (Cmd{Runner: runner, Binary: "herdr"}).Open(project.Project{}, nil)
+	err := (Cmd{Runner: runner}).Open(project.Project{}, nil)
 	if err == nil || !strings.Contains(err.Error(), "start a Herdr session first") || len(runner.Calls) != 1 {
 		t.Fatal(err, runner.Calls)
 	}
