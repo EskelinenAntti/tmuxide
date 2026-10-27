@@ -3,24 +3,25 @@ package picker
 import (
 	"bytes"
 	"errors"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/history"
-	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
+	fdcmd "github.com/eskelinenantti/tmuxide/internal/shell/fd"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
 )
 
-func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
+func Prompt(fdCmd fdcmd.Cmd, fzf fzf.Cmd) (string, error) {
 	var buffer bytes.Buffer
 	fzfStdin, err := fzf.Fzf(&buffer)
 	if err != nil {
 		return "", err
 	}
 
-	scanErr := streamCandidates(fd, &candidates{output: fzfStdin, seen: make(map[string]bool)})
+	scanErr := fd(fdCmd, fzfStdin)
 
 	err = fzfStdin.Close()
 	if err != nil {
@@ -39,7 +40,8 @@ func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 	return filepath.Join(os.Getenv("HOME"), selection), nil
 }
 
-func streamCandidates(fd fd.Cmd, output *candidates) error {
+func fd(cmd fdcmd.Cmd, output io.Writer) error {
+	results := &candidates{output: output, seen: make(map[string]bool)}
 	home := os.Getenv("HOME")
 	paths, _ := history.Ranked()
 	var folders []string
@@ -55,17 +57,17 @@ func streamCandidates(fd fd.Cmd, output *candidates) error {
 			folders = append(folders, path)
 			path += string(filepath.Separator)
 		}
-		if err := output.add(path); err != nil {
+		if err := results.add(path); err != nil {
 			return err
 		}
 	}
 
 	for _, folder := range folders {
-		if err := fd.Fd(output, folder); err != nil {
+		if err := cmd.Fd(results, folder); err != nil {
 			return err
 		}
 	}
-	return fd.Fd(output)
+	return cmd.Fd(results)
 }
 
 func IsUserCancelledErr(err error) bool {
