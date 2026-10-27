@@ -21,7 +21,7 @@ func Prompt(fdCmd fdcmd.Cmd, fzf fzf.Cmd) (string, error) {
 		return "", err
 	}
 
-	scanErr := fd(fdCmd, fzfStdin)
+	fdErr := fd(fdCmd, fzfStdin)
 
 	err = fzfStdin.Close()
 	if err != nil {
@@ -30,9 +30,10 @@ func Prompt(fdCmd fdcmd.Cmd, fzf fzf.Cmd) (string, error) {
 		}
 		return "", err
 	}
+
 	selection := strings.TrimSuffix(buffer.String(), "\n")
 	if selection == "" {
-		return "", scanErr
+		return "", fdErr
 	}
 	if filepath.IsAbs(selection) {
 		return selection, nil
@@ -58,14 +59,14 @@ func fd(cmd fdcmd.Cmd, output io.Writer) error {
 	paths, _ := history.Ranked()
 	var folders []string
 	for _, path := range paths {
-		info, err := os.Stat(path)
+		fileInfo, err := os.Stat(path)
 		if err != nil || strings.ContainsAny(path, "\r\n") {
 			continue
 		}
 		if relative, err := filepath.Rel(home, path); err == nil && filepath.IsLocal(relative) {
 			path = relative
 		}
-		if info.IsDir() {
+		if fileInfo.IsDir() {
 			folders = append(folders, path)
 			path += string(filepath.Separator)
 		}

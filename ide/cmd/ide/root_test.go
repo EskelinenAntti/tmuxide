@@ -16,7 +16,6 @@ import (
 const editor string = "editor"
 
 func TestRunMuxOverride(t *testing.T) {
-	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "1")
 	t.Setenv("EDITOR", editor)
 	dir := t.TempDir()
@@ -61,7 +60,6 @@ func createFile(t *testing.T, dir, name string) string {
 }
 
 func TestSelectFolderFromPrompt(t *testing.T) {
-	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	tests := []struct {
 		name     string
@@ -73,6 +71,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("XDG_STATE_HOME", t.TempDir())
 			t.Setenv("EDITOR", editor)
 			if tt.attached {
 				t.Setenv("TMUX", "test")
@@ -113,7 +112,6 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 }
 
 func TestFolderSessionWorkflow(t *testing.T) {
-	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	tests := []struct {
 		name          string
@@ -127,6 +125,7 @@ func TestFolderSessionWorkflow(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("XDG_STATE_HOME", t.TempDir())
 			t.Setenv("EDITOR", editor)
 			if tt.attached {
 				t.Setenv("TMUX", "test")
@@ -169,7 +168,6 @@ func TestFolderSessionWorkflow(t *testing.T) {
 }
 
 func TestTmuxNotInstalled(t *testing.T) {
-	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	unsetenv(t, "TMUX")
 	t.Setenv("EDITOR", editor)
@@ -191,7 +189,6 @@ func TestTmuxNotInstalled(t *testing.T) {
 }
 
 func TestEditorSessionWorkflow(t *testing.T) {
-	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	tests := []struct {
 		name          string
@@ -206,6 +203,7 @@ func TestEditorSessionWorkflow(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("XDG_STATE_HOME", t.TempDir())
 			t.Setenv("EDITOR", editor)
 			if tt.attached {
 				t.Setenv("TMUX", "test")
@@ -285,7 +283,6 @@ func TestRelativePathToFile(t *testing.T) {
 }
 
 func TestFileDoesNotExist(t *testing.T) {
-	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	unsetenv(t, "TMUX")
 	t.Setenv("EDITOR", editor)
@@ -336,7 +333,6 @@ func TestFileInRepository(t *testing.T) {
 }
 
 func TestEditorNotSet(t *testing.T) {
-	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	unsetenv(t, "EDITOR")
 	unsetenv(t, "TMUX")
@@ -354,7 +350,6 @@ func TestEditorNotSet(t *testing.T) {
 }
 
 func TestEditorNotInstalled(t *testing.T) {
-	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	t.Setenv("EDITOR", editor)
 	unsetenv(t, "TMUX")
@@ -435,21 +430,23 @@ func TestSearchPrioritizesFrequentSelections(t *testing.T) {
 	file := createFile(t, dir, "file.txt")
 	createFile(t, dir, "child.txt")
 	createFile(t, home, "other.txt")
+
 	for _, target := range []string{dir, file, dir, file, file} {
-		r := &spy.SpyRunner{}
+		runner := &spy.SpyRunner{}
 		if target == file {
-			r.Responses = []spy.Response{{OnRun: mock.SimulateError}}
+			runner.Responses = []spy.Response{{OnRun: mock.SimulateError}}
 		}
-		requireNoError(t, Run([]string{target}, "tmux", r, mock.Path{}))
+		requireNoError(t, Run([]string{target}, "tmux", runner, mock.Path{}))
 	}
-	r := &spy.SpyRunner{Responses: []spy.Response{
+
+	runner := &spy.SpyRunner{Responses: []spy.Response{
 		{OnRun: mock.WriteToStdout("project/\n")},
 		{OnRun: mock.WriteToStdout("project/file.txt\nproject/child.txt\n")},
 		{OnRun: mock.WriteToStdout("project/\nproject/file.txt\nproject/child.txt\nother.txt\n")},
 	}}
-	requireNoError(t, Run(nil, "tmux", r, mock.Path{}))
+	requireNoError(t, Run(nil, "tmux", runner, mock.Path{}))
 	want := "project/file.txt\nproject/\nproject/child.txt\nother.txt\n"
-	if diff := cmp.Diff(want, r.Stdin.String()); diff != "" {
+	if diff := cmp.Diff(want, runner.Stdin.String()); diff != "" {
 		t.Fatal(diff)
 	}
 }

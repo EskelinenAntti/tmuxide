@@ -43,5 +43,5 @@ func (t *SpyRunner) Run(cmd *exec.Cmd) error {
 }
 
 func (t *SpyRunner) Start(cmd *exec.Cmd) (runner.WriteCloser, error) {
-	return FakeWriteCloser{&t.Stdin}, t.Run(cmd)
+	return FakeWriteCloser{Buffer: &t.Stdin}, t.Run(cmd)
 }
