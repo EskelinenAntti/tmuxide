@@ -41,7 +41,19 @@ func Prompt(fdCmd fdcmd.Cmd, fzf fzf.Cmd) (string, error) {
 }
 
 func fd(cmd fdcmd.Cmd, output io.Writer) error {
-	results := &candidates{output: output, seen: make(map[string]bool)}
+	shownPaths := make(map[string]bool)
+	writePath := func(path string) error {
+		key := filepath.Clean(path)
+		if path == "" || shownPaths[key] {
+			return nil
+		}
+		if _, err := io.WriteString(output, path+"\n"); err != nil {
+			return err
+		}
+		shownPaths[key] = true
+		return nil
+	}
+
 	home := os.Getenv("HOME")
 	paths, _ := history.Ranked()
 	var folders []string
@@ -57,17 +69,17 @@ func fd(cmd fdcmd.Cmd, output io.Writer) error {
 			folders = append(folders, path)
 			path += string(filepath.Separator)
 		}
-		if err := results.add(path); err != nil {
+		if err := writePath(path); err != nil {
 			return err
 		}
 	}
 
 	for _, folder := range folders {
-		if err := cmd.Fd(results, folder); err != nil {
+		if err := cmd.Fd(writePath, folder); err != nil {
 			return err
 		}
 	}
-	return cmd.Fd(results)
+	return cmd.Fd(writePath)
 }
 
 func IsUserCancelledErr(err error) bool {

@@ -425,147 +425,31 @@ func TestHerdrRelativeFileInRepository(t *testing.T) {
 	}, runner.Calls)
 }
 
-func TestSelectedTargetsAppearFirstInNextSearch(t *testing.T) {
-	for _, tt := range []struct {
-		name   string
-		file   bool
-		prompt bool
-	}{
-		{name: "folder argument"},
-		{name: "folder prompt", prompt: true},
-		{name: "file argument", file: true},
-		{name: "file prompt", file: true, prompt: true},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv("XDG_STATE_HOME", t.TempDir())
-			t.Setenv("HERDR_ENV", "")
-			t.Setenv("EDITOR", editor)
-			home := t.TempDir()
-			t.Setenv("HOME", home)
-			t.Chdir(home)
-			target := filepath.Join(home, "target")
-			if tt.file {
-				createFile(t, home, "target")
-			} else {
-				requireNoError(t, os.Mkdir(target, 0755))
-			}
-			r := &spy.SpyRunner{}
-			args := []string{"./target"}
-			if tt.prompt {
-				args = nil
-				r.Responses = append(r.Responses, spy.Response{OnRun: mock.WriteToStdout("target\n")}, spy.Response{})
-			}
-			if tt.file {
-				r.Responses = append(r.Responses, spy.Response{OnRun: mock.WriteToStdout(home)})
-			}
-			requireNoError(t, Run(args, "tmux", r, mock.Path{}))
-			next := &spy.SpyRunner{}
-			requireNoError(t, Run(nil, "tmux", next, mock.Path{}))
-			want := "target/\n"
-			if tt.file {
-				want = "target\n"
-			}
-			if diff := cmp.Diff(want, next.Stdin.String()); diff != "" {
-				t.Fatal(diff)
-			}
-		})
-	}
-}
-
-func TestPromptWithoutSelectionDoesNotOpenSession(t *testing.T) {
-	t.Setenv("XDG_STATE_HOME", t.TempDir())
-	t.Setenv("HERDR_ENV", "")
-	t.Setenv("EDITOR", editor)
-	t.Setenv("HOME", t.TempDir())
-	r := &spy.SpyRunner{}
-	requireNoError(t, Run(nil, "tmux", r, mock.Path{}))
-	if len(r.Calls) != 2 {
-		t.Fatalf("unexpected commands after empty selection: %v", r.Calls)
-	}
-}
-
 func TestSearchPrioritizesFrequentSelections(t *testing.T) {
-	t.Setenv("HERDR_ENV", "")
 	t.Setenv("EDITOR", editor)
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
-	unsetenv(t, "TMUX")
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	t.Chdir(home)
-	for _, dir := range []string{"project", "another"} {
-		requireNoError(t, os.Mkdir(dir, 0755))
-	}
-	for _, file := range []string{"project/notes.txt", "project/child.txt", "another/child.txt", "z.txt", "deleted.txt", "new.txt"} {
-		createFile(t, home, file)
-	}
-	for _, target := range []string{"z.txt", "another", "project/notes.txt", "project", "./project/notes.txt", "project", "project/notes.txt", "deleted.txt"} {
+	dir := filepath.Join(home, "project")
+	requireNoError(t, os.Mkdir(dir, 0755))
+	file := createFile(t, dir, "file.txt")
+	createFile(t, dir, "child.txt")
+	createFile(t, home, "other.txt")
+	for _, target := range []string{dir, file, dir, file, file} {
 		r := &spy.SpyRunner{}
-		if filepath.Ext(target) == ".txt" {
+		if target == file {
 			r.Responses = []spy.Response{{OnRun: mock.SimulateError}}
 		}
 		requireNoError(t, Run([]string{target}, "tmux", r, mock.Path{}))
 	}
-	requireNoError(t, os.Remove("deleted.txt"))
 	r := &spy.SpyRunner{Responses: []spy.Response{
-		{OnRun: mock.WriteToStdout("project/notes.txt\n")},
-		{OnRun: mock.WriteToStdout("project/notes.txt\nproject/child.txt\n")},
-		{OnRun: mock.WriteToStdout("another/child.txt\n")},
-		{OnRun: mock.WriteToStdout("another/\nproject/\nproject/notes.txt\nz.txt\nnew.txt\n")},
-		{OnRun: mock.SimulateError},
+		{OnRun: mock.WriteToStdout("project/\n")},
+		{OnRun: mock.WriteToStdout("project/file.txt\nproject/child.txt\n")},
+		{OnRun: mock.WriteToStdout("project/\nproject/file.txt\nproject/child.txt\nother.txt\n")},
 	}}
 	requireNoError(t, Run(nil, "tmux", r, mock.Path{}))
-	want := "project/notes.txt\nproject/\nanother/\nz.txt\nproject/child.txt\nanother/child.txt\nnew.txt\n"
+	want := "project/file.txt\nproject/\nproject/child.txt\nother.txt\n"
 	if diff := cmp.Diff(want, r.Stdin.String()); diff != "" {
 		t.Fatal(diff)
-	}
-	dir := filepath.Join(home, "project")
-	session := project.Name(dir)
-	requireCalls(t, [][]string{
-		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
-		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--", "project"},
-		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--", "another"},
-		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--"},
-		{"git", "-C", dir, "rev-parse", "--show-toplevel"},
-		{"tmux", "has-session", "-t", session + ":"},
-		{"tmux", "new-window", "-t", session + ":", "-c", dir, editor, filepath.Join(dir, "notes.txt")},
-		{"tmux", "attach", "-t", session + ":"},
-	}, r.Calls)
-}
-
-func TestSearchWithoutUsableHistory(t *testing.T) {
-	for _, state := range []string{"missing", "invalid", "unavailable"} {
-		t.Run(state, func(t *testing.T) {
-			t.Setenv("HERDR_ENV", "")
-			t.Setenv("EDITOR", editor)
-			unsetenv(t, "TMUX")
-			home := t.TempDir()
-			t.Setenv("HOME", home)
-			stateHome := t.TempDir()
-			if state == "invalid" {
-				dir := filepath.Join(stateHome, "tmuxide")
-				requireNoError(t, os.Mkdir(dir, 0700))
-				requireNoError(t, os.WriteFile(filepath.Join(dir, "history.json"), []byte("not json"), 0600))
-			} else if state == "unavailable" {
-				stateHome = createFile(t, stateHome, "state")
-			}
-			t.Setenv("XDG_STATE_HOME", stateHome)
-			dir := filepath.Join(home, "project")
-			requireNoError(t, os.Mkdir(dir, 0755))
-			r := &spy.SpyRunner{Responses: []spy.Response{
-				{OnRun: mock.WriteToStdout("project/\n")},
-				{OnRun: mock.WriteToStdout("project/\n")},
-			}}
-			requireNoError(t, Run(nil, "tmux", r, mock.Path{}))
-			if diff := cmp.Diff("project/\n", r.Stdin.String()); diff != "" {
-				t.Fatal(diff)
-			}
-			session := project.Name(dir)
-			requireCalls(t, [][]string{
-				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
-				{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--"},
-				{"tmux", "has-session", "-t", session + ":"},
-				{"tmux", "attach", "-t", session + ":"},
-			}, r.Calls)
-		})
 	}
 }

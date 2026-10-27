@@ -9,8 +9,8 @@ import (
 func SimulateError(cmd *exec.Cmd) error { return errors.New("mock error") }
 func WriteToStdout(value string) func(*exec.Cmd) error {
 	return func(cmd *exec.Cmd) error {
-		cmd.Stdout.Write([]byte(value))
-		return nil
+		_, err := cmd.Stdout.Write([]byte(value))
+		return err
 	}
 }
 
