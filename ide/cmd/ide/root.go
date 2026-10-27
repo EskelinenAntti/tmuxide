@@ -99,8 +99,6 @@ func Run(args []string, muxFlag string, runner runner.Runner, path path.ShellPat
 		command = append(editorCmd, target)
 	}
 
-	// Record valid selections before attaching, since Open can block for the
-	// lifetime of the session. History failures must not prevent navigation.
 	_ = history.Record(target)
 	return mux.Open(proj, command)
 }

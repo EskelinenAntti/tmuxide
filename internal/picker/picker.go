@@ -33,7 +33,6 @@ func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 	if selection == "" {
 		return "", scanErr
 	}
-	// A selection is usable even if fzf closed its input before fd finished.
 	if filepath.IsAbs(selection) {
 		return selection, nil
 	}
@@ -42,8 +41,6 @@ func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 
 func search(fd fd.Cmd, output *candidates) error {
 	home := os.Getenv("HOME")
-	// History is only an optimization: a missing or unreadable history must
-	// never prevent the normal home-directory search.
 	paths, _ := history.Ranked()
 	var folders []string
 	for _, path := range paths {
@@ -63,8 +60,6 @@ func search(fd fd.Cmd, output *candidates) error {
 		}
 	}
 
-	// Seed all known paths first, then scan selected folders in frequency
-	// order before falling back to the rest of home.
 	for _, folder := range folders {
 		if err := fd.Fd(output, folder); err != nil {
 			return err

@@ -496,7 +496,6 @@ func TestRunWithUnavailableHistory(t *testing.T) {
 	t.Setenv("HERDR_ENV", "")
 	t.Setenv("EDITOR", editor)
 	dir := t.TempDir()
-	// A regular file cannot hold the history directory.
 	t.Setenv("XDG_STATE_HOME", createFile(t, dir, "state"))
 	r := &spy.SpyRunner{}
 	requireNoError(t, Run([]string{dir}, "tmux", r, mock.Path{}))

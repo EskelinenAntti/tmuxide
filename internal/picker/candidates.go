@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-// candidates streams unique paths without buffering the full filesystem scan.
-// fd may split a path across writes, or include several paths in a single write.
 type candidates struct {
 	output  io.Writer
 	seen    map[string]bool
