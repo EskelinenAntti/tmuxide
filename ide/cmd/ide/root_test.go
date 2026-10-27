@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/eskelinenantti/tmuxide/internal/history"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/eskelinenantti/tmuxide/internal/test/mock"
@@ -16,6 +17,7 @@ import (
 const editor string = "editor"
 
 func TestRunMuxOverride(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "1")
 	t.Setenv("EDITOR", editor)
 	dir := t.TempDir()
@@ -60,6 +62,7 @@ func createFile(t *testing.T, dir, name string) string {
 }
 
 func TestSelectFolderFromPrompt(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	tests := []struct {
 		name     string
@@ -95,8 +98,8 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 
 			session := project.Name(filepath.Join(home, folder))
 			expectedCalls := [][]string{
-				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
-				{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
+				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
+				{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--"},
 				{"tmux", "has-session", "-t", session + ":"},
 			}
 			if tt.attached {
@@ -111,6 +114,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 }
 
 func TestFolderSessionWorkflow(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	tests := []struct {
 		name          string
@@ -166,6 +170,7 @@ func TestFolderSessionWorkflow(t *testing.T) {
 }
 
 func TestTmuxNotInstalled(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	unsetenv(t, "TMUX")
 	t.Setenv("EDITOR", editor)
@@ -187,6 +192,7 @@ func TestTmuxNotInstalled(t *testing.T) {
 }
 
 func TestEditorSessionWorkflow(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	tests := []struct {
 		name          string
@@ -246,6 +252,7 @@ func TestEditorSessionWorkflow(t *testing.T) {
 }
 
 func TestRelativePathToFile(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	unsetenv(t, "TMUX")
 	t.Setenv("EDITOR", editor)
@@ -279,6 +286,7 @@ func TestRelativePathToFile(t *testing.T) {
 }
 
 func TestFileDoesNotExist(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	unsetenv(t, "TMUX")
 	t.Setenv("EDITOR", editor)
@@ -295,9 +303,15 @@ func TestFileDoesNotExist(t *testing.T) {
 	}
 
 	requireCalls(t, nil, spyRunner.Calls)
+	entries, err := history.Default().Ranked()
+	requireNoError(t, err)
+	if len(entries) != 0 {
+		t.Fatalf("invalid target was recorded: %v", entries)
+	}
 }
 
 func TestFileInRepository(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	unsetenv(t, "TMUX")
 	t.Setenv("EDITOR", editor)
@@ -328,6 +342,7 @@ func TestFileInRepository(t *testing.T) {
 }
 
 func TestEditorNotSet(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	unsetenv(t, "EDITOR")
 	unsetenv(t, "TMUX")
@@ -345,6 +360,7 @@ func TestEditorNotSet(t *testing.T) {
 }
 
 func TestEditorNotInstalled(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	t.Setenv("EDITOR", editor)
 	unsetenv(t, "TMUX")
@@ -362,6 +378,7 @@ func TestEditorNotInstalled(t *testing.T) {
 }
 
 func TestHerdrFolderFromPrompt(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "1")
 	t.Setenv("TMUX", "outer-tmux")
 	t.Setenv("EDITOR", editor)
@@ -378,8 +395,8 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 	err := Run(nil, "auto", runner, mock.Path{Missing: []string{"tmux"}})
 	requireNoError(t, err)
 	requireCalls(t, [][]string{
-		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
-		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
+		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
+		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--"},
 		{"herdr", "workspace", "list"},
 		{"herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
 		{"herdr", "workspace", "focus", "w1"},
@@ -387,6 +404,7 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 }
 
 func TestHerdrRelativeFileInRepository(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "1")
 	t.Setenv("EDITOR", "editor -R")
 	dir := t.TempDir()
@@ -411,4 +429,78 @@ func TestHerdrRelativeFileInRepository(t *testing.T) {
 		{"herdr", "tab", "focus", "w1:t1"},
 		{"herdr", "workspace", "focus", "w1"},
 	}, runner.Calls)
+}
+
+func TestRunRecordsSelections(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		file   bool
+		prompt bool
+	}{
+		{name: "folder argument"},
+		{name: "folder prompt", prompt: true},
+		{name: "file argument", file: true},
+		{name: "file prompt", file: true, prompt: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("XDG_STATE_HOME", t.TempDir())
+			t.Setenv("HERDR_ENV", "")
+			t.Setenv("EDITOR", editor)
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			t.Chdir(home)
+			target := filepath.Join(home, "target")
+			if tt.file {
+				createFile(t, home, "target")
+			} else {
+				requireNoError(t, os.Mkdir(target, 0755))
+			}
+			r := &spy.SpyRunner{}
+			args := []string{"./target"}
+			if tt.prompt {
+				args = nil
+				r.Responses = append(r.Responses, spy.Response{OnRun: mock.WriteToStdout("target\n")}, spy.Response{})
+			}
+			if tt.file {
+				r.Responses = append(r.Responses, spy.Response{OnRun: mock.WriteToStdout(home)})
+			}
+			requireNoError(t, Run(args, "tmux", r, mock.Path{}))
+			entries, err := history.Default().Ranked()
+			requireNoError(t, err)
+			want := []history.Entry{{Path: target, Count: 1}}
+			if diff := cmp.Diff(want, entries); diff != "" {
+				t.Fatal(diff)
+			}
+		})
+	}
+}
+
+func TestRunWithoutSelectionDoesNotRecordHistory(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+	t.Setenv("HERDR_ENV", "")
+	t.Setenv("EDITOR", editor)
+	t.Setenv("HOME", t.TempDir())
+	r := &spy.SpyRunner{}
+	requireNoError(t, Run(nil, "tmux", r, mock.Path{}))
+	entries, err := history.Default().Ranked()
+	requireNoError(t, err)
+	if len(entries) != 0 {
+		t.Fatalf("empty selection was recorded: %v", entries)
+	}
+	if len(r.Calls) != 2 {
+		t.Fatalf("unexpected commands after empty selection: %v", r.Calls)
+	}
+}
+
+func TestRunWithUnavailableHistory(t *testing.T) {
+	t.Setenv("HERDR_ENV", "")
+	t.Setenv("EDITOR", editor)
+	dir := t.TempDir()
+	// A regular file cannot hold the history directory.
+	t.Setenv("XDG_STATE_HOME", createFile(t, dir, "state"))
+	r := &spy.SpyRunner{}
+	requireNoError(t, Run([]string{dir}, "tmux", r, mock.Path{}))
+	if len(r.Calls) != 2 || r.Calls[1][0] != "tmux" {
+		t.Fatalf("navigation did not complete: %v", r.Calls)
+	}
 }

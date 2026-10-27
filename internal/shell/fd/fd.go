@@ -13,7 +13,7 @@ type Cmd struct {
 	runner.Runner
 }
 
-func (f Cmd) Fd(output io.Writer) error {
+func (f Cmd) Fd(output io.Writer, roots ...string) error {
 	args := []string{
 		"--follow",
 		"--hidden",
@@ -22,6 +22,8 @@ func (f Cmd) Fd(output io.Writer) error {
 		"--base-directory",
 		os.Getenv("HOME"),
 	}
+	args = append(args, "--")
+	args = append(args, roots...)
 
 	fdCmd := exec.Command("fd", args...)
 	fdCmd.Stdout = output
@@ -34,7 +36,6 @@ func (f Cmd) Fd(output io.Writer) error {
 			// This error occurs if fzf closes the pipe before the command is completed
 			return nil
 		}
-		return err
 	}
-	return nil
+	return err
 }

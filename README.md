@@ -17,6 +17,19 @@ Running `ide` will start a fuzzy finder where you can fuzzy find folders and fil
 
 Alternatively, you can pass folders and files as argument to the command.
 
+### Search ranking
+
+tmuxide remembers how often you select each file or folder, including targets
+passed as arguments. Previously selected paths appear first, ordered by selection
+count (ties are alphabetical). Matches keep this order while you type. Selected
+folders are also searched in frequency order before the full home-directory scan,
+and duplicate results and missing history paths are skipped.
+
+History is stored locally in `$XDG_STATE_HOME/tmuxide/history.json`, or
+`~/.local/state/tmuxide/history.json` when `XDG_STATE_HOME` is unset. Delete that
+file to reset the ranking. Search and navigation still work if history cannot be
+read or saved.
+
 ### Folder targets
 
 ```txt

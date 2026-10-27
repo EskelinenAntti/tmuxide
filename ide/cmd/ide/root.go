@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/eskelinenantti/tmuxide/internal/history"
 	"github.com/eskelinenantti/tmuxide/internal/multiplexer"
 	"github.com/eskelinenantti/tmuxide/internal/picker"
 	"github.com/eskelinenantti/tmuxide/internal/project"
@@ -98,6 +99,9 @@ func Run(args []string, muxFlag string, runner runner.Runner, path path.ShellPat
 		command = append(editorCmd, target)
 	}
 
+	// Record valid selections before attaching, since Open can block for the
+	// lifetime of the session. History failures must not prevent navigation.
+	_ = history.Default().Record(target)
 	return mux.Open(proj, command)
 }
 
