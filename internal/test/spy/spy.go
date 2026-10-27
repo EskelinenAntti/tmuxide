@@ -2,6 +2,7 @@ package spy
 
 import (
 	"bytes"
+	"io"
 	"os/exec"
 
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
@@ -19,11 +20,18 @@ type SpyRunner struct {
 	Stdin     bytes.Buffer
 }
 
-type FakeWriteCloser struct {
+type FakeProcess struct {
 	*bytes.Buffer
+	done chan struct{}
 }
 
-func (f FakeWriteCloser) Close() error {
+func (f FakeProcess) Close() error {
+	close(f.done)
+	return nil
+}
+
+func (f FakeProcess) Wait() error {
+	<-f.done
 	return nil
 }
 
@@ -42,6 +50,15 @@ func (t *SpyRunner) Run(cmd *exec.Cmd) error {
 	return response.OnRun(cmd)
 }
 
-func (t *SpyRunner) Start(cmd *exec.Cmd) (runner.WriteCloser, error) {
-	return FakeWriteCloser{Buffer: &t.Stdin}, t.Run(cmd)
+func (t *SpyRunner) Start(cmd *exec.Cmd) (runner.Process, error) {
+	return FakeProcess{Buffer: &t.Stdin, done: make(chan struct{})}, t.Run(cmd)
+}
+
+func (t *SpyRunner) Read(cmd *exec.Cmd) (io.ReadCloser, error) {
+	var output bytes.Buffer
+	cmd.Stdout = &output
+	if err := t.Run(cmd); err != nil {
+		return nil, err
+	}
+	return io.NopCloser(&output), nil
 }

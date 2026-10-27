@@ -99,7 +99,7 @@ func Run(args []string, muxFlag string, runner runner.Runner, path path.ShellPat
 		command = append(editorCmd, target)
 	}
 
-	_ = history.Record(target)
+	history.Record(target)
 	return mux.Open(proj, command)
 }
 

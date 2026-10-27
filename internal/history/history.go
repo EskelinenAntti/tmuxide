@@ -3,7 +3,6 @@ package history
 import (
 	"cmp"
 	"encoding/json"
-	"errors"
 	"os"
 	"path/filepath"
 	"slices"
@@ -17,20 +16,13 @@ func filePath() string {
 	return filepath.Join(stateHome, "tmuxide", "history.json")
 }
 
-func load() (map[string]int, error) {
-	data, err := os.ReadFile(filePath())
-	if errors.Is(err, os.ErrNotExist) {
-		return make(map[string]int), nil
-	}
-	if err != nil {
-		return nil, err
-	}
+func load() map[string]int {
+	data, _ := os.ReadFile(filePath())
 	var counts map[string]int
-	err = json.Unmarshal(data, &counts)
-	if counts == nil {
-		counts = make(map[string]int)
+	if err := json.Unmarshal(data, &counts); err != nil || counts == nil {
+		return make(map[string]int)
 	}
-	return counts, err
+	return counts
 }
 
 func save(counts map[string]int) error {
@@ -50,11 +42,8 @@ func save(counts map[string]int) error {
 	return os.Rename(temporary, filename)
 }
 
-func Ranked() ([]string, error) {
-	counts, err := load()
-	if err != nil {
-		return nil, err
-	}
+func Ranked() []string {
+	counts := load()
 	paths := make([]string, 0, len(counts))
 	for path := range counts {
 		paths = append(paths, path)
@@ -65,18 +54,15 @@ func Ranked() ([]string, error) {
 		}
 		return cmp.Compare(a, b)
 	})
-	return paths, nil
+	return paths
 }
 
-func Record(path string) error {
+func Record(path string) {
 	path, err := filepath.Abs(path)
 	if err != nil {
-		return err
+		return
 	}
-	counts, err := load()
-	if err != nil {
-		return err
-	}
+	counts := load()
 	counts[path]++
-	return save(counts)
+	_ = save(counts)
 }

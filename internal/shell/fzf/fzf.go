@@ -12,7 +12,7 @@ type Cmd struct {
 	runner.Runner
 }
 
-func (f Cmd) Fzf(output io.Writer) (runner.WriteCloser, error) {
+func (f Cmd) Fzf(output io.Writer) (runner.Process, error) {
 	fzfCmd := exec.Command("fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort")
 	fzfCmd.Stdout = output
 	fzfCmd.Stderr = os.Stderr
