@@ -7,86 +7,56 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"syscall"
 )
 
-type Store struct {
-	path string
-}
-
-type Entry struct {
-	Path  string
-	Count uint64
-}
-
-func Default() Store {
+func filePath() string {
 	stateHome := os.Getenv("XDG_STATE_HOME")
 	if !filepath.IsAbs(stateHome) {
 		stateHome = filepath.Join(os.Getenv("HOME"), ".local", "state")
 	}
-	return Store{path: filepath.Join(stateHome, "tmuxide", "history.json")}
+	return filepath.Join(stateHome, "tmuxide", "history.json")
 }
 
-func (s Store) load() (map[string]uint64, error) {
-	data, err := os.ReadFile(s.path)
+func load() (map[string]int, error) {
+	data, err := os.ReadFile(filePath())
 	if errors.Is(err, os.ErrNotExist) {
-		return make(map[string]uint64), nil
+		return make(map[string]int), nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	counts := make(map[string]uint64)
-	if err := json.Unmarshal(data, &counts); err != nil {
-		return nil, err
-	}
+	var counts map[string]int
+	err = json.Unmarshal(data, &counts)
 	if counts == nil {
-		counts = make(map[string]uint64)
+		counts = make(map[string]int)
 	}
-	return counts, nil
+	return counts, err
 }
 
-func (s Store) Ranked() ([]Entry, error) {
-	counts, err := s.load()
+func Ranked() ([]string, error) {
+	counts, err := load()
 	if err != nil {
 		return nil, err
 	}
-	var entries []Entry
-	for path, count := range counts {
-		if count > 0 && filepath.IsAbs(path) {
-			entries = append(entries, Entry{Path: path, Count: count})
-		}
+	paths := make([]string, 0, len(counts))
+	for path := range counts {
+		paths = append(paths, path)
 	}
-	slices.SortFunc(entries, func(a, b Entry) int {
-		if order := cmp.Compare(b.Count, a.Count); order != 0 {
+	slices.SortFunc(paths, func(a, b string) int {
+		if order := cmp.Compare(counts[b], counts[a]); order != 0 {
 			return order
 		}
-		return cmp.Compare(a.Path, b.Path)
+		return cmp.Compare(a, b)
 	})
-	return entries, nil
+	return paths, nil
 }
 
-func (s Store) Record(path string) error {
+func Record(path string) error {
 	path, err := filepath.Abs(path)
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(s.path), 0700); err != nil {
-		return err
-	}
-
-	// Multiple pickers can be open at once. Lock the read-modify-write, and
-	// replace the file atomically so readers never see a partial history.
-	lock, err := os.OpenFile(s.path+".lock", os.O_CREATE|os.O_RDWR, 0600)
-	if err != nil {
-		return err
-	}
-	defer lock.Close()
-	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX); err != nil {
-		return err
-	}
-	defer syscall.Flock(int(lock.Fd()), syscall.LOCK_UN)
-
-	counts, err := s.load()
+	counts, err := load()
 	if err != nil {
 		return err
 	}
@@ -95,17 +65,14 @@ func (s Store) Record(path string) error {
 	if err != nil {
 		return err
 	}
-	file, err := os.CreateTemp(filepath.Dir(s.path), ".history-*")
-	if err != nil {
+	filename := filePath()
+	if err := os.MkdirAll(filepath.Dir(filename), 0700); err != nil {
 		return err
 	}
-	defer os.Remove(file.Name())
-	if _, err := file.Write(data); err != nil {
-		file.Close()
+	temporary := filename + ".tmp"
+	defer os.Remove(temporary)
+	if err := os.WriteFile(temporary, data, 0600); err != nil {
 		return err
 	}
-	if err := file.Close(); err != nil {
-		return err
-	}
-	return os.Rename(file.Name(), s.path)
+	return os.Rename(temporary, filename)
 }

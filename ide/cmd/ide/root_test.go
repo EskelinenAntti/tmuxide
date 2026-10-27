@@ -303,7 +303,7 @@ func TestFileDoesNotExist(t *testing.T) {
 	}
 
 	requireCalls(t, nil, spyRunner.Calls)
-	entries, err := history.Default().Ranked()
+	entries, err := history.Ranked()
 	requireNoError(t, err)
 	if len(entries) != 0 {
 		t.Fatalf("invalid target was recorded: %v", entries)
@@ -465,9 +465,9 @@ func TestRunRecordsSelections(t *testing.T) {
 				r.Responses = append(r.Responses, spy.Response{OnRun: mock.WriteToStdout(home)})
 			}
 			requireNoError(t, Run(args, "tmux", r, mock.Path{}))
-			entries, err := history.Default().Ranked()
+			entries, err := history.Ranked()
 			requireNoError(t, err)
-			want := []history.Entry{{Path: target, Count: 1}}
+			want := []string{target}
 			if diff := cmp.Diff(want, entries); diff != "" {
 				t.Fatal(diff)
 			}
@@ -482,7 +482,7 @@ func TestRunWithoutSelectionDoesNotRecordHistory(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	r := &spy.SpyRunner{}
 	requireNoError(t, Run(nil, "tmux", r, mock.Path{}))
-	entries, err := history.Default().Ranked()
+	entries, err := history.Ranked()
 	requireNoError(t, err)
 	if len(entries) != 0 {
 		t.Fatalf("empty selection was recorded: %v", entries)

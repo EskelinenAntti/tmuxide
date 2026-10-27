@@ -1,9 +1,9 @@
 package picker
 
 import (
-	"bytes"
 	"io"
 	"path/filepath"
+	"strings"
 )
 
 // candidates streams unique paths without buffering the full filesystem scan.
@@ -11,45 +11,31 @@ import (
 type candidates struct {
 	output  io.Writer
 	seen    map[string]bool
-	pending []byte
-	err     error
+	pending string
 }
 
 func (c *candidates) add(path string) error {
-	if c.err != nil {
-		return c.err
-	}
 	key := filepath.Clean(path)
 	if path == "" || c.seen[key] {
 		return nil
 	}
-	_, c.err = io.WriteString(c.output, path+"\n")
-	if c.err == nil {
+	_, err := io.WriteString(c.output, path+"\n")
+	if err == nil {
 		c.seen[key] = true
 	}
-	return c.err
+	return err
 }
 
 func (c *candidates) Write(p []byte) (int, error) {
-	c.pending = append(c.pending, p...)
+	c.pending += string(p)
 	for {
-		end := bytes.IndexByte(c.pending, '\n')
-		if end < 0 {
-			break
+		path, rest, ok := strings.Cut(c.pending, "\n")
+		if !ok {
+			return len(p), nil
 		}
-		if err := c.add(string(c.pending[:end])); err != nil {
+		c.pending = rest
+		if err := c.add(path); err != nil {
 			return 0, err
 		}
-		c.pending = c.pending[end+1:]
 	}
-	return len(p), nil
-}
-
-func (c *candidates) flush() error {
-	if len(c.pending) == 0 {
-		return c.err
-	}
-	path := string(c.pending)
-	c.pending = nil
-	return c.add(path)
 }

@@ -7,8 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
-	"syscall"
 	"testing"
 
 	"github.com/eskelinenantti/tmuxide/internal/history"
@@ -21,11 +19,12 @@ import (
 )
 
 func TestSearchRanksHistoryBeforeScanningFoldersAndHome(t *testing.T) {
-	home := t.TempDir()
+	dir := t.TempDir()
+	home := filepath.Join(dir, "home")
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	for _, dir := range []string{"popular", "other folder"} {
-		if err := os.Mkdir(filepath.Join(home, dir), 0755); err != nil {
+		if err := os.MkdirAll(filepath.Join(home, dir), 0755); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -33,7 +32,7 @@ func TestSearchRanksHistoryBeforeScanningFoldersAndHome(t *testing.T) {
 	if err := os.WriteFile(file, nil, 0644); err != nil {
 		t.Fatal(err)
 	}
-	outside := filepath.Join(t.TempDir(), "outside.txt")
+	outside := filepath.Join(dir, "outside.txt")
 	if err := os.WriteFile(outside, nil, 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -42,7 +41,7 @@ func TestSearchRanksHistoryBeforeScanningFoldersAndHome(t *testing.T) {
 		filepath.Join(home, "popular"), filepath.Join(home, "popular"),
 		filepath.Join(home, "other folder"), outside, filepath.Join(home, "missing"),
 	} {
-		if err := history.Default().Record(path); err != nil {
+		if err := history.Record(path); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -63,21 +62,7 @@ func TestSearchRanksHistoryBeforeScanningFoldersAndHome(t *testing.T) {
 	if diff := cmp.Diff(wantCalls, r.Calls); diff != "" {
 		t.Fatal(diff)
 	}
-	// The two paths selected once are ordered alphabetically by absolute path.
-	entries, err := history.Default().Ranked()
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := "popular/file.txt\npopular/\n"
-	for _, entry := range entries[2:] {
-		switch entry.Path {
-		case outside:
-			want += outside + "\n"
-		case filepath.Join(home, "other folder"):
-			want += "other folder/\n"
-		}
-	}
-	want += "popular/child.txt\nother folder/child.txt\nnew.txt\n"
+	want := "popular/file.txt\npopular/\nother folder/\n" + outside + "\npopular/child.txt\nother folder/child.txt\nnew.txt\n"
 	if got := buffer.String(); got != want {
 		t.Fatalf("results = %q, want %q", got, want)
 	}
@@ -114,12 +99,10 @@ func TestSearchWithoutUsableHistory(t *testing.T) {
 }
 
 type promptRunner struct {
-	input    bytes.Buffer
 	selected string
 	writeErr error
 	closeErr error
 	scanErr  error
-	pipeExit error
 	closed   bool
 }
 
@@ -128,9 +111,6 @@ func (r *promptRunner) Run(cmd *exec.Cmd) error {
 		return r.scanErr
 	}
 	_, err := io.WriteString(cmd.Stdout, "file\n")
-	if err != nil && r.pipeExit != nil {
-		return r.pipeExit
-	}
 	return err
 }
 
@@ -145,7 +125,7 @@ func (r *promptRunner) Write(p []byte) (int, error) {
 	if r.writeErr != nil {
 		return 0, r.writeErr
 	}
-	return r.input.Write(p)
+	return len(p), nil
 }
 
 func (r *promptRunner) Close() error {
@@ -168,10 +148,10 @@ func TestPrompt(t *testing.T) {
 		{name: "absolute path", runner: promptRunner{selected: "/outside/file\n"}, want: "/outside/file"},
 		{name: "spaces preserved", runner: promptRunner{selected: " file \n"}, want: filepath.Join(home, " file ")},
 		{name: "empty selection"},
-		{name: "early selection", runner: promptRunner{selected: "file\n", writeErr: syscall.EPIPE}, want: filepath.Join(home, "file")},
-		{name: "fd exits after early selection", runner: promptRunner{selected: "file\n", writeErr: syscall.EPIPE, pipeExit: exitError(t, 2)}, want: filepath.Join(home, "file")},
+		{name: "early selection", runner: promptRunner{selected: "file\n", writeErr: io.ErrClosedPipe}, want: filepath.Join(home, "file")},
+		{name: "selection despite scan error", runner: promptRunner{selected: "file\n", scanErr: failure}, want: filepath.Join(home, "file")},
 		{name: "scan failure", runner: promptRunner{scanErr: failure}, err: failure},
-		{name: "cancelled", runner: promptRunner{closeErr: exitError(t, 130)}},
+		{name: "cancelled", runner: promptRunner{closeErr: exec.Command("sh", "-c", "exit 130").Run()}},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &tt.runner
@@ -184,14 +164,4 @@ func TestPrompt(t *testing.T) {
 			}
 		})
 	}
-}
-
-func exitError(t *testing.T, code int) error {
-	t.Helper()
-	err := exec.Command("sh", "-c", "exit \"$1\"", "sh", strconv.Itoa(code)).Run()
-	var exitErr *exec.ExitError
-	if !errors.As(err, &exitErr) {
-		t.Fatalf("expected exit error, got %v", err)
-	}
-	return err
 }

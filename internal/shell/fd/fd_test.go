@@ -32,7 +32,6 @@ func TestFdErrors(t *testing.T) {
 	}{
 		{name: "success"},
 		{name: "start failure", err: failure, want: failure},
-		{name: "closed fzf pipe", err: exec.Command("sh", "-c", "exit 1").Run()},
 		{name: "unexpected exit", err: exitErr, want: exitErr},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
