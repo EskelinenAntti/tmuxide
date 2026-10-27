@@ -33,6 +33,23 @@ func load() (map[string]int, error) {
 	return counts, err
 }
 
+func save(counts map[string]int) error {
+	data, err := json.Marshal(counts)
+	if err != nil {
+		return err
+	}
+	filename := filePath()
+	if err := os.MkdirAll(filepath.Dir(filename), 0700); err != nil {
+		return err
+	}
+	temporary := filename + ".tmp"
+	defer os.Remove(temporary)
+	if err := os.WriteFile(temporary, data, 0600); err != nil {
+		return err
+	}
+	return os.Rename(temporary, filename)
+}
+
 func Ranked() ([]string, error) {
 	counts, err := load()
 	if err != nil {
@@ -61,18 +78,5 @@ func Record(path string) error {
 		return err
 	}
 	counts[path]++
-	data, err := json.Marshal(counts)
-	if err != nil {
-		return err
-	}
-	filename := filePath()
-	if err := os.MkdirAll(filepath.Dir(filename), 0700); err != nil {
-		return err
-	}
-	temporary := filename + ".tmp"
-	defer os.Remove(temporary)
-	if err := os.WriteFile(temporary, data, 0600); err != nil {
-		return err
-	}
-	return os.Rename(temporary, filename)
+	return save(counts)
 }

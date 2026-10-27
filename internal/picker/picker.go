@@ -20,7 +20,7 @@ func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 		return "", err
 	}
 
-	scanErr := search(fd, &candidates{output: fzfStdin, seen: make(map[string]bool)})
+	scanErr := streamCandidates(fd, &candidates{output: fzfStdin, seen: make(map[string]bool)})
 
 	err = fzfStdin.Close()
 	if err != nil {
@@ -39,7 +39,7 @@ func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 	return filepath.Join(os.Getenv("HOME"), selection), nil
 }
 
-func search(fd fd.Cmd, output *candidates) error {
+func streamCandidates(fd fd.Cmd, output *candidates) error {
 	home := os.Getenv("HOME")
 	paths, _ := history.Ranked()
 	var folders []string
