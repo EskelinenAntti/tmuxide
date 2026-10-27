@@ -1,6 +1,7 @@
 package spy
 
 import (
+	"bytes"
 	"os/exec"
 
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
@@ -15,16 +16,15 @@ type Response struct {
 type SpyRunner struct {
 	Calls     [][]string
 	Responses []Response
+	Stdin     bytes.Buffer
 }
 
-type FakeWriteCloser struct{}
+type FakeWriteCloser struct {
+	*bytes.Buffer
+}
 
 func (f FakeWriteCloser) Close() error {
 	return nil
-}
-
-func (f FakeWriteCloser) Write(p []byte) (n int, err error) {
-	return 0, nil
 }
 
 func (t *SpyRunner) Run(cmd *exec.Cmd) error {
@@ -43,5 +43,5 @@ func (t *SpyRunner) Run(cmd *exec.Cmd) error {
 }
 
 func (t *SpyRunner) Start(cmd *exec.Cmd) (runner.WriteCloser, error) {
-	return FakeWriteCloser{}, t.Run(cmd)
+	return FakeWriteCloser{&t.Stdin}, t.Run(cmd)
 }

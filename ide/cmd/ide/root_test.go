@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/eskelinenantti/tmuxide/internal/history"
 	"github.com/eskelinenantti/tmuxide/internal/project"
 	"github.com/eskelinenantti/tmuxide/internal/shell"
 	"github.com/eskelinenantti/tmuxide/internal/test/mock"
@@ -303,11 +302,6 @@ func TestFileDoesNotExist(t *testing.T) {
 	}
 
 	requireCalls(t, nil, spyRunner.Calls)
-	entries, err := history.Ranked()
-	requireNoError(t, err)
-	if len(entries) != 0 {
-		t.Fatalf("invalid target was recorded: %v", entries)
-	}
 }
 
 func TestFileInRepository(t *testing.T) {
@@ -431,7 +425,7 @@ func TestHerdrRelativeFileInRepository(t *testing.T) {
 	}, runner.Calls)
 }
 
-func TestRunRecordsSelections(t *testing.T) {
+func TestSelectedTargetsAppearFirstInNextSearch(t *testing.T) {
 	for _, tt := range []struct {
 		name   string
 		file   bool
@@ -465,41 +459,113 @@ func TestRunRecordsSelections(t *testing.T) {
 				r.Responses = append(r.Responses, spy.Response{OnRun: mock.WriteToStdout(home)})
 			}
 			requireNoError(t, Run(args, "tmux", r, mock.Path{}))
-			entries, err := history.Ranked()
-			requireNoError(t, err)
-			want := []string{target}
-			if diff := cmp.Diff(want, entries); diff != "" {
+			next := &spy.SpyRunner{}
+			requireNoError(t, Run(nil, "tmux", next, mock.Path{}))
+			want := "target/\n"
+			if tt.file {
+				want = "target\n"
+			}
+			if diff := cmp.Diff(want, next.Stdin.String()); diff != "" {
 				t.Fatal(diff)
 			}
 		})
 	}
 }
 
-func TestRunWithoutSelectionDoesNotRecordHistory(t *testing.T) {
+func TestPromptWithoutSelectionDoesNotOpenSession(t *testing.T) {
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	t.Setenv("HERDR_ENV", "")
 	t.Setenv("EDITOR", editor)
 	t.Setenv("HOME", t.TempDir())
 	r := &spy.SpyRunner{}
 	requireNoError(t, Run(nil, "tmux", r, mock.Path{}))
-	entries, err := history.Ranked()
-	requireNoError(t, err)
-	if len(entries) != 0 {
-		t.Fatalf("empty selection was recorded: %v", entries)
-	}
 	if len(r.Calls) != 2 {
 		t.Fatalf("unexpected commands after empty selection: %v", r.Calls)
 	}
 }
 
-func TestRunWithUnavailableHistory(t *testing.T) {
+func TestSearchPrioritizesFrequentSelections(t *testing.T) {
 	t.Setenv("HERDR_ENV", "")
 	t.Setenv("EDITOR", editor)
-	dir := t.TempDir()
-	t.Setenv("XDG_STATE_HOME", createFile(t, dir, "state"))
-	r := &spy.SpyRunner{}
-	requireNoError(t, Run([]string{dir}, "tmux", r, mock.Path{}))
-	if len(r.Calls) != 2 || r.Calls[1][0] != "tmux" {
-		t.Fatalf("navigation did not complete: %v", r.Calls)
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+	unsetenv(t, "TMUX")
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Chdir(home)
+	for _, dir := range []string{"project", "another"} {
+		requireNoError(t, os.Mkdir(dir, 0755))
+	}
+	for _, file := range []string{"project/notes.txt", "project/child.txt", "another/child.txt", "z.txt", "deleted.txt", "new.txt"} {
+		createFile(t, home, file)
+	}
+	for _, target := range []string{"z.txt", "another", "project/notes.txt", "project", "./project/notes.txt", "project", "project/notes.txt", "deleted.txt"} {
+		r := &spy.SpyRunner{}
+		if filepath.Ext(target) == ".txt" {
+			r.Responses = []spy.Response{{OnRun: mock.SimulateError}}
+		}
+		requireNoError(t, Run([]string{target}, "tmux", r, mock.Path{}))
+	}
+	requireNoError(t, os.Remove("deleted.txt"))
+	r := &spy.SpyRunner{Responses: []spy.Response{
+		{OnRun: mock.WriteToStdout("project/notes.txt\n")},
+		{OnRun: mock.WriteToStdout("project/notes.txt\nproject/child.txt\n")},
+		{OnRun: mock.WriteToStdout("another/child.txt\n")},
+		{OnRun: mock.WriteToStdout("another/\nproject/\nproject/notes.txt\nz.txt\nnew.txt\n")},
+		{OnRun: mock.SimulateError},
+	}}
+	requireNoError(t, Run(nil, "tmux", r, mock.Path{}))
+	want := "project/notes.txt\nproject/\nanother/\nz.txt\nproject/child.txt\nanother/child.txt\nnew.txt\n"
+	if diff := cmp.Diff(want, r.Stdin.String()); diff != "" {
+		t.Fatal(diff)
+	}
+	dir := filepath.Join(home, "project")
+	session := project.Name(dir)
+	requireCalls(t, [][]string{
+		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
+		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--", "project"},
+		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--", "another"},
+		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--"},
+		{"git", "-C", dir, "rev-parse", "--show-toplevel"},
+		{"tmux", "has-session", "-t", session + ":"},
+		{"tmux", "new-window", "-t", session + ":", "-c", dir, editor, filepath.Join(dir, "notes.txt")},
+		{"tmux", "attach", "-t", session + ":"},
+	}, r.Calls)
+}
+
+func TestSearchWithoutUsableHistory(t *testing.T) {
+	for _, state := range []string{"missing", "invalid", "unavailable"} {
+		t.Run(state, func(t *testing.T) {
+			t.Setenv("HERDR_ENV", "")
+			t.Setenv("EDITOR", editor)
+			unsetenv(t, "TMUX")
+			home := t.TempDir()
+			t.Setenv("HOME", home)
+			stateHome := t.TempDir()
+			if state == "invalid" {
+				dir := filepath.Join(stateHome, "tmuxide")
+				requireNoError(t, os.Mkdir(dir, 0700))
+				requireNoError(t, os.WriteFile(filepath.Join(dir, "history.json"), []byte("not json"), 0600))
+			} else if state == "unavailable" {
+				stateHome = createFile(t, stateHome, "state")
+			}
+			t.Setenv("XDG_STATE_HOME", stateHome)
+			dir := filepath.Join(home, "project")
+			requireNoError(t, os.Mkdir(dir, 0755))
+			r := &spy.SpyRunner{Responses: []spy.Response{
+				{OnRun: mock.WriteToStdout("project/\n")},
+				{OnRun: mock.WriteToStdout("project/\n")},
+			}}
+			requireNoError(t, Run(nil, "tmux", r, mock.Path{}))
+			if diff := cmp.Diff("project/\n", r.Stdin.String()); diff != "" {
+				t.Fatal(diff)
+			}
+			session := project.Name(dir)
+			requireCalls(t, [][]string{
+				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
+				{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--"},
+				{"tmux", "has-session", "-t", session + ":"},
+				{"tmux", "attach", "-t", session + ":"},
+			}, r.Calls)
+		})
 	}
 }
