@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"sync"
 )
 
 var ErrCommandFailed = errors.New("command failed")
@@ -12,6 +14,7 @@ var ErrCommandFailed = errors.New("command failed")
 type Process interface {
 	io.WriteCloser
 	Wait() error
+	Kill() error
 }
 
 type Runner interface {
@@ -28,7 +31,8 @@ type CmdProcess struct {
 
 type CmdReadCloser struct {
 	io.ReadCloser
-	cmd *exec.Cmd
+	cmd  *exec.Cmd
+	wait func() error
 }
 
 func (c CmdRunner) Run(cmd *exec.Cmd) error {
@@ -62,7 +66,13 @@ func (c CmdRunner) Read(cmd *exec.Cmd) (io.ReadCloser, error) {
 		stdout.Close()
 		return nil, fmt.Errorf("'%v' %w: %w", cmd.Args, ErrCommandFailed, err)
 	}
-	return CmdReadCloser{ReadCloser: stdout, cmd: cmd}, nil
+	wait := sync.OnceValue(func() error {
+		if err := cmd.Wait(); err != nil {
+			return fmt.Errorf("'%v' %w: %w", cmd.Args, ErrCommandFailed, err)
+		}
+		return nil
+	})
+	return CmdReadCloser{ReadCloser: stdout, cmd: cmd, wait: wait}, nil
 }
 
 func (c CmdProcess) Write(p []byte) (n int, err error) {
@@ -77,10 +87,38 @@ func (c CmdProcess) Wait() error {
 	return c.cmd.Wait()
 }
 
-func (c CmdReadCloser) Close() error {
-	err := errors.Join(c.ReadCloser.Close(), c.cmd.Wait())
-	if err != nil {
-		return fmt.Errorf("'%v' %w: %w", c.cmd.Args, ErrCommandFailed, err)
+// Kill also closes stdin and reaps the command, unless Wait already did so.
+func (c CmdProcess) Kill() error {
+	c.stdin.Close()
+	if c.cmd.ProcessState != nil {
+		return nil
 	}
-	return nil
+	err := c.cmd.Process.Kill()
+	c.cmd.Wait()
+	if errors.Is(err, os.ErrProcessDone) {
+		return nil
+	}
+	return err
+}
+
+func (c CmdReadCloser) Read(p []byte) (int, error) {
+	n, err := c.ReadCloser.Read(p)
+	if err == io.EOF {
+		// Exit status travels with stdout, rather than being lost in a deferred Close.
+		if waitErr := c.wait(); waitErr != nil {
+			return n, waitErr
+		}
+	}
+	return n, err
+}
+
+func (c CmdReadCloser) Close() error {
+	if c.cmd.ProcessState == nil {
+		c.cmd.Process.Kill()
+	}
+	err := c.ReadCloser.Close()
+	if errors.Is(err, os.ErrClosed) {
+		err = nil
+	}
+	return errors.Join(err, c.wait())
 }

@@ -69,7 +69,7 @@ func Run(args []string, muxFlag string, runner runner.Runner, path path.ShellPat
 
 	var target string
 	if len(args) == 0 {
-		target, err = picker.Prompt(shell.Fd, shell.Fzf)
+		target, err = picker.Prompt(shell.Ranked, shell.Fd, shell.Fzf)
 	} else {
 		target = args[0]
 	}

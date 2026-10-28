@@ -3,34 +3,36 @@ package picker
 import (
 	"bytes"
 	"context"
+	"errors"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
-	"github.com/eskelinenantti/tmuxide/internal/history"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
+	"github.com/eskelinenantti/tmuxide/internal/shell/pipe"
+	"github.com/eskelinenantti/tmuxide/internal/shell/ranked"
 )
 
-func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
+func Prompt(ranked ranked.Cmd, fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 	var buffer bytes.Buffer
 	fzfStdin, err := fzf.Fzf(&buffer)
 	if err != nil {
 		return "", err
 	}
-	defer cleanupPicker(fzfStdin)
+	defer fzfStdin.Kill()
 
-	seen, err := writeRanked(fzfStdin, history.Ranked())
+	rankedStdout := ranked.Ranked()
+	fdStdout, err := fd.Fd(context.Background())
 	if err != nil {
 		return "", err
 	}
+	defer fdStdout.Close()
 
-	results, err := fd.Fd(ctx)
-	if err != nil {
-		return "", err
-	}
-
-	if err := streamUnseen(fzfStdin, results, seen, cancel); err != nil {
+	stdin := io.MultiReader(rankedStdout, fdStdout)
+	if err := pipe.Pipe(pipe.DeduplicatePaths(stdin), fzfStdin); err != nil {
 		return "", err
 	}
 
@@ -39,11 +41,16 @@ func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 	}
 
 	if err := fzfStdin.Wait(); err != nil {
-		if IsUserCancelledErr(err) {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 130 {
 			return "", nil
 		}
 		return "", err
 	}
 
-	return selectedPath(buffer.String()), nil
+	selection := strings.TrimSuffix(buffer.String(), "\n")
+	if selection == "" || filepath.IsAbs(selection) {
+		return selection, nil
+	}
+	return filepath.Join(os.Getenv("HOME"), selection), nil
 }

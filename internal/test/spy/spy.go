@@ -32,6 +32,10 @@ func (f FakeProcess) Wait() error {
 	return nil
 }
 
+func (f FakeProcess) Kill() error {
+	return nil
+}
+
 func (t *SpyRunner) Run(cmd *exec.Cmd) error {
 	t.Calls = append(t.Calls, cmd.Args)
 

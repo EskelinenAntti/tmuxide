@@ -8,6 +8,7 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/history"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
+	"github.com/eskelinenantti/tmuxide/internal/shell/ranked"
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 	"github.com/eskelinenantti/tmuxide/internal/test/mock"
 	"github.com/eskelinenantti/tmuxide/internal/test/spy"
@@ -35,7 +36,7 @@ func TestPromptWritesRankedPathsThenOneScan(t *testing.T) {
 		{OnRun: mock.WriteToStdout("project/\n")},
 		{OnRun: mock.WriteToStdout("./project/\nproject/file.txt\nproject/child.txt\nother.txt\n")},
 	}}
-	selection, err := Prompt(fd.Cmd{Runner: r}, fzf.Cmd{Runner: r})
+	selection, err := Prompt(ranked.Cmd{}, fd.Cmd{Runner: r}, fzf.Cmd{Runner: r})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -69,6 +70,23 @@ func TestPrompt(t *testing.T) {
 			selection: "project",
 		},
 		{
+			name:      "absolute selection",
+			fd:        "printf 'project/\n'",
+			fzf:       "while IFS= read -r line; do :; done; printf '/outside/project/\n'",
+			selection: "/outside/project/",
+		},
+		{
+			name:      "selection with trailing space",
+			fd:        "printf 'project /\n'",
+			fzf:       "while IFS= read -r line; do :; done; printf 'project \n'",
+			selection: "project ",
+		},
+		{
+			name: "empty selection",
+			fd:   "printf 'project/\n'",
+			fzf:  "while IFS= read -r line; do :; done",
+		},
+		{
 			name: "user cancellation",
 			fd:   "printf 'project/\n'",
 			fzf:  "exit 130",
@@ -92,6 +110,12 @@ func TestPrompt(t *testing.T) {
 			wantError: true,
 		},
 		{
+			name:      "scan failure stops fzf without waiting for user input",
+			fd:        "exit 7",
+			fzf:       "exec /bin/sleep 60",
+			wantError: true,
+		},
+		{
 			name:      "fzf failure",
 			fd:        "printf 'project/\n'",
 			fzf:       "exit 2",
@@ -111,12 +135,14 @@ func TestPrompt(t *testing.T) {
 				}
 			}
 			r := runner.CmdRunner{}
-			selection, err := Prompt(fd.Cmd{Runner: r}, fzf.Cmd{Runner: r})
+			selection, err := Prompt(ranked.Cmd{}, fd.Cmd{Runner: r}, fzf.Cmd{Runner: r})
 			if (err != nil) != tt.wantError {
 				t.Fatalf("Prompt error = %v, want error = %v", err, tt.wantError)
 			}
 			want := ""
-			if tt.selection != "" {
+			if filepath.IsAbs(tt.selection) {
+				want = tt.selection
+			} else if tt.selection != "" {
 				want = filepath.Join(home, tt.selection)
 			}
 			if selection != want {
