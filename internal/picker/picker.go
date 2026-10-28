@@ -3,11 +3,6 @@ package picker
 import (
 	"bytes"
 	"context"
-	"errors"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/history"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
@@ -23,45 +18,32 @@ func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer cleanupPicker(fzfStdin)
 
-	seen := make(map[string]bool)
-	candidateErr := writeRanked(fzfStdin, history.Ranked(), seen)
-	if candidateErr == nil {
-		input, err := fd.Fd(ctx)
-		if err != nil {
-			candidateErr = err
-		} else {
-			candidateErr = copyUnseen(fzfStdin, input, seen)
-			if candidateErr != nil {
-				cancel()
-			}
-			candidateErr = errors.Join(candidateErr, input.Close())
-		}
-	}
-	candidateErr = errors.Join(candidateErr, fzfStdin.Close())
-	err = fzfStdin.Wait()
+	seen, err := writeRanked(fzfStdin, history.Ranked())
 	if err != nil {
+		return "", err
+	}
+
+	results, err := fd.Fd(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	if err := streamUnseen(fzfStdin, results, seen, cancel); err != nil {
+		return "", err
+	}
+
+	if err := fzfStdin.Close(); err != nil {
+		return "", err
+	}
+
+	if err := fzfStdin.Wait(); err != nil {
 		if IsUserCancelledErr(err) {
 			return "", nil
 		}
 		return "", err
 	}
 
-	selection := strings.TrimSuffix(buffer.String(), "\n")
-	if selection == "" {
-		return "", candidateErr
-	}
-	if filepath.IsAbs(selection) {
-		return selection, nil
-	}
-	return filepath.Join(os.Getenv("HOME"), selection), nil
-}
-
-func IsUserCancelledErr(err error) bool {
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
-		exitCode := exitErr.ExitCode()
-		return exitCode == 130
-	}
-	return false
+	return selectedPath(buffer.String()), nil
 }

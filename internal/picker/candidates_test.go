@@ -30,7 +30,7 @@ func TestWriteRankedFormatsExistingPaths(t *testing.T) {
 	}
 	paths := []string{file, dir, filepath.Join(home, "missing"), newline, external}
 	var output bytes.Buffer
-	if err := writeRanked(&output, paths, make(map[string]bool)); err != nil {
+	if _, err := writeRanked(&output, paths); err != nil {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff("project/file.txt\nproject/\n"+external+"\n", output.String()); diff != "" {

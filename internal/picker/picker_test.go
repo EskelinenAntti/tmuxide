@@ -86,6 +86,12 @@ func TestPrompt(t *testing.T) {
 			wantError: true,
 		},
 		{
+			name:      "scan failure takes precedence over selection",
+			fd:        "exit 7",
+			fzf:       "while IFS= read -r line; do :; done; printf 'project/\n'",
+			wantError: true,
+		},
+		{
 			name:      "fzf failure",
 			fd:        "printf 'project/\n'",
 			fzf:       "exit 2",

@@ -2,14 +2,17 @@ package picker
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
-func writeRanked(output io.Writer, paths []string, seen map[string]bool) error {
+func writeRanked(output io.Writer, paths []string) (map[string]bool, error) {
 	home := os.Getenv("HOME")
+	seen := make(map[string]bool)
 	for _, path := range paths {
 		fileInfo, err := os.Stat(path)
 		if err != nil || strings.ContainsAny(path, "\r\n") {
@@ -22,10 +25,13 @@ func writeRanked(output io.Writer, paths []string, seen map[string]bool) error {
 			path += string(filepath.Separator)
 		}
 		if err := writePath(output, path, seen); err != nil {
-			return err
+			if errors.Is(err, syscall.EPIPE) {
+				return seen, nil
+			}
+			return nil, err
 		}
 	}
-	return nil
+	return seen, nil
 }
 
 func copyUnseen(output io.Writer, input io.Reader, seen map[string]bool) error {
@@ -48,4 +54,12 @@ func writePath(output io.Writer, path string, seen map[string]bool) error {
 	}
 	seen[key] = true
 	return nil
+}
+
+func selectedPath(output string) string {
+	selection := strings.TrimSuffix(output, "\n")
+	if selection == "" || filepath.IsAbs(selection) {
+		return selection
+	}
+	return filepath.Join(os.Getenv("HOME"), selection)
 }
