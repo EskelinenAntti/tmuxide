@@ -19,8 +19,8 @@ func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 		return "", err
 	}
 
-	fdErr := fd.Fd(fzfStdin)
-	fdErr = errors.Join(fdErr, fzfStdin.Close())
+	candidateErr := writeCandidates(fd, fzfStdin)
+	candidateErr = errors.Join(candidateErr, fzfStdin.Close())
 	err = fzfStdin.Wait()
 	if err != nil {
 		if IsUserCancelledErr(err) {
@@ -31,7 +31,7 @@ func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 
 	selection := strings.TrimSuffix(buffer.String(), "\n")
 	if selection == "" {
-		return "", fdErr
+		return "", candidateErr
 	}
 	if filepath.IsAbs(selection) {
 		return selection, nil
