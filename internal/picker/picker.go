@@ -2,24 +2,42 @@ package picker
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/eskelinenantti/tmuxide/internal/history"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
 )
 
 func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	var buffer bytes.Buffer
 	fzfStdin, err := fzf.Fzf(&buffer)
 	if err != nil {
 		return "", err
 	}
 
-	candidateErr := writeCandidates(fd, fzfStdin)
+	seen := make(map[string]bool)
+	candidateErr := writeRanked(fzfStdin, history.Ranked(), seen)
+	if candidateErr == nil {
+		input, err := fd.Fd(ctx)
+		if err != nil {
+			candidateErr = err
+		} else {
+			candidateErr = copyUnseen(fzfStdin, input, seen)
+			if candidateErr != nil {
+				cancel()
+			}
+			candidateErr = errors.Join(candidateErr, input.Close())
+		}
+	}
 	candidateErr = errors.Join(candidateErr, fzfStdin.Close())
 	err = fzfStdin.Wait()
 	if err != nil {

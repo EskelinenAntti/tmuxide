@@ -6,17 +6,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/eskelinenantti/tmuxide/internal/history"
-	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
-	"github.com/eskelinenantti/tmuxide/internal/test/mock"
-	"github.com/eskelinenantti/tmuxide/internal/test/spy"
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestWriteCandidatesWritesRankedPathsThenOneScan(t *testing.T) {
+func TestWriteRankedFormatsExistingPaths(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	dir := filepath.Join(home, "project")
 	if err := os.Mkdir(dir, 0755); err != nil {
 		t.Fatal(err)
@@ -25,23 +20,20 @@ func TestWriteCandidatesWritesRankedPathsThenOneScan(t *testing.T) {
 	if err := os.WriteFile(file, nil, 0644); err != nil {
 		t.Fatal(err)
 	}
-	history.Record(dir)
-	history.Record(file)
-	history.Record(file)
-	history.Record(filepath.Join(home, "missing"))
-
-	runner := &spy.SpyRunner{Responses: []spy.Response{
-		{OnRun: mock.WriteToStdout("./project/\nproject/file.txt\nproject/child.txt\nother.txt\n")},
-	}}
-	var output bytes.Buffer
-	if err := writeCandidates(fd.Cmd{Runner: runner}, &output); err != nil {
+	external := filepath.Join(t.TempDir(), "external.txt")
+	if err := os.WriteFile(external, nil, 0644); err != nil {
 		t.Fatal(err)
 	}
-	if diff := cmp.Diff("project/file.txt\nproject/\nproject/child.txt\nother.txt\n", output.String()); diff != "" {
-		t.Fatal(diff)
+	newline := filepath.Join(home, "new\nline")
+	if err := os.WriteFile(newline, nil, 0644); err != nil {
+		t.Fatal(err)
 	}
-	wantCalls := [][]string{{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--"}}
-	if diff := cmp.Diff(wantCalls, runner.Calls); diff != "" {
+	paths := []string{file, dir, filepath.Join(home, "missing"), newline, external}
+	var output bytes.Buffer
+	if err := writeRanked(&output, paths, make(map[string]bool)); err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff("project/file.txt\nproject/\n"+external+"\n", output.String()); diff != "" {
 		t.Fatal(diff)
 	}
 }

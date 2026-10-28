@@ -2,23 +2,15 @@ package picker
 
 import (
 	"bufio"
-	"context"
-	"errors"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/eskelinenantti/tmuxide/internal/history"
-	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
 )
 
-func writeCandidates(fd fd.Cmd, output io.Writer) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+func writeRanked(output io.Writer, paths []string, seen map[string]bool) error {
 	home := os.Getenv("HOME")
-	seen := make(map[string]bool)
-	for _, path := range history.Ranked() {
+	for _, path := range paths {
 		fileInfo, err := os.Stat(path)
 		if err != nil || strings.ContainsAny(path, "\r\n") {
 			continue
@@ -33,23 +25,17 @@ func writeCandidates(fd fd.Cmd, output io.Writer) error {
 			return err
 		}
 	}
+	return nil
+}
 
-	input, err := fd.Fd(ctx)
-	if err != nil {
-		return err
-	}
+func copyUnseen(output io.Writer, input io.Reader, seen map[string]bool) error {
 	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
 		if err := writePath(output, scanner.Text(), seen); err != nil {
-			cancel()
-			input.Close()
 			return err
 		}
 	}
-	if scanner.Err() != nil {
-		cancel()
-	}
-	return errors.Join(scanner.Err(), input.Close())
+	return scanner.Err()
 }
 
 func writePath(output io.Writer, path string, seen map[string]bool) error {
