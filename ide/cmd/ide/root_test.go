@@ -441,7 +441,6 @@ func TestSearchPrioritizesFrequentSelections(t *testing.T) {
 
 	runner := &spy.SpyRunner{Responses: []spy.Response{
 		{OnRun: mock.WriteToStdout("project/\n")},
-		{OnRun: mock.WriteToStdout("project/file.txt\nproject/child.txt\n")},
 		{OnRun: mock.WriteToStdout("project/\nproject/file.txt\nproject/child.txt\nother.txt\n")},
 	}}
 	requireNoError(t, Run(nil, "tmux", runner, mock.Path{}))

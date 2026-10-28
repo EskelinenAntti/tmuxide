@@ -2,7 +2,6 @@ package picker
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"os"
 	"os/exec"
@@ -20,17 +19,9 @@ func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
 		return "", err
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	done := make(chan error, 1)
-	go func() {
-		err := fd.Fd(ctx, fzfStdin)
-		done <- errors.Join(err, fzfStdin.Close())
-	}()
-
+	fdErr := fd.Fd(fzfStdin)
+	fdErr = errors.Join(fdErr, fzfStdin.Close())
 	err = fzfStdin.Wait()
-	cancel()
-	fdErr := <-done
 	if err != nil {
 		if IsUserCancelledErr(err) {
 			return "", nil

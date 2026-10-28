@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/eskelinenantti/tmuxide/internal/history"
@@ -19,16 +18,12 @@ type Cmd struct {
 	runner.Runner
 }
 
-func (f Cmd) Fd(ctx context.Context, output io.Writer) error {
-	ctx, cancel := context.WithCancel(ctx)
+func (f Cmd) Fd(output io.Writer) error {
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	home := os.Getenv("HOME")
 	seen := make(map[string]bool)
-	var folders []string
 	for _, path := range history.Ranked() {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
 		fileInfo, err := os.Stat(path)
 		if err != nil || strings.ContainsAny(path, "\r\n") {
 			continue
@@ -37,7 +32,6 @@ func (f Cmd) Fd(ctx context.Context, output io.Writer) error {
 			path = relative
 		}
 		if fileInfo.IsDir() {
-			folders = append(folders, path)
 			path += string(filepath.Separator)
 		}
 		if err := write(output, path, seen); err != nil {
@@ -45,47 +39,31 @@ func (f Cmd) Fd(ctx context.Context, output io.Writer) error {
 		}
 	}
 
-	if !slices.Contains(folders, ".") {
-		folders = append(folders, ".")
-	}
-	for _, folder := range folders {
-		input, err := f.open(ctx, folder)
-		if err != nil {
-			return err
-		}
-		scanner := bufio.NewScanner(input)
-		for scanner.Scan() {
-			if err := write(output, scanner.Text(), seen); err != nil {
-				cancel()
-				input.Close()
-				return err
-			}
-		}
-		if scanner.Err() != nil {
-			cancel()
-		}
-		if err := errors.Join(scanner.Err(), input.Close()); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (f Cmd) open(ctx context.Context, folder string) (io.ReadCloser, error) {
 	args := []string{
 		"--follow",
 		"--hidden",
 		"--exclude", "{.git,node_modules,Library}",
 		".",
 		"--base-directory",
-		os.Getenv("HOME"),
+		home,
 		"--",
 	}
-	if folder != "." {
-		args = append(args, folder)
+	input, err := f.Read(exec.CommandContext(ctx, "fd", args...))
+	if err != nil {
+		return err
 	}
-
-	return f.Read(exec.CommandContext(ctx, "fd", args...))
+	scanner := bufio.NewScanner(input)
+	for scanner.Scan() {
+		if err := write(output, scanner.Text(), seen); err != nil {
+			cancel()
+			input.Close()
+			return err
+		}
+	}
+	if scanner.Err() != nil {
+		cancel()
+	}
+	return errors.Join(scanner.Err(), input.Close())
 }
 
 func write(output io.Writer, path string, seen map[string]bool) error {

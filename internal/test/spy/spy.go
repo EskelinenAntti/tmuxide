@@ -22,16 +22,13 @@ type SpyRunner struct {
 
 type FakeProcess struct {
 	*bytes.Buffer
-	done chan struct{}
 }
 
 func (f FakeProcess) Close() error {
-	close(f.done)
 	return nil
 }
 
 func (f FakeProcess) Wait() error {
-	<-f.done
 	return nil
 }
 
@@ -51,7 +48,7 @@ func (t *SpyRunner) Run(cmd *exec.Cmd) error {
 }
 
 func (t *SpyRunner) Start(cmd *exec.Cmd) (runner.Process, error) {
-	return FakeProcess{Buffer: &t.Stdin, done: make(chan struct{})}, t.Run(cmd)
+	return FakeProcess{Buffer: &t.Stdin}, t.Run(cmd)
 }
 
 func (t *SpyRunner) Read(cmd *exec.Cmd) (io.ReadCloser, error) {
