@@ -17,12 +17,14 @@ type Cmd struct {
 
 func (f Cmd) Fzf(input io.Reader, output io.Writer) error {
 	fzfCmd := exec.Command("fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort")
-	fzfCmd.Stdin = input
-	fzfCmd.Stdout = output
 	fzfCmd.Stderr = os.Stderr
-	err := f.Run(fzfCmd)
+	err := f.Pipe(input, fzfCmd, output)
+	var inputErr *runner.InputError
+	if errors.As(err, &inputErr) {
+		return err
+	}
 	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) && exitErr.ProcessState != nil && exitErr.ProcessState == fzfCmd.ProcessState && exitErr.ExitCode() == 130 {
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 130 {
 		return ErrCancelled
 	}
 	return err

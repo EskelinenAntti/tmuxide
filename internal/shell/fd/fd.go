@@ -21,5 +21,5 @@ func (f Cmd) Fd() (io.ReadCloser, error) {
 		"--base-directory",
 		os.Getenv("HOME"),
 	}
-	return f.Read(exec.Command("fd", args...))
+	return f.Stdout(exec.Command("fd", args...))
 }

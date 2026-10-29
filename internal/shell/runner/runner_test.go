@@ -2,20 +2,22 @@ package runner
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"testing/iotest"
 	"time"
 )
 
-func TestReadStreamsAndCancels(t *testing.T) {
+func TestStdoutStreamsAndCancels(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	cmd := exec.CommandContext(ctx, "sh", "-c", "printf 'project/\n'; exec sleep 60")
-	input, err := (CmdRunner{}).Read(cmd)
+	input, err := (CmdRunner{}).Stdout(cmd)
 	if err != nil {
 		cancel()
 		t.Fatal(err)
@@ -40,9 +42,9 @@ func TestRunReturnsExitStatus(t *testing.T) {
 	}
 }
 
-func TestReadReturnsExitStatusAtEOF(t *testing.T) {
+func TestStdoutReturnsExitStatusAtEOF(t *testing.T) {
 	cmd := exec.Command("sh", "-c", "printf 'project/\n'; exit 7")
-	input, err := (CmdRunner{}).Read(cmd)
+	input, err := (CmdRunner{}).Stdout(cmd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,9 +59,9 @@ func TestReadReturnsExitStatusAtEOF(t *testing.T) {
 	}
 }
 
-func TestReadClosesSuccessfullyAfterEOF(t *testing.T) {
+func TestStdoutClosesSuccessfullyAfterEOF(t *testing.T) {
 	cmd := exec.Command("sh", "-c", "printf 'project/\n'")
-	input, err := (CmdRunner{}).Read(cmd)
+	input, err := (CmdRunner{}).Stdout(cmd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,11 +76,11 @@ func TestReadClosesSuccessfullyAfterEOF(t *testing.T) {
 	}
 }
 
-func TestReadCloseStopsUnreadCommand(t *testing.T) {
+func TestStdoutCloseStopsUnreadCommand(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "sh", "-c", "exec sleep 60")
-	input, err := (CmdRunner{}).Read(cmd)
+	input, err := (CmdRunner{}).Stdout(cmd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,17 +89,18 @@ func TestReadCloseStopsUnreadCommand(t *testing.T) {
 	}
 }
 
-func TestRunStopsCommandOnStdinFailure(t *testing.T) {
+func TestPipeStopsCommandOnInputFailure(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "sh", "-c", "exec sleep 60")
 	want := errors.New("upstream failed")
-	cmd.Stdin = iotest.ErrReader(want)
-	if err := (CmdRunner{}).Run(cmd); !errors.Is(err, want) || !errors.Is(err, ErrCommandFailed) {
-		t.Fatalf("Run error = %v, want upstream error", err)
+	err := (CmdRunner{}).Pipe(iotest.ErrReader(want), cmd, io.Discard)
+	var inputErr *InputError
+	if !errors.As(err, &inputErr) || !errors.Is(err, want) {
+		t.Fatalf("Pipe error = %v, want upstream InputError", err)
 	}
 	if cmd.ProcessState == nil || ctx.Err() != nil {
-		t.Fatalf("Run did not stop and reap command: state = %v, context error = %v", cmd.ProcessState, ctx.Err())
+		t.Fatalf("Pipe did not stop and reap command: state = %v, context error = %v", cmd.ProcessState, ctx.Err())
 	}
 }
 
@@ -120,5 +123,63 @@ func TestRunLeavesFileStdinUnwrapped(t *testing.T) {
 	}
 	if cmd.Stdin != stdin {
 		t.Fatal("file stdin was wrapped, which would break terminal handling")
+	}
+}
+
+func TestRunLeavesReaderStdinUnwrapped(t *testing.T) {
+	want := errors.New("input failed")
+	stdin := iotest.ErrReader(want)
+	cmd := exec.Command("sh", "-c", "read line; exit 0")
+	cmd.Stdin = stdin
+	err := (CmdRunner{}).Run(cmd)
+	var inputErr *InputError
+	if !errors.Is(err, want) || errors.As(err, &inputErr) {
+		t.Fatalf("Run error = %v, want ordinary command error", err)
+	}
+	if cmd.Stdin != stdin {
+		t.Fatal("Run replaced the command's stdin")
+	}
+}
+
+func TestPipeConnectsStdinAndStdout(t *testing.T) {
+	stdin := strings.NewReader("project\n")
+	var stdout bytes.Buffer
+	cmd := exec.Command("sh", "-c", `read line; printf '%s\n' "$line"`)
+	if err := (CmdRunner{}).Pipe(stdin, cmd, &stdout); err != nil {
+		t.Fatal(err)
+	}
+	if stdout.String() != "project\n" {
+		t.Fatalf("stdout = %q", stdout.String())
+	}
+}
+
+func TestPipeKeepsConsumerExitStatusSeparate(t *testing.T) {
+	cmd := exec.Command("sh", "-c", "exit 130")
+	err := (CmdRunner{}).Pipe(nil, cmd, io.Discard)
+	var inputErr *InputError
+	var exitErr *exec.ExitError
+	if errors.As(err, &inputErr) || !errors.As(err, &exitErr) || exitErr.ExitCode() != 130 {
+		t.Fatalf("Pipe error = %v, want consumer exit status 130", err)
+	}
+}
+
+func TestPipeMarksProducerExitStatusAsInputFailure(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	runner := CmdRunner{}
+	stdin, err := runner.Stdout(exec.CommandContext(ctx, "sh", "-c", "exit 130"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stdin.Close()
+	cmd := exec.CommandContext(ctx, "sh", "-c", "exec sleep 60")
+	err = runner.Pipe(stdin, cmd, io.Discard)
+	var inputErr *InputError
+	var exitErr *exec.ExitError
+	if !errors.As(err, &inputErr) || !errors.As(inputErr, &exitErr) || exitErr.ExitCode() != 130 {
+		t.Fatalf("Pipe error = %v, want upstream exit status 130 in InputError", err)
+	}
+	if cmd.ProcessState == nil || ctx.Err() != nil {
+		t.Fatalf("consumer not stopped and reaped: state = %v, context error = %v", cmd.ProcessState, ctx.Err())
 	}
 }
