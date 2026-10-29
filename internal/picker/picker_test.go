@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/eskelinenantti/tmuxide/internal/history"
-	"github.com/eskelinenantti/tmuxide/internal/ranked"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
@@ -36,7 +35,7 @@ func TestPromptWritesRankedPathsThenOneScan(t *testing.T) {
 		{OnRun: mock.WriteToStdout("./project/\nproject/file.txt\nproject/child.txt\nother.txt\n")},
 		{OnRun: mock.WriteToStdout("project/\n")},
 	}}
-	selection, err := Prompt(ranked.History{}, fd.Cmd{Runner: r}, fzf.Cmd{Runner: r})
+	selection, err := Prompt(fd.Cmd{Runner: r}, fzf.Cmd{Runner: r})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +139,7 @@ func TestPrompt(t *testing.T) {
 				}
 			}
 			r := runner.CmdRunner{}
-			selection, err := Prompt(ranked.History{}, fd.Cmd{Runner: r}, fzf.Cmd{Runner: r})
+			selection, err := Prompt(fd.Cmd{Runner: r}, fzf.Cmd{Runner: r})
 			if (err != nil) != tt.wantError {
 				t.Fatalf("Prompt error = %v, want error = %v", err, tt.wantError)
 			}

@@ -13,6 +13,10 @@ var ErrCommandFailed = errors.New("command failed")
 
 type Runner interface {
 	Run(cmd *exec.Cmd) error
+
+	// Stdout starts cmd and returns its output. Reading to EOF waits for cmd and
+	// reports its exit error. The caller must close the stream; closing it early
+	// terminates and reaps cmd and may return its exit error.
 	Stdout(cmd *exec.Cmd) (io.ReadCloser, error)
 }
 

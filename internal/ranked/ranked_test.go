@@ -33,7 +33,7 @@ func TestRankedFormatsExistingPaths(t *testing.T) {
 	for _, path := range []string{file, file, file, dir, dir, filepath.Join(home, "missing"), newline, external} {
 		history.Record(path)
 	}
-	output, err := io.ReadAll((History{}).Ranked())
+	output, err := io.ReadAll(History())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +44,7 @@ func TestRankedFormatsExistingPaths(t *testing.T) {
 
 func TestRankedWithoutHistory(t *testing.T) {
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
-	output, err := io.ReadAll((History{}).Ranked())
+	output, err := io.ReadAll(History())
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -14,9 +14,9 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell/pipe"
 )
 
-func Prompt(ranked ranked.History, fdCmd fd.Cmd, fzfCmd fzf.Cmd) (string, error) {
+func Prompt(fdCmd fd.Cmd, fzfCmd fzf.Cmd) (string, error) {
 	var buffer bytes.Buffer
-	rankedStdout := ranked.Ranked()
+	rankedStdout := ranked.History()
 	fdStdout, err := fdCmd.Fd()
 	if err != nil {
 		return "", err

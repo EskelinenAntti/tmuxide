@@ -9,9 +9,7 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/history"
 )
 
-type History struct{}
-
-func (History) Ranked() io.Reader {
+func History() io.Reader {
 	home := os.Getenv("HOME")
 	var stdout strings.Builder
 	for _, path := range history.Ranked() {
