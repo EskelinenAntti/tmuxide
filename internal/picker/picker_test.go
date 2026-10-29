@@ -47,7 +47,7 @@ func TestPromptWritesRankedPathsThenOneScan(t *testing.T) {
 	}
 	wantCalls := [][]string{
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
+		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
 	}
 	if diff := cmp.Diff(wantCalls, r.Calls); diff != "" {
 		t.Fatal(diff)

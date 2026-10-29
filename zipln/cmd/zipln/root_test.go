@@ -98,7 +98,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 			session := project.Name(filepath.Join(home, folder))
 			expectedCalls := [][]string{
 				{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
+				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
 				{"tmux", "has-session", "-t", session + ":"},
 			}
 			if tt.attached {
@@ -386,7 +386,7 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 	requireNoError(t, err)
 	requireCalls(t, [][]string{
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
+		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
 		{"herdr", "workspace", "list"},
 		{"herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
 		{"herdr", "workspace", "focus", "w1"},

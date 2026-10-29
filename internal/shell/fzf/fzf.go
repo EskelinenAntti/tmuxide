@@ -16,7 +16,8 @@ type Cmd struct {
 }
 
 func (f Cmd) Fzf(input io.Reader, output io.Writer) error {
-	fzfCmd := exec.Command("fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort")
+	// Keep history order for an empty query; let fzf rank matches as the user types.
+	fzfCmd := exec.Command("fzf", "--reverse", "--height", "70%", "--tmux", "70%")
 	fzfCmd.Stdin = input
 	fzfCmd.Stdout = output
 	fzfCmd.Stderr = os.Stderr
