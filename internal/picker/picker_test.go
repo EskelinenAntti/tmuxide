@@ -33,8 +33,8 @@ func TestPromptWritesRankedPathsThenOneScan(t *testing.T) {
 	history.Record(filepath.Join(home, "missing"))
 
 	r := &spy.SpyRunner{Responses: []spy.Response{
-		{OnRun: mock.WriteToStdout("project/\n")},
 		{OnRun: mock.WriteToStdout("./project/\nproject/file.txt\nproject/child.txt\nother.txt\n")},
+		{OnRun: mock.WriteToStdout("project/\n")},
 	}}
 	selection, err := Prompt(ranked.History{}, fd.Cmd{Runner: r}, fzf.Cmd{Runner: r})
 	if err != nil {
@@ -47,8 +47,8 @@ func TestPromptWritesRankedPathsThenOneScan(t *testing.T) {
 		t.Fatal(diff)
 	}
 	wantCalls := [][]string{
+		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
 		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
-		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--"},
 	}
 	if diff := cmp.Diff(wantCalls, r.Calls); diff != "" {
 		t.Fatal(diff)
@@ -92,6 +92,11 @@ func TestPrompt(t *testing.T) {
 			fzf:  "exit 130",
 		},
 		{
+			name: "user cancellation discards output",
+			fd:   "printf 'project/\n'",
+			fzf:  "printf 'project/\n'; exit 130",
+		},
+		{
 			name:      "selection before scan finishes",
 			fd:        "i=0; while [ \"$i\" -lt 100000 ]; do printf 'file%s\n' \"$i\"; i=$((i+1)); done",
 			fzf:       "printf 'project/\n'",
@@ -113,6 +118,12 @@ func TestPrompt(t *testing.T) {
 			name:      "scan failure stops fzf without waiting for user input",
 			fd:        "exit 7",
 			fzf:       "exec /bin/sleep 60",
+			wantError: true,
+		},
+		{
+			name:      "scan exit 130 is not fzf cancellation",
+			fd:        "exit 130",
+			fzf:       "while IFS= read -r line; do :; done",
 			wantError: true,
 		},
 		{

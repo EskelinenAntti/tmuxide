@@ -88,6 +88,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 
 			spyRunner := &spy.SpyRunner{
 				Responses: []spy.Response{
+					{},
 					{OnRun: mock.WriteToStdout(folder)},
 				},
 			}
@@ -96,8 +97,8 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 
 			session := project.Name(filepath.Join(home, folder))
 			expectedCalls := [][]string{
+				{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
 				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
-				{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--"},
 				{"tmux", "has-session", "-t", session + ":"},
 			}
 			if tt.attached {
@@ -376,7 +377,7 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 	dir := filepath.Join(home, "project")
 	requireNoError(t, os.Mkdir(dir, 0755))
 	runner := &spy.SpyRunner{Responses: []spy.Response{
-		{OnRun: mock.WriteToStdout("project")}, {},
+		{}, {OnRun: mock.WriteToStdout("project")},
 		{OnRun: mock.WriteToStdout(`{"result":{"type":"workspace_list","workspaces":[]}}`)},
 		{OnRun: mock.WriteToStdout(`{"result":{"workspace":{"workspace_id":"w1"}}}`)},
 		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
@@ -384,8 +385,8 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 	err := Run(nil, "auto", runner, mock.Path{Missing: []string{"tmux"}})
 	requireNoError(t, err)
 	requireCalls(t, [][]string{
+		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
 		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
-		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--"},
 		{"herdr", "workspace", "list"},
 		{"herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
 		{"herdr", "workspace", "focus", "w1"},
@@ -440,8 +441,8 @@ func TestSearchPrioritizesFrequentSelections(t *testing.T) {
 	}
 
 	runner := &spy.SpyRunner{Responses: []spy.Response{
-		{OnRun: mock.WriteToStdout("project/\n")},
 		{OnRun: mock.WriteToStdout("project/\nproject/file.txt\nproject/child.txt\nother.txt\n")},
+		{OnRun: mock.WriteToStdout("project/\n")},
 	}}
 	requireNoError(t, Run(nil, "tmux", runner, mock.Path{}))
 	want := "project/file.txt\nproject/\nproject/child.txt\nother.txt\n"

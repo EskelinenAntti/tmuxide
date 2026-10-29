@@ -2,11 +2,9 @@ package picker
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -16,33 +14,18 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell/pipe"
 )
 
-func Prompt(ranked ranked.History, fd fd.Cmd, fzf fzf.Cmd) (string, error) {
+func Prompt(ranked ranked.History, fdCmd fd.Cmd, fzfCmd fzf.Cmd) (string, error) {
 	var buffer bytes.Buffer
-	fzfStdin, err := fzf.Fzf(&buffer)
-	if err != nil {
-		return "", err
-	}
-	defer fzfStdin.Kill()
-
 	rankedStdout := ranked.Ranked()
-	fdStdout, err := fd.Fd(context.Background())
+	fdStdout, err := fdCmd.Fd()
 	if err != nil {
 		return "", err
 	}
 	defer fdStdout.Close()
 
 	stdin := io.MultiReader(rankedStdout, fdStdout)
-	if err := pipe.Pipe(pipe.DeduplicatePaths(stdin), fzfStdin); err != nil {
-		return "", err
-	}
-
-	if err := fzfStdin.Close(); err != nil {
-		return "", err
-	}
-
-	if err := fzfStdin.Wait(); err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && exitErr.ExitCode() == 130 {
+	if err := fzfCmd.Fzf(pipe.DeduplicatePaths(stdin), &buffer); err != nil {
+		if errors.Is(err, fzf.ErrCancelled) {
 			return "", nil
 		}
 		return "", err

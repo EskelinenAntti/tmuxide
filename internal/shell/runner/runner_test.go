@@ -5,8 +5,10 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 	"os/exec"
 	"testing"
+	"testing/iotest"
 	"time"
 )
 
@@ -30,16 +32,11 @@ func TestReadStreamsAndCancels(t *testing.T) {
 	}
 }
 
-func TestWaitReturnsExitStatus(t *testing.T) {
-	process, err := (CmdRunner{}).Start(exec.Command("sh", "-c", "exit 7"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer process.Close()
-	err = process.Wait()
+func TestRunReturnsExitStatus(t *testing.T) {
+	err := (CmdRunner{}).Run(exec.Command("sh", "-c", "exit 7"))
 	var exitErr *exec.ExitError
 	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 7 {
-		t.Fatalf("Wait = %v, want exit status 7", err)
+		t.Fatalf("Run = %v, want exit status 7", err)
 	}
 }
 
@@ -90,33 +87,38 @@ func TestReadCloseStopsUnreadCommand(t *testing.T) {
 	}
 }
 
-func TestKillReapsCommand(t *testing.T) {
+func TestRunStopsCommandOnStdinFailure(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "sh", "-c", "exec sleep 60")
-	process, err := (CmdRunner{}).Start(cmd)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for range 2 {
-		if err := process.Kill(); err != nil {
-			t.Fatal(err)
-		}
+	want := errors.New("upstream failed")
+	cmd.Stdin = iotest.ErrReader(want)
+	if err := (CmdRunner{}).Run(cmd); !errors.Is(err, want) || !errors.Is(err, ErrCommandFailed) {
+		t.Fatalf("Run error = %v, want upstream error", err)
 	}
 	if cmd.ProcessState == nil || ctx.Err() != nil {
-		t.Fatalf("Kill did not reap command: state = %v, context error = %v", cmd.ProcessState, ctx.Err())
+		t.Fatalf("Run did not stop and reap command: state = %v, context error = %v", cmd.ProcessState, ctx.Err())
 	}
 }
 
-func TestKillAfterWait(t *testing.T) {
-	process, err := (CmdRunner{}).Start(exec.Command("sh", "-c", "exit 0"))
+func TestRunLeavesFileStdinUnwrapped(t *testing.T) {
+	stdin, err := os.CreateTemp(t.TempDir(), "stdin")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := process.Wait(); err != nil {
+	defer stdin.Close()
+	if _, err := stdin.WriteString("project\n"); err != nil {
 		t.Fatal(err)
 	}
-	if err := process.Kill(); err != nil {
+	if _, err := stdin.Seek(0, io.SeekStart); err != nil {
 		t.Fatal(err)
+	}
+	cmd := exec.Command("sh", "-c", `read line; test "$line" = project`)
+	cmd.Stdin = stdin
+	if err := (CmdRunner{}).Run(cmd); err != nil {
+		t.Fatal(err)
+	}
+	if cmd.Stdin != stdin {
+		t.Fatal("file stdin was wrapped, which would break terminal handling")
 	}
 }

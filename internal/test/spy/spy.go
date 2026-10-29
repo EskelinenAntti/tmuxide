@@ -3,9 +3,8 @@ package spy
 import (
 	"bytes"
 	"io"
+	"os"
 	"os/exec"
-
-	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 )
 
 type RunFunc func(cmd *exec.Cmd) error
@@ -20,24 +19,13 @@ type SpyRunner struct {
 	Stdin     bytes.Buffer
 }
 
-type FakeProcess struct {
-	*bytes.Buffer
-}
-
-func (f FakeProcess) Close() error {
-	return nil
-}
-
-func (f FakeProcess) Wait() error {
-	return nil
-}
-
-func (f FakeProcess) Kill() error {
-	return nil
-}
-
 func (t *SpyRunner) Run(cmd *exec.Cmd) error {
 	t.Calls = append(t.Calls, cmd.Args)
+	if _, file := cmd.Stdin.(*os.File); cmd.Stdin != nil && !file {
+		if _, err := io.Copy(&t.Stdin, cmd.Stdin); err != nil {
+			return err
+		}
+	}
 
 	if len(t.Responses) == 0 {
 		return nil
@@ -49,10 +37,6 @@ func (t *SpyRunner) Run(cmd *exec.Cmd) error {
 		return nil
 	}
 	return response.OnRun(cmd)
-}
-
-func (t *SpyRunner) Start(cmd *exec.Cmd) (runner.Process, error) {
-	return FakeProcess{Buffer: &t.Stdin}, t.Run(cmd)
 }
 
 func (t *SpyRunner) Read(cmd *exec.Cmd) (io.ReadCloser, error) {

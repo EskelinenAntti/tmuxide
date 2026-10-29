@@ -1,7 +1,6 @@
 package fd
 
 import (
-	"context"
 	"io"
 	"os"
 	"os/exec"
@@ -13,7 +12,7 @@ type Cmd struct {
 	runner.Runner
 }
 
-func (f Cmd) Fd(ctx context.Context) (io.ReadCloser, error) {
+func (f Cmd) Fd() (io.ReadCloser, error) {
 	args := []string{
 		"--follow",
 		"--hidden",
@@ -21,7 +20,6 @@ func (f Cmd) Fd(ctx context.Context) (io.ReadCloser, error) {
 		".",
 		"--base-directory",
 		os.Getenv("HOME"),
-		"--",
 	}
-	return f.Read(exec.CommandContext(ctx, "fd", args...))
+	return f.Read(exec.Command("fd", args...))
 }

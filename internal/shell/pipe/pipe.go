@@ -2,20 +2,9 @@ package pipe
 
 import (
 	"bufio"
-	"errors"
 	"io"
 	"path/filepath"
-	"syscall"
 )
-
-func Pipe(stdin io.Reader, stdout io.Writer) error {
-	_, err := io.Copy(stdout, stdin)
-	// A downstream command may close its input before consuming the whole stream.
-	if errors.Is(err, syscall.EPIPE) {
-		return nil
-	}
-	return err
-}
 
 // DeduplicatePaths keeps the first occurrence of each path without sorting the stream.
 func DeduplicatePaths(stdin io.Reader) io.Reader {

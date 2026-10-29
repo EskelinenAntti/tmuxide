@@ -16,7 +16,7 @@ func TestFdReturnsUnmodifiedOutput(t *testing.T) {
 	runner := &spy.SpyRunner{Responses: []spy.Response{
 		{OnRun: mock.WriteToStdout(want)},
 	}}
-	input, err := (Cmd{Runner: runner}).Fd(t.Context())
+	input, err := (Cmd{Runner: runner}).Fd()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -28,7 +28,7 @@ func TestFdReturnsUnmodifiedOutput(t *testing.T) {
 	if diff := cmp.Diff(want, string(output)); diff != "" {
 		t.Fatal(diff)
 	}
-	wantCalls := [][]string{{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--"}}
+	wantCalls := [][]string{{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home}}
 	if diff := cmp.Diff(wantCalls, runner.Calls); diff != "" {
 		t.Fatal(diff)
 	}
