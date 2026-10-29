@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/eskelinenantti/tmuxide/internal/ranked"
-	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
-	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
-	"github.com/eskelinenantti/tmuxide/internal/shell/pipe"
+	"github.com/eskelinenantti/herdr-zipln/internal/ranked"
+	"github.com/eskelinenantti/herdr-zipln/internal/shell/fd"
+	"github.com/eskelinenantti/herdr-zipln/internal/shell/fzf"
+	"github.com/eskelinenantti/herdr-zipln/internal/shell/pipe"
 )
 
 func Prompt(fdCmd fd.Cmd, fzfCmd fzf.Cmd) (string, error) {

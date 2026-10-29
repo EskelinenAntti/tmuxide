@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
+	"github.com/eskelinenantti/herdr-zipln/internal/shell/runner"
 )
 
 type Cmd struct {

@@ -13,7 +13,7 @@ func filePath() string {
 	if !filepath.IsAbs(stateHome) {
 		stateHome = filepath.Join(os.Getenv("HOME"), ".local", "state")
 	}
-	return filepath.Join(stateHome, "tmuxide", "history.json")
+	return filepath.Join(stateHome, "zipln", "history.json")
 }
 
 func load() map[string]int {
