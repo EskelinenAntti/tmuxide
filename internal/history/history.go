@@ -1,11 +1,9 @@
 package history
 
 import (
-	"cmp"
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"slices"
 )
 
 func filePath() string {
@@ -13,56 +11,48 @@ func filePath() string {
 	if !filepath.IsAbs(stateHome) {
 		stateHome = filepath.Join(os.Getenv("HOME"), ".local", "state")
 	}
-	return filepath.Join(stateHome, "zipln", "history.json")
+	return filepath.Join(stateHome, "zipln", "queries.json")
 }
 
-func load() map[string]int {
+func load() map[string]string {
 	data, _ := os.ReadFile(filePath())
-	var counts map[string]int
-	if err := json.Unmarshal(data, &counts); err != nil || counts == nil {
-		return make(map[string]int)
+	var selections map[string]string
+	if json.Unmarshal(data, &selections) != nil || selections == nil {
+		return make(map[string]string)
 	}
-	return counts
+	return selections
 }
 
-func save(counts map[string]int) error {
-	data, err := json.Marshal(counts)
-	if err != nil {
-		return err
-	}
-	filename := filePath()
-	if err := os.MkdirAll(filepath.Dir(filename), 0700); err != nil {
-		return err
-	}
-	temporary := filename + ".tmp"
-	defer os.Remove(temporary)
-	if err := os.WriteFile(temporary, data, 0600); err != nil {
-		return err
-	}
-	return os.Rename(temporary, filename)
+func Preferred(query string) string {
+	return load()[query]
 }
 
-func Ranked() []string {
-	counts := load()
-	paths := make([]string, 0, len(counts))
-	for path := range counts {
-		paths = append(paths, path)
+func RecordQuery(query, path string) {
+	if query == "" || path == "" {
+		return
 	}
-	slices.SortFunc(paths, func(a, b string) int {
-		if order := cmp.Compare(counts[b], counts[a]); order != 0 {
-			return order
-		}
-		return cmp.Compare(a, b)
-	})
-	return paths
-}
-
-func Record(path string) {
 	path, err := filepath.Abs(path)
 	if err != nil {
 		return
 	}
-	counts := load()
-	counts[path]++
-	_ = save(counts)
+	selections := load()
+	selections[query] = path
+	data, err := json.Marshal(selections)
+	if err != nil {
+		return
+	}
+	filename := filePath()
+	if os.MkdirAll(filepath.Dir(filename), 0700) != nil {
+		return
+	}
+	temporary, err := os.CreateTemp(filepath.Dir(filename), "queries-*.tmp")
+	if err != nil {
+		return
+	}
+	defer os.Remove(temporary.Name())
+	_, writeErr := temporary.Write(data)
+	closeErr := temporary.Close()
+	if writeErr == nil && closeErr == nil {
+		_ = os.Rename(temporary.Name(), filename)
+	}
 }

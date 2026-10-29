@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/eskelinenantti/herdr-zipln/internal/history"
 	"github.com/eskelinenantti/herdr-zipln/internal/project"
 	"github.com/eskelinenantti/herdr-zipln/internal/shell"
 	"github.com/eskelinenantti/herdr-zipln/internal/test/mock"
@@ -89,7 +90,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 			spyRunner := &spy.SpyRunner{
 				Responses: []spy.Response{
 					{},
-					{OnRun: mock.WriteToStdout(folder)},
+					{OnRun: mock.WriteToStdout("\n" + folder + "\n")},
 				},
 			}
 			err := Run([]string{}, "auto", spyRunner, mock.Path{})
@@ -98,7 +99,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 			session := project.Name(filepath.Join(home, folder))
 			expectedCalls := [][]string{
 				{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
+				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--disabled", "--no-sort", "--print-query", "--with-shell", "sh -c", "--bind", `start:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q}),change:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q})`},
 				{"tmux", "has-session", "-t", session + ":"},
 			}
 			if tt.attached {
@@ -377,7 +378,7 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 	dir := filepath.Join(home, "project")
 	requireNoError(t, os.Mkdir(dir, 0755))
 	runner := &spy.SpyRunner{Responses: []spy.Response{
-		{}, {OnRun: mock.WriteToStdout("project")},
+		{}, {OnRun: mock.WriteToStdout("\nproject\n")},
 		{OnRun: mock.WriteToStdout(`{"result":{"type":"workspace_list","workspaces":[]}}`)},
 		{OnRun: mock.WriteToStdout(`{"result":{"workspace":{"workspace_id":"w1"}}}`)},
 		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
@@ -386,7 +387,7 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 	requireNoError(t, err)
 	requireCalls(t, [][]string{
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
+		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--disabled", "--no-sort", "--print-query", "--with-shell", "sh -c", "--bind", `start:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q}),change:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q})`},
 		{"herdr", "workspace", "list"},
 		{"herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
 		{"herdr", "workspace", "focus", "w1"},
@@ -421,32 +422,30 @@ func TestHerdrRelativeFileInRepository(t *testing.T) {
 	}, runner.Calls)
 }
 
-func TestSearchPrioritizesFrequentSelections(t *testing.T) {
+func TestSearchRemembersQuerySelection(t *testing.T) {
 	t.Setenv("EDITOR", editor)
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	dir := filepath.Join(home, "project")
 	requireNoError(t, os.Mkdir(dir, 0755))
-	file := createFile(t, dir, "file.txt")
+	createFile(t, dir, "file.txt")
 	createFile(t, dir, "child.txt")
 	createFile(t, home, "other.txt")
 
-	for _, target := range []string{dir, file, dir, file, file} {
-		runner := &spy.SpyRunner{}
-		if target == file {
-			runner.Responses = []spy.Response{{OnRun: mock.SimulateError}}
-		}
-		requireNoError(t, Run([]string{target}, "tmux", runner, mock.Path{}))
-	}
-
 	runner := &spy.SpyRunner{Responses: []spy.Response{
 		{OnRun: mock.WriteToStdout("project/\nproject/file.txt\nproject/child.txt\nother.txt\n")},
-		{OnRun: mock.WriteToStdout("project/\n")},
+		{OnRun: mock.WriteToStdout("proj\nproject/\n")},
 	}}
 	requireNoError(t, Run(nil, "tmux", runner, mock.Path{}))
-	want := "project/file.txt\nproject/\nproject/child.txt\nother.txt\n"
+	want := "project/\nother.txt\nproject/file.txt\nproject/child.txt\n"
 	if diff := cmp.Diff(want, runner.Stdin.String()); diff != "" {
 		t.Fatal(diff)
+	}
+	if got := history.Preferred("proj"); got != dir {
+		t.Fatalf("query selection = %q, want %q", got, dir)
+	}
+	if got := history.Preferred("file"); got != "" {
+		t.Fatalf("unrelated query got preference %q", got)
 	}
 }

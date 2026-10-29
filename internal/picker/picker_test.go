@@ -14,7 +14,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestPromptWritesRankedPathsThenOneScan(t *testing.T) {
+func TestPromptSortsAndDeduplicatesOneScan(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
@@ -26,14 +26,10 @@ func TestPromptWritesRankedPathsThenOneScan(t *testing.T) {
 	if err := os.WriteFile(file, nil, 0644); err != nil {
 		t.Fatal(err)
 	}
-	history.Record(dir)
-	history.Record(file)
-	history.Record(file)
-	history.Record(filepath.Join(home, "missing"))
 
 	r := &spy.SpyRunner{Responses: []spy.Response{
 		{OnRun: mock.WriteToStdout("./project/\nproject/file.txt\nproject/child.txt\nother.txt\n")},
-		{OnRun: mock.WriteToStdout("project/\n")},
+		{OnRun: mock.WriteToStdout("proj\nproject/\n")},
 	}}
 	selection, err := Prompt(fd.Cmd{Runner: r}, fzf.Cmd{Runner: r})
 	if err != nil {
@@ -42,15 +38,18 @@ func TestPromptWritesRankedPathsThenOneScan(t *testing.T) {
 	if selection != dir {
 		t.Fatalf("Prompt selection = %q, want %q", selection, dir)
 	}
-	if diff := cmp.Diff("project/file.txt\nproject/\nproject/child.txt\nother.txt\n", r.Stdin.String()); diff != "" {
+	if diff := cmp.Diff("other.txt\n./project/\nproject/file.txt\nproject/child.txt\n", r.Stdin.String()); diff != "" {
 		t.Fatal(diff)
 	}
 	wantCalls := [][]string{
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%"},
+		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--disabled", "--no-sort", "--print-query", "--with-shell", "sh -c", "--bind", `start:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q}),change:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q})`},
 	}
 	if diff := cmp.Diff(wantCalls, r.Calls); diff != "" {
 		t.Fatal(diff)
+	}
+	if got := history.Preferred("proj"); got != dir {
+		t.Fatalf("saved preference = %q, want %q", got, dir)
 	}
 }
 
@@ -65,19 +64,19 @@ func TestPrompt(t *testing.T) {
 		{
 			name:      "closes input before waiting for selection",
 			fd:        "printf 'project/\n'",
-			fzf:       "while IFS= read -r line; do :; done; printf 'project/\n'",
+			fzf:       "while IFS= read -r line; do :; done; printf '\nproject/\n'",
 			selection: "project",
 		},
 		{
 			name:      "absolute selection",
 			fd:        "printf 'project/\n'",
-			fzf:       "while IFS= read -r line; do :; done; printf '/outside/project/\n'",
+			fzf:       "while IFS= read -r line; do :; done; printf '\n/outside/project/\n'",
 			selection: "/outside/project/",
 		},
 		{
 			name:      "selection with trailing space",
 			fd:        "printf 'project /\n'",
-			fzf:       "while IFS= read -r line; do :; done; printf 'project \n'",
+			fzf:       "while IFS= read -r line; do :; done; printf '\nproject \n'",
 			selection: "project ",
 		},
 		{
@@ -96,9 +95,9 @@ func TestPrompt(t *testing.T) {
 			fzf:  "printf 'project/\n'; exit 130",
 		},
 		{
-			name:      "selection before scan finishes",
+			name:      "large scan",
 			fd:        "i=0; while [ \"$i\" -lt 100000 ]; do printf 'file%s\n' \"$i\"; i=$((i+1)); done",
-			fzf:       "printf 'project/\n'",
+			fzf:       "printf '\nproject/\n'",
 			selection: "project",
 		},
 		{
