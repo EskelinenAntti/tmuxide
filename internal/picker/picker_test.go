@@ -6,9 +6,9 @@ import (
 	"testing"
 
 	"github.com/eskelinenantti/tmuxide/internal/history"
+	"github.com/eskelinenantti/tmuxide/internal/ranked"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
-	"github.com/eskelinenantti/tmuxide/internal/shell/ranked"
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 	"github.com/eskelinenantti/tmuxide/internal/test/mock"
 	"github.com/eskelinenantti/tmuxide/internal/test/spy"

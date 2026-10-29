@@ -8,7 +8,6 @@ import (
 	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
 	"github.com/eskelinenantti/tmuxide/internal/shell/git"
 	"github.com/eskelinenantti/tmuxide/internal/shell/path"
-	"github.com/eskelinenantti/tmuxide/internal/shell/ranked"
 	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
 )
 
@@ -28,10 +27,9 @@ func (e NotInstalledError) Unwrap() error {
 }
 
 type Shell struct {
-	Ranked ranked.Cmd
-	Fd     fd.Cmd
-	Fzf    fzf.Cmd
-	Git    git.Cmd
+	Fd  fd.Cmd
+	Fzf fzf.Cmd
+	Git git.Cmd
 }
 
 func Init(path path.ShellPath, runner runner.Runner) (Shell, error) {
@@ -42,10 +40,9 @@ func Init(path path.ShellPath, runner runner.Runner) (Shell, error) {
 	}
 
 	return Shell{
-		Ranked: ranked.Cmd{},
-		Fd:     fd.Cmd{Runner: runner},
-		Fzf:    fzf.Cmd{Runner: runner},
-		Git:    git.Cmd{Runner: runner},
+		Fd:  fd.Cmd{Runner: runner},
+		Fzf: fzf.Cmd{Runner: runner},
+		Git: git.Cmd{Runner: runner},
 	}, nil
 }
 
