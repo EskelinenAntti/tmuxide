@@ -1,8 +1,8 @@
 # herdr-zipln 🪄
 
-Jump to any file or folder in herdr. Pick it from the fuzzy finder, and zipln takes you to its workspace.
+Open `zipln`, pick any file or folder from the fuzzy finder, and you'll find yourself in the right herdr workspace.
 
-Already open or starting fresh, it'll *just work* 🪄
+It doesn't matter if the workspace doesn't exist yet, or the file is buried in a subfolder of a subfolder. It'll *just work* 🪄
 
 ## Installation
 
@@ -12,10 +12,10 @@ Install zipln as a herdr plugin:
 herdr plugin install eskelinenantti/herdr-zipln
 ```
 
-You'll need herdr 0.9.1 or newer, Go 1.25.1 or newer to build the plugin, and `fd`, `fzf`, and `git` on your `$PATH`. Set `$EDITOR` to the editor you'd like to use for files.
+You'll need herdr 0.9.1 or newer, Go 1.25.1 or newer to build the plugin, and `fd`, `fzf`, and `git`. If you are already using homebrew and are missing any of these dependencies, run `brew install fd fzf git`.
 
 > [!TIP]
-> Add the following config to your `~/.config/herdr/config.toml` to start jumping between folders and files from anywhere in herdr. Press your prefix, then `f` for *find* — free in herdr's default shortcuts.
+> Add the following config to your `~/.config/herdr/config.toml` to start jumping between folders and files from anywhere in herdr with the `prefix+f` shortcut.
 >
 > ```toml
 > [[keys.command]]
@@ -27,7 +27,7 @@ You'll need herdr 0.9.1 or newer, Go 1.25.1 or newer to build the plugin, and `f
 
 ## Manual
 
-Your shortcut opens a fuzzy finder in a popup. If a workspace for the selected location already exists, zipln switches to it. Otherwise, zipln creates one.
+Your shortcut opens zipln in a popup where you can fuzzy find folders and files. If a workspace for the selected location already exists, zipln will switch to it. Otherwise, zipln creates the workspace.
 
 Picking a folder takes you to its workspace. Picking a file opens it in your editor, in a new tab in its workspace.
 
@@ -52,7 +52,7 @@ path/to/file.txt
 
 ### tmux
 
-zipln also supports tmux sessions. With `zipln` on your `$PATH`, add this to your `tmux.conf`:
+zipln also supports tmux sessions. Install `zipln` with `go install github.com/eskelinenantti/herdr-zipln/zipln@latest` and add this to your `tmux.conf`:
 
 ```tmux
 bind-key o "run 'zipln --mux tmux'"
