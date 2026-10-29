@@ -3,44 +3,37 @@ package picker
 import (
 	"bytes"
 	"errors"
+	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"github.com/eskelinenantti/tmuxide/internal/ranked"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
 	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
+	"github.com/eskelinenantti/tmuxide/internal/shell/pipe"
 )
 
-func Prompt(fd fd.Cmd, fzf fzf.Cmd) (string, error) {
+func Prompt(fdCmd fd.Cmd, fzfCmd fzf.Cmd) (string, error) {
 	var buffer bytes.Buffer
-	fzfStdin, err := fzf.Fzf(&buffer)
+	rankedStdout := ranked.History()
+	fdStdout, err := fdCmd.Fd()
 	if err != nil {
 		return "", err
 	}
+	defer fdStdout.Close()
 
-	err = fd.Fd(fzfStdin)
-	if err != nil {
-		return "", err
-	}
-
-	err = fzfStdin.Close()
-	if err != nil {
-		if IsUserCancelledErr(err) {
+	stdin := io.MultiReader(rankedStdout, fdStdout)
+	if err := fzfCmd.Fzf(pipe.DeduplicatePaths(stdin), &buffer); err != nil {
+		if errors.Is(err, fzf.ErrCancelled) {
 			return "", nil
 		}
 		return "", err
 	}
 
-	selection := strings.TrimSpace(buffer.String())
-	return filepath.Join(os.Getenv("HOME"), selection), nil
-}
-
-func IsUserCancelledErr(err error) bool {
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
-		exitCode := exitErr.ExitCode()
-		return exitCode == 130
+	selection := strings.TrimSuffix(buffer.String(), "\n")
+	if selection == "" || filepath.IsAbs(selection) {
+		return selection, nil
 	}
-	return false
+	return filepath.Join(os.Getenv("HOME"), selection), nil
 }

@@ -4,25 +4,27 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
+	"sync"
 )
 
 var ErrCommandFailed = errors.New("command failed")
 
-type WriteCloser interface {
-	Close() error
-	Write(p []byte) (n int, err error)
-}
-
 type Runner interface {
 	Run(cmd *exec.Cmd) error
-	Start(cmd *exec.Cmd) (WriteCloser, error)
+
+	// Stdout starts cmd and returns its output. Reading to EOF waits for cmd and
+	// reports its exit error. The caller must close the stream; closing it early
+	// terminates and reaps cmd and may return its exit error.
+	Stdout(cmd *exec.Cmd) (io.ReadCloser, error)
 }
 
 type CmdRunner struct{}
-type CmdWriteCloser struct {
-	cmd   *exec.Cmd
-	stdin io.WriteCloser
+type CmdReadCloser struct {
+	io.ReadCloser
+	cmd  *exec.Cmd
+	wait func() error
 }
 
 func (c CmdRunner) Run(cmd *exec.Cmd) error {
@@ -33,27 +35,42 @@ func (c CmdRunner) Run(cmd *exec.Cmd) error {
 	return nil
 }
 
-func (c CmdRunner) Start(cmd *exec.Cmd) (WriteCloser, error) {
-	stdin, err := cmd.StdinPipe()
+func (c CmdRunner) Stdout(cmd *exec.Cmd) (io.ReadCloser, error) {
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, err
 	}
-	err = cmd.Start()
-	if err != nil {
+	if err := cmd.Start(); err != nil {
+		stdout.Close()
 		return nil, fmt.Errorf("'%v' %w: %w", cmd.Args, ErrCommandFailed, err)
 	}
-
-	return CmdWriteCloser{cmd: cmd, stdin: stdin}, nil
+	wait := sync.OnceValue(func() error {
+		if err := cmd.Wait(); err != nil {
+			return fmt.Errorf("'%v' %w: %w", cmd.Args, ErrCommandFailed, err)
+		}
+		return nil
+	})
+	return CmdReadCloser{ReadCloser: stdout, cmd: cmd, wait: wait}, nil
 }
 
-func (c CmdWriteCloser) Write(p []byte) (n int, err error) {
-	return c.stdin.Write(p)
-}
-
-func (c CmdWriteCloser) Close() error {
-	err := c.stdin.Close()
-	if err != nil {
-		return err
+func (c CmdReadCloser) Read(p []byte) (int, error) {
+	n, err := c.ReadCloser.Read(p)
+	if err == io.EOF {
+		// Exit status travels with stdout, rather than being lost in a deferred Close.
+		if waitErr := c.wait(); waitErr != nil {
+			return n, waitErr
+		}
 	}
-	return c.cmd.Wait()
+	return n, err
+}
+
+func (c CmdReadCloser) Close() error {
+	if c.cmd.ProcessState == nil {
+		c.cmd.Process.Kill()
+	}
+	err := c.ReadCloser.Close()
+	if errors.Is(err, os.ErrClosed) {
+		err = nil
+	}
+	return errors.Join(err, c.wait())
 }
