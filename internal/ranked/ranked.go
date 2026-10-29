@@ -23,7 +23,8 @@ func History() io.Reader {
 		if fileInfo.IsDir() {
 			path += string(filepath.Separator)
 		}
-		stdout.WriteString(path + "\n")
+		stdout.WriteString(path)
+		stdout.WriteString("\n")
 	}
 	return strings.NewReader(stdout.String())
 }
