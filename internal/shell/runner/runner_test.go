@@ -89,18 +89,19 @@ func TestStdoutCloseStopsUnreadCommand(t *testing.T) {
 	}
 }
 
-func TestPipeStopsCommandOnInputFailure(t *testing.T) {
+func TestRunClosesStdinOnInputFailureWithoutKillingConsumer(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "sh", "-c", "exec sleep 60")
+	cmd := exec.CommandContext(ctx, "sh", "-c", "while read line; do :; done; printf 'finished'")
+	var stdout bytes.Buffer
 	want := errors.New("upstream failed")
-	err := (CmdRunner{}).Pipe(iotest.ErrReader(want), cmd, io.Discard)
-	var inputErr *InputError
-	if !errors.As(err, &inputErr) || !errors.Is(err, want) {
-		t.Fatalf("Pipe error = %v, want upstream InputError", err)
+	cmd.Stdin, cmd.Stdout = iotest.ErrReader(want), &stdout
+	err := (CmdRunner{}).Run(cmd)
+	if !errors.Is(err, want) {
+		t.Fatalf("Run error = %v, want upstream error", err)
 	}
-	if cmd.ProcessState == nil || ctx.Err() != nil {
-		t.Fatalf("Pipe did not stop and reap command: state = %v, context error = %v", cmd.ProcessState, ctx.Err())
+	if stdout.String() != "finished" || cmd.ProcessState == nil || !cmd.ProcessState.Success() || ctx.Err() != nil {
+		t.Fatalf("consumer did not finish normally: stdout = %q, state = %v, context error = %v", stdout.String(), cmd.ProcessState, ctx.Err())
 	}
 }
 
@@ -132,8 +133,7 @@ func TestRunLeavesReaderStdinUnwrapped(t *testing.T) {
 	cmd := exec.Command("sh", "-c", "read line; exit 0")
 	cmd.Stdin = stdin
 	err := (CmdRunner{}).Run(cmd)
-	var inputErr *InputError
-	if !errors.Is(err, want) || errors.As(err, &inputErr) {
+	if !errors.Is(err, want) {
 		t.Fatalf("Run error = %v, want ordinary command error", err)
 	}
 	if cmd.Stdin != stdin {
@@ -141,11 +141,12 @@ func TestRunLeavesReaderStdinUnwrapped(t *testing.T) {
 	}
 }
 
-func TestPipeConnectsStdinAndStdout(t *testing.T) {
+func TestRunConnectsStdinAndStdout(t *testing.T) {
 	stdin := strings.NewReader("project\n")
 	var stdout bytes.Buffer
 	cmd := exec.Command("sh", "-c", `read line; printf '%s\n' "$line"`)
-	if err := (CmdRunner{}).Pipe(stdin, cmd, &stdout); err != nil {
+	cmd.Stdin, cmd.Stdout = stdin, &stdout
+	if err := (CmdRunner{}).Run(cmd); err != nil {
 		t.Fatal(err)
 	}
 	if stdout.String() != "project\n" {
@@ -153,17 +154,18 @@ func TestPipeConnectsStdinAndStdout(t *testing.T) {
 	}
 }
 
-func TestPipeKeepsConsumerExitStatusSeparate(t *testing.T) {
+func TestRunReturnsConsumerFailureWhenInputAlsoFails(t *testing.T) {
 	cmd := exec.Command("sh", "-c", "exit 130")
-	err := (CmdRunner{}).Pipe(nil, cmd, io.Discard)
-	var inputErr *InputError
+	want := errors.New("upstream failed")
+	cmd.Stdin = iotest.ErrReader(want)
+	err := (CmdRunner{}).Run(cmd)
 	var exitErr *exec.ExitError
-	if errors.As(err, &inputErr) || !errors.As(err, &exitErr) || exitErr.ExitCode() != 130 {
-		t.Fatalf("Pipe error = %v, want consumer exit status 130", err)
+	if errors.Is(err, want) || !errors.As(err, &exitErr) || exitErr.ExitCode() != 130 {
+		t.Fatalf("Run error = %v, want consumer exit status 130", err)
 	}
 }
 
-func TestPipeMarksProducerExitStatusAsInputFailure(t *testing.T) {
+func TestRunPropagatesProducerFailureWhenConsumerSucceeds(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	runner := CmdRunner{}
@@ -172,14 +174,14 @@ func TestPipeMarksProducerExitStatusAsInputFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer stdin.Close()
-	cmd := exec.CommandContext(ctx, "sh", "-c", "exec sleep 60")
-	err = runner.Pipe(stdin, cmd, io.Discard)
-	var inputErr *InputError
+	cmd := exec.CommandContext(ctx, "sh", "-c", "while read line; do :; done")
+	cmd.Stdin = stdin
+	err = runner.Run(cmd)
 	var exitErr *exec.ExitError
-	if !errors.As(err, &inputErr) || !errors.As(inputErr, &exitErr) || exitErr.ExitCode() != 130 {
-		t.Fatalf("Pipe error = %v, want upstream exit status 130 in InputError", err)
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 130 {
+		t.Fatalf("Run error = %v, want upstream exit status 130", err)
 	}
-	if cmd.ProcessState == nil || ctx.Err() != nil {
-		t.Fatalf("consumer not stopped and reaped: state = %v, context error = %v", cmd.ProcessState, ctx.Err())
+	if cmd.ProcessState == nil || !cmd.ProcessState.Success() || ctx.Err() != nil {
+		t.Fatalf("consumer did not finish normally: state = %v, context error = %v", cmd.ProcessState, ctx.Err())
 	}
 }

@@ -115,12 +115,6 @@ func TestPrompt(t *testing.T) {
 			wantError: true,
 		},
 		{
-			name:      "scan failure stops fzf without waiting for user input",
-			fd:        "exit 7",
-			fzf:       "exec /bin/sleep 60",
-			wantError: true,
-		},
-		{
 			name:      "scan exit 130 is not fzf cancellation",
 			fd:        "exit 130",
 			fzf:       "while IFS= read -r line; do :; done",

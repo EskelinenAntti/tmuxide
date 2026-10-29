@@ -14,15 +14,7 @@ var ErrCommandFailed = errors.New("command failed")
 type Runner interface {
 	Run(cmd *exec.Cmd) error
 	Stdout(cmd *exec.Cmd) (io.ReadCloser, error)
-	Pipe(stdin io.Reader, cmd *exec.Cmd, stdout io.Writer) error
 }
-
-type InputError struct {
-	Err error
-}
-
-func (e *InputError) Error() string { return "stdin: " + e.Err.Error() }
-func (e *InputError) Unwrap() error { return e.Err }
 
 type CmdRunner struct{}
 type CmdReadCloser struct {
@@ -55,35 +47,6 @@ func (c CmdRunner) Stdout(cmd *exec.Cmd) (io.ReadCloser, error) {
 		return nil
 	})
 	return CmdReadCloser{ReadCloser: stdout, cmd: cmd, wait: wait}, nil
-}
-
-func (c CmdRunner) Pipe(stdin io.Reader, cmd *exec.Cmd, stdout io.Writer) error {
-	cmd.Stdin, cmd.Stdout = stdin, stdout
-	if stdin == nil {
-		return c.Run(cmd)
-	}
-	input := &commandStdin{Reader: stdin, cmd: cmd}
-	cmd.Stdin = input
-	err := c.Run(cmd)
-	if input.err != nil {
-		return &InputError{Err: input.err}
-	}
-	return err
-}
-
-type commandStdin struct {
-	io.Reader
-	cmd *exec.Cmd
-	err error
-}
-
-func (s *commandStdin) Read(p []byte) (int, error) {
-	n, err := s.Reader.Read(p)
-	if err != nil && err != io.EOF {
-		s.err = err
-		s.cmd.Process.Kill()
-	}
-	return n, err
 }
 
 func (c CmdReadCloser) Read(p []byte) (int, error) {
