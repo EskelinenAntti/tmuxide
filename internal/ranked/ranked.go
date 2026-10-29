@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/eskelinenantti/tmuxide/internal/history"
+	"github.com/eskelinenantti/herdr-zipln/internal/history"
 )
 
 func History() io.Reader {

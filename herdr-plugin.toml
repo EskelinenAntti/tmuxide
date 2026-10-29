@@ -1,18 +1,18 @@
-id = "tmuxide"
-name = "tmuxide"
+id = "herdr-zipln"
+name = "zipln"
 version = "0.1.0"
 min_herdr_version = "0.9.1"
 description = "Fuzzy-find files and folders and open native project workspaces"
 platforms = ["linux", "macos"]
 
 [[build]]
-command = ["go", "build", "-o", "bin/ide", "./ide"]
+command = ["go", "build", "-o", "bin/zipln", "./zipln"]
 
 [[actions]]
 id = "open"
 title = "Open project or file"
 contexts = ["workspace"]
-command = ["herdr", "plugin", "pane", "open", "--plugin", "tmuxide", "--entrypoint", "picker"]
+command = ["herdr", "plugin", "pane", "open", "--plugin", "herdr-zipln", "--entrypoint", "picker"]
 
 [[panes]]
 id = "picker"
@@ -20,4 +20,4 @@ title = "Open project or file"
 placement = "popup"
 width = "80%"
 height = "70%"
-command = ["./bin/ide", "--mux", "herdr"]
+command = ["./bin/zipln", "--mux", "herdr"]

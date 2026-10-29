@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/eskelinenantti/tmuxide/internal/project"
-	"github.com/eskelinenantti/tmuxide/internal/test/mock"
-	"github.com/eskelinenantti/tmuxide/internal/test/spy"
+	"github.com/eskelinenantti/herdr-zipln/internal/project"
+	"github.com/eskelinenantti/herdr-zipln/internal/test/mock"
+	"github.com/eskelinenantti/herdr-zipln/internal/test/spy"
 	"github.com/google/go-cmp/cmp"
 )
 

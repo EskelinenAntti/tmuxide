@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/eskelinenantti/tmuxide/internal/history"
+	"github.com/eskelinenantti/herdr-zipln/internal/history"
 	"github.com/google/go-cmp/cmp"
 )
 

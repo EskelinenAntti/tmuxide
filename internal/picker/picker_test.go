@@ -5,12 +5,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/eskelinenantti/tmuxide/internal/history"
-	"github.com/eskelinenantti/tmuxide/internal/shell/fd"
-	"github.com/eskelinenantti/tmuxide/internal/shell/fzf"
-	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
-	"github.com/eskelinenantti/tmuxide/internal/test/mock"
-	"github.com/eskelinenantti/tmuxide/internal/test/spy"
+	"github.com/eskelinenantti/herdr-zipln/internal/history"
+	"github.com/eskelinenantti/herdr-zipln/internal/shell/fd"
+	"github.com/eskelinenantti/herdr-zipln/internal/shell/fzf"
+	"github.com/eskelinenantti/herdr-zipln/internal/shell/runner"
+	"github.com/eskelinenantti/herdr-zipln/internal/test/mock"
+	"github.com/eskelinenantti/herdr-zipln/internal/test/spy"
 	"github.com/google/go-cmp/cmp"
 )
 

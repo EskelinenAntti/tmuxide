@@ -1,4 +1,4 @@
-module github.com/eskelinenantti/tmuxide
+module github.com/eskelinenantti/herdr-zipln
 
 go 1.25.1
 

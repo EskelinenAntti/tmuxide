@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/eskelinenantti/tmuxide/internal/project"
-	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
+	"github.com/eskelinenantti/herdr-zipln/internal/project"
+	"github.com/eskelinenantti/herdr-zipln/internal/shell/runner"
 )
 
 type Cmd struct {

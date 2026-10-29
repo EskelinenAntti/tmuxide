@@ -6,27 +6,27 @@ import (
 	"os"
 	"strings"
 
-	"github.com/eskelinenantti/tmuxide/internal/history"
-	"github.com/eskelinenantti/tmuxide/internal/multiplexer"
-	"github.com/eskelinenantti/tmuxide/internal/picker"
-	"github.com/eskelinenantti/tmuxide/internal/project"
-	"github.com/eskelinenantti/tmuxide/internal/shell"
-	"github.com/eskelinenantti/tmuxide/internal/shell/path"
-	"github.com/eskelinenantti/tmuxide/internal/shell/runner"
+	"github.com/eskelinenantti/herdr-zipln/internal/history"
+	"github.com/eskelinenantti/herdr-zipln/internal/multiplexer"
+	"github.com/eskelinenantti/herdr-zipln/internal/picker"
+	"github.com/eskelinenantti/herdr-zipln/internal/project"
+	"github.com/eskelinenantti/herdr-zipln/internal/shell"
+	"github.com/eskelinenantti/herdr-zipln/internal/shell/path"
+	"github.com/eskelinenantti/herdr-zipln/internal/shell/runner"
 	"github.com/spf13/cobra"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "ide [file|folder]",
-	Short: "tmuxide creates or switches to tmux sessions based on files and folders.",
+	Use:   "zipln [file|folder]",
+	Short: "zipln opens herdr workspaces based on files and folders.",
 	Args:  cobra.MaximumNArgs(1),
-	Long: `tmuxide creates or switches to tmux sessions based on files and folders.
+	Long: `zipln creates or switches to herdr workspaces based on files and folders.
 
-Run it without arguments to pick a location from a fuzzy finder. A tmux
-session will be created (or reused) for that location automatically.
+Pick a location from the fuzzy finder. A herdr workspace will be created
+(or reused) for that location automatically. tmux sessions are also supported.
 
-When a file is selected or passed as an argument, tmuxide opens it in
-$EDITOR and creates the session for the repository root, or the file's
+When a file is selected or passed as an argument, zipln opens it in
+$EDITOR and creates the workspace for the repository root, or the file's
 directory if it is not inside a git repository.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		mux, err := cmd.Flags().GetString("mux")
@@ -44,10 +44,9 @@ For example, to use Vim as your editor, add the following line to your ~/.zshrc 
 export EDITOR=vim`
 
 var helpCommandNotInstalledTemplate = `
-Did not find %s, which is a required dependency for ide command.
+Did not find %s, which is a required dependency for zipln.
 
-You can install %[1]s e.g. via homebrew by running:
-brew install %[1]s`
+Install %[1]s with your system's package manager and make sure it is on $PATH.`
 
 var ErrEditorNotInstalled = errors.New("editor not installed")
 var ErrEditorEnvNotSet = errors.New("editor not configured")
