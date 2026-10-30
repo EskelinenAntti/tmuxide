@@ -99,7 +99,7 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 			session := project.Name(filepath.Join(home, folder))
 			expectedCalls := [][]string{
 				{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--disabled", "--no-sort", "--print-query", "--with-shell", "sh -c", "--bind", `start:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q}),change:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q})`},
+				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--sort", "--scheme=default", "--tiebreak=length,index", "--sync", "--print-query", "--with-shell", "sh -c", "--bind", `start,change:rebind(result),result:transform("$ZIPLN_EXECUTABLE" _focus -- {q} {*f})`},
 				{"tmux", "has-session", "-t", session + ":"},
 			}
 			if tt.attached {
@@ -387,7 +387,7 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 	requireNoError(t, err)
 	requireCalls(t, [][]string{
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--disabled", "--no-sort", "--print-query", "--with-shell", "sh -c", "--bind", `start:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q}),change:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q})`},
+		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--sort", "--scheme=default", "--tiebreak=length,index", "--sync", "--print-query", "--with-shell", "sh -c", "--bind", `start,change:rebind(result),result:transform("$ZIPLN_EXECUTABLE" _focus -- {q} {*f})`},
 		{"herdr", "workspace", "list"},
 		{"herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
 		{"herdr", "workspace", "focus", "w1"},
@@ -438,7 +438,7 @@ func TestSearchRemembersQuerySelection(t *testing.T) {
 		{OnRun: mock.WriteToStdout("proj\nproject/\n")},
 	}}
 	requireNoError(t, Run(nil, "tmux", runner, mock.Path{}))
-	want := "project/\nother.txt\nproject/file.txt\nproject/child.txt\n"
+	want := "project/\nproject/file.txt\nproject/child.txt\nother.txt\n"
 	if diff := cmp.Diff(want, runner.Stdin.String()); diff != "" {
 		t.Fatal(diff)
 	}

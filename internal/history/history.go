@@ -1,10 +1,17 @@
 package history
 
 import (
+	"cmp"
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"slices"
 )
+
+type selection struct {
+	Path  string `json:"path"`
+	Count int    `json:"count"`
+}
 
 func filePath() string {
 	stateHome := os.Getenv("XDG_STATE_HOME")
@@ -14,17 +21,20 @@ func filePath() string {
 	return filepath.Join(stateHome, "zipln", "queries.json")
 }
 
-func load() map[string]string {
+func load() map[string][]selection {
 	data, _ := os.ReadFile(filePath())
-	var selections map[string]string
+	var selections map[string][]selection
 	if json.Unmarshal(data, &selections) != nil || selections == nil {
-		return make(map[string]string)
+		return make(map[string][]selection)
 	}
 	return selections
 }
 
 func Preferred(query string) string {
-	return load()[query]
+	if selections := load()[query]; len(selections) > 0 {
+		return selections[0].Path
+	}
+	return ""
 }
 
 func RecordQuery(query, path string) {
@@ -36,7 +46,21 @@ func RecordQuery(query, path string) {
 		return
 	}
 	selections := load()
-	selections[query] = path
+	choices := selections[query]
+	count := 1
+	for i, choice := range choices {
+		if choice.Path == path {
+			count += choice.Count
+			choices = slices.Delete(choices, i, i+1)
+			break
+		}
+	}
+	// Stable sorting keeps the most recent selection first when counts tie.
+	choices = append([]selection{{Path: path, Count: count}}, choices...)
+	slices.SortStableFunc(choices, func(a, b selection) int {
+		return cmp.Compare(b.Count, a.Count)
+	})
+	selections[query] = choices
 	data, err := json.Marshal(selections)
 	if err != nil {
 		return

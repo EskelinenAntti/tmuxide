@@ -15,15 +15,20 @@ type Cmd struct {
 	runner.Runner
 }
 
-func (f Cmd) Fzf(input io.Reader, output io.Writer, candidates string) error {
+func (f Cmd) Fzf(input io.Reader, output io.Writer) error {
 	executable, err := os.Executable()
 	if err != nil {
 		return err
 	}
-	// Filtering and ranking happen in _rank so an exact query preference can
-	// precede the normal fuzzy results without disabling relevance for the rest.
-	fzfCmd := exec.Command("fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--disabled", "--no-sort", "--print-query", "--with-shell", "sh -c", "--bind", `start:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q}),change:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q})`)
-	fzfCmd.Env = append(os.Environ(), "ZIPLN_EXECUTABLE="+executable, "ZIPLN_CANDIDATES="+candidates)
+	// Wait for the scan so later arrivals cannot move a restored selection.
+	// Rebinding marks query changes, letting _focus respect subsequent navigation.
+	fzfCmd := exec.Command("fzf",
+		"--reverse", "--height", "70%", "--tmux", "70%",
+		"--sort", "--scheme=default", "--tiebreak=length,index", "--sync", "--print-query",
+		"--with-shell", "sh -c",
+		"--bind", `start,change:rebind(result),result:transform("$ZIPLN_EXECUTABLE" _focus -- {q} {*f})`,
+	)
+	fzfCmd.Env = append(os.Environ(), "ZIPLN_EXECUTABLE="+executable)
 	fzfCmd.Stdin = input
 	fzfCmd.Stdout = output
 	fzfCmd.Stderr = os.Stderr

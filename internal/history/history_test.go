@@ -26,3 +26,24 @@ func TestQuerySelections(t *testing.T) {
 		t.Fatal("empty queries and selections must not be recorded")
 	}
 }
+
+func TestMostSelectedForEachQuery(t *testing.T) {
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
+	dir := t.TempDir()
+	first := filepath.Join(dir, "first")
+	second := filepath.Join(dir, "second")
+	for _, path := range []string{first, first, second} {
+		RecordQuery("proj", path)
+	}
+	RecordQuery("other", second)
+	if got := Preferred("proj"); got != first {
+		t.Fatalf("most selected = %q, want %q", got, first)
+	}
+	if got := Preferred("other"); got != second {
+		t.Fatalf("other query = %q, want %q", got, second)
+	}
+	RecordQuery("proj", second)
+	if got := Preferred("proj"); got != second {
+		t.Fatalf("most recent tied selection = %q, want %q", got, second)
+	}
+}

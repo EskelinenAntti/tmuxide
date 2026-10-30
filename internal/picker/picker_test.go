@@ -14,19 +14,11 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestPromptSortsAndDeduplicatesOneScan(t *testing.T) {
+func TestPromptStreamsOneScanAndRecordsQuery(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	dir := filepath.Join(home, "project")
-	if err := os.Mkdir(dir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	file := filepath.Join(dir, "file.txt")
-	if err := os.WriteFile(file, nil, 0644); err != nil {
-		t.Fatal(err)
-	}
-
 	r := &spy.SpyRunner{Responses: []spy.Response{
 		{OnRun: mock.WriteToStdout("./project/\nproject/file.txt\nproject/child.txt\nother.txt\n")},
 		{OnRun: mock.WriteToStdout("proj\nproject/\n")},
@@ -38,12 +30,12 @@ func TestPromptSortsAndDeduplicatesOneScan(t *testing.T) {
 	if selection != dir {
 		t.Fatalf("Prompt selection = %q, want %q", selection, dir)
 	}
-	if diff := cmp.Diff("other.txt\n./project/\nproject/file.txt\nproject/child.txt\n", r.Stdin.String()); diff != "" {
+	if diff := cmp.Diff("./project/\nproject/file.txt\nproject/child.txt\nother.txt\n", r.Stdin.String()); diff != "" {
 		t.Fatal(diff)
 	}
 	wantCalls := [][]string{
 		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--disabled", "--no-sort", "--print-query", "--with-shell", "sh -c", "--bind", `start:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q}),change:reload("$ZIPLN_EXECUTABLE" _rank -- "$ZIPLN_CANDIDATES" {q})`},
+		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--sort", "--scheme=default", "--tiebreak=length,index", "--sync", "--print-query", "--with-shell", "sh -c", "--bind", `start,change:rebind(result),result:transform("$ZIPLN_EXECUTABLE" _focus -- {q} {*f})`},
 	}
 	if diff := cmp.Diff(wantCalls, r.Calls); diff != "" {
 		t.Fatal(diff)
@@ -85,6 +77,11 @@ func TestPrompt(t *testing.T) {
 			fzf:  "while IFS= read -r line; do :; done",
 		},
 		{
+			name: "query without selection",
+			fd:   "printf 'project/\n'",
+			fzf:  "while IFS= read -r line; do :; done; printf 'proj\n'",
+		},
+		{
 			name: "user cancellation",
 			fd:   "printf 'project/\n'",
 			fzf:  "exit 130",
@@ -92,7 +89,7 @@ func TestPrompt(t *testing.T) {
 		{
 			name: "user cancellation discards output",
 			fd:   "printf 'project/\n'",
-			fzf:  "printf 'project/\n'; exit 130",
+			fzf:  "printf 'proj\nproject/\n'; exit 130",
 		},
 		{
 			name:      "large scan",
@@ -150,6 +147,9 @@ func TestPrompt(t *testing.T) {
 			}
 			if selection != want {
 				t.Fatalf("Prompt selection = %q, want %q", selection, want)
+			}
+			if selection == "" && history.Preferred("proj") != "" {
+				t.Fatal("cancelled or empty selection was recorded")
 			}
 		})
 	}
