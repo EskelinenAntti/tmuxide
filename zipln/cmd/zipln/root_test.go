@@ -96,8 +96,8 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 
 			session := project.Name(filepath.Join(home, folder))
 			expectedCalls := [][]string{
-				{"fd", "--type", "d", "--max-depth", "2", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-				{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
+				{"fd", "--max-depth", "2", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
+				{"fd", "--min-depth", "3", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
 				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
 				{"tmux", "has-session", "-t", session + ":"},
 			}
@@ -380,8 +380,8 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 	err := Run(nil, "auto", runner, mock.Path{Missing: []string{"tmux"}})
 	requireNoError(t, err)
 	requireCalls(t, [][]string{
-		{"fd", "--type", "d", "--max-depth", "2", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
+		{"fd", "--max-depth", "2", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
+		{"fd", "--min-depth", "3", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
 		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
 		{"herdr", "workspace", "list"},
 		{"herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},

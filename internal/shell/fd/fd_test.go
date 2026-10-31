@@ -29,7 +29,7 @@ func TestFdReturnsUnmodifiedOutput(t *testing.T) {
 	if diff := cmp.Diff(want, string(output)); diff != "" {
 		t.Fatal(diff)
 	}
-	wantCalls := [][]string{{"fd", "--type", "d", "--max-depth", "2", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home}, {"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home}}
+	wantCalls := [][]string{{"fd", "--max-depth", "2", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home}, {"fd", "--min-depth", "3", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home}}
 	if diff := cmp.Diff(wantCalls, runner.Calls); diff != "" {
 		t.Fatal(diff)
 	}

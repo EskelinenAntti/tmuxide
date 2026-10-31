@@ -9,7 +9,6 @@ import (
 
 	"github.com/eskelinenantti/herdr-zipln/internal/shell/fd"
 	"github.com/eskelinenantti/herdr-zipln/internal/shell/fzf"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/pipe"
 )
 
 func Prompt(fdCmd fd.Cmd, fzfCmd fzf.Cmd) (string, error) {
@@ -20,7 +19,7 @@ func Prompt(fdCmd fd.Cmd, fzfCmd fzf.Cmd) (string, error) {
 	}
 	defer fdStdout.Close()
 
-	if err := fzfCmd.Fzf(pipe.DeduplicatePaths(fdStdout), &buffer); err != nil {
+	if err := fzfCmd.Fzf(fdStdout, &buffer); err != nil {
 		if errors.Is(err, fzf.ErrCancelled) {
 			return "", nil
 		}
