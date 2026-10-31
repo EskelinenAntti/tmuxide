@@ -98,8 +98,9 @@ func TestSelectFolderFromPrompt(t *testing.T) {
 
 			session := project.Name(filepath.Join(home, folder))
 			expectedCalls := [][]string{
-				{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--sort", "--scheme=default", "--tiebreak=length,index", "--sync", "--print-query", "--with-shell", "sh -c", "--bind", `start,change:rebind(result),result:transform("$ZIPLN_EXECUTABLE" _focus -- {q} {*f})`},
+				{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--max-depth", "3"},
+				{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--sort", "--scheme=default", "--tiebreak=length,index", "--print-query", "--with-shell", "sh -c", "--bind", `start,change:untrack-current+first+rebind(result),result:transform("$ZIPLN_EXECUTABLE" _focus -- {q} {*f})`},
+				{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--min-depth", "4"},
 				{"tmux", "has-session", "-t", session + ":"},
 			}
 			if tt.attached {
@@ -378,7 +379,7 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 	dir := filepath.Join(home, "project")
 	requireNoError(t, os.Mkdir(dir, 0755))
 	runner := &spy.SpyRunner{Responses: []spy.Response{
-		{}, {OnRun: mock.WriteToStdout("\nproject\n")},
+		{}, {OnRun: mock.WriteToStdout("\nproject\n")}, {},
 		{OnRun: mock.WriteToStdout(`{"result":{"type":"workspace_list","workspaces":[]}}`)},
 		{OnRun: mock.WriteToStdout(`{"result":{"workspace":{"workspace_id":"w1"}}}`)},
 		{OnRun: mock.WriteToStdout(`{"result":{"type":"ok"}}`)},
@@ -386,8 +387,9 @@ func TestHerdrFolderFromPrompt(t *testing.T) {
 	err := Run(nil, "auto", runner, mock.Path{Missing: []string{"tmux"}})
 	requireNoError(t, err)
 	requireCalls(t, [][]string{
-		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--sort", "--scheme=default", "--tiebreak=length,index", "--sync", "--print-query", "--with-shell", "sh -c", "--bind", `start,change:rebind(result),result:transform("$ZIPLN_EXECUTABLE" _focus -- {q} {*f})`},
+		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--max-depth", "3"},
+		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--sort", "--scheme=default", "--tiebreak=length,index", "--print-query", "--with-shell", "sh -c", "--bind", `start,change:untrack-current+first+rebind(result),result:transform("$ZIPLN_EXECUTABLE" _focus -- {q} {*f})`},
+		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--min-depth", "4"},
 		{"herdr", "workspace", "list"},
 		{"herdr", "workspace", "create", "--cwd", dir, "--label", filepath.Base(dir), "--no-focus"},
 		{"herdr", "workspace", "focus", "w1"},

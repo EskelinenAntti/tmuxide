@@ -21,16 +21,17 @@ type SpyRunner struct {
 
 func (t *SpyRunner) Run(cmd *exec.Cmd) error {
 	t.Calls = append(t.Calls, cmd.Args)
+	// Reserve this command's response before reading stdin, which can lazily
+	// start another command while the current command is running.
+	var response Response
+	if len(t.Responses) > 0 {
+		response = t.Responses[0]
+		t.Responses = t.Responses[1:]
+	}
 	var inputErr error
 	if _, file := cmd.Stdin.(*os.File); cmd.Stdin != nil && !file {
 		_, inputErr = io.Copy(&t.Stdin, cmd.Stdin)
 	}
-	if len(t.Responses) == 0 {
-		return inputErr
-	}
-
-	response := t.Responses[0]
-	t.Responses = t.Responses[1:]
 	if response.OnRun != nil {
 		if err := response.OnRun(cmd); err != nil {
 			return err

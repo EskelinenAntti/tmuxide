@@ -20,13 +20,13 @@ func (f Cmd) Fzf(input io.Reader, output io.Writer) error {
 	if err != nil {
 		return err
 	}
-	// Wait for the scan so later arrivals cannot move a restored selection.
-	// Rebinding marks query changes, letting _focus respect subsequent navigation.
+	// Stream the scan immediately. Track a restored selection as more results
+	// arrive, and release it on query changes so normal fuzzy ranking resumes.
 	fzfCmd := exec.Command("fzf",
 		"--reverse", "--height", "70%", "--tmux", "70%",
-		"--sort", "--scheme=default", "--tiebreak=length,index", "--sync", "--print-query",
+		"--sort", "--scheme=default", "--tiebreak=length,index", "--print-query",
 		"--with-shell", "sh -c",
-		"--bind", `start,change:rebind(result),result:transform("$ZIPLN_EXECUTABLE" _focus -- {q} {*f})`,
+		"--bind", `start,change:untrack-current+first+rebind(result),result:transform("$ZIPLN_EXECUTABLE" _focus -- {q} {*f})`,
 	)
 	fzfCmd.Env = append(os.Environ(), "ZIPLN_EXECUTABLE="+executable)
 	fzfCmd.Stdin = input

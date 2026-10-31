@@ -14,14 +14,15 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestPromptStreamsOneScanAndRecordsQuery(t *testing.T) {
+func TestPromptStreamsShallowThenDeepAndRecordsQuery(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	dir := filepath.Join(home, "project")
 	r := &spy.SpyRunner{Responses: []spy.Response{
-		{OnRun: mock.WriteToStdout("./project/\nproject/file.txt\nproject/child.txt\nother.txt\n")},
+		{OnRun: mock.WriteToStdout("./project/\nproject/file.txt\nother.txt\n")},
 		{OnRun: mock.WriteToStdout("proj\nproject/\n")},
+		{OnRun: mock.WriteToStdout("project/src/nested/child.txt\n")},
 	}}
 	selection, err := Prompt(fd.Cmd{Runner: r}, fzf.Cmd{Runner: r})
 	if err != nil {
@@ -30,12 +31,13 @@ func TestPromptStreamsOneScanAndRecordsQuery(t *testing.T) {
 	if selection != dir {
 		t.Fatalf("Prompt selection = %q, want %q", selection, dir)
 	}
-	if diff := cmp.Diff("./project/\nproject/file.txt\nproject/child.txt\nother.txt\n", r.Stdin.String()); diff != "" {
+	if diff := cmp.Diff("./project/\nproject/file.txt\nother.txt\nproject/src/nested/child.txt\n", r.Stdin.String()); diff != "" {
 		t.Fatal(diff)
 	}
 	wantCalls := [][]string{
-		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
-		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--sort", "--scheme=default", "--tiebreak=length,index", "--sync", "--print-query", "--with-shell", "sh -c", "--bind", `start,change:rebind(result),result:transform("$ZIPLN_EXECUTABLE" _focus -- {q} {*f})`},
+		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--max-depth", "3"},
+		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--sort", "--scheme=default", "--tiebreak=length,index", "--print-query", "--with-shell", "sh -c", "--bind", `start,change:untrack-current+first+rebind(result),result:transform("$ZIPLN_EXECUTABLE" _focus -- {q} {*f})`},
+		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home, "--min-depth", "4"},
 	}
 	if diff := cmp.Diff(wantCalls, r.Calls); diff != "" {
 		t.Fatal(diff)

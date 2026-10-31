@@ -5,17 +5,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-
-	"github.com/eskelinenantti/herdr-zipln/internal/history"
 )
 
-// PreferredPosition locates the query's preferred path in fzf's ranked matches.
-// Without a matching preference, the best fuzzy result stays selected.
-func PreferredPosition(query string, matches io.Reader) (int, error) {
-	preferred := history.Preferred(query)
-	if preferred == "" {
-		return 1, nil
-	}
+// PreferredPosition locates a preferred absolute path in fzf's ranked matches.
+// It returns zero if the path has not arrived in the stream yet.
+func PreferredPosition(preferred string, matches io.Reader) (int, error) {
 	scanner := bufio.NewScanner(matches)
 	for position := 1; scanner.Scan(); position++ {
 		path := scanner.Text()
@@ -26,5 +20,5 @@ func PreferredPosition(query string, matches io.Reader) (int, error) {
 			return position, nil
 		}
 	}
-	return 1, scanner.Err()
+	return 0, scanner.Err()
 }
