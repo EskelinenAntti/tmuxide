@@ -22,7 +22,6 @@ func (f Cmd) Fd() (io.ReadCloser, error) {
 		"--base-directory",
 		os.Getenv("HOME"),
 	}
-	// Bound the priority scan so deep trees cannot delay shallow paths.
 	shallowArgs := append([]string{"--max-depth", "2"}, args...)
 	shallow, err := f.Stdout(exec.Command("fd", shallowArgs...))
 	if err != nil {
@@ -37,7 +36,6 @@ func (f Cmd) Fd() (io.ReadCloser, error) {
 	return &scanOutput{Reader: io.MultiReader(shallow, deep), shallow: shallow, deep: deep}, nil
 }
 
-// Both scans stream and are stopped when the picker closes its input.
 type scanOutput struct {
 	io.Reader
 	shallow io.ReadCloser
