@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/eskelinenantti/herdr-zipln/internal/history"
 	"github.com/eskelinenantti/herdr-zipln/internal/multiplexer"
 	"github.com/eskelinenantti/herdr-zipln/internal/picker"
 	"github.com/eskelinenantti/herdr-zipln/internal/project"
@@ -98,7 +97,6 @@ func Run(args []string, muxFlag string, runner runner.Runner, path path.ShellPat
 		command = append(editorCmd, target)
 	}
 
-	history.Record(target)
 	return mux.Open(proj, command)
 }
 

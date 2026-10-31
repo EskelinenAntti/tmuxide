@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/eskelinenantti/herdr-zipln/internal/history"
 	"github.com/eskelinenantti/herdr-zipln/internal/shell/fd"
 	"github.com/eskelinenantti/herdr-zipln/internal/shell/fzf"
 	"github.com/eskelinenantti/herdr-zipln/internal/shell/runner"
@@ -14,25 +13,14 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestPromptWritesRankedPathsThenOneScan(t *testing.T) {
+func TestPromptWritesShallowPathsBeforeDeepPaths(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	dir := filepath.Join(home, "project")
-	if err := os.Mkdir(dir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	file := filepath.Join(dir, "file.txt")
-	if err := os.WriteFile(file, nil, 0644); err != nil {
-		t.Fatal(err)
-	}
-	history.Record(dir)
-	history.Record(file)
-	history.Record(file)
-	history.Record(filepath.Join(home, "missing"))
 
 	r := &spy.SpyRunner{Responses: []spy.Response{
-		{OnRun: mock.WriteToStdout("./project/\nproject/file.txt\nproject/child.txt\nother.txt\n")},
+		{OnRun: mock.WriteToStdout("project/\nproject/file.txt\nother.txt\n")},
+		{OnRun: mock.WriteToStdout("project/nested/child.txt\n")},
 		{OnRun: mock.WriteToStdout("project/\n")},
 	}}
 	selection, err := Prompt(fd.Cmd{Runner: r}, fzf.Cmd{Runner: r})
@@ -42,11 +30,12 @@ func TestPromptWritesRankedPathsThenOneScan(t *testing.T) {
 	if selection != dir {
 		t.Fatalf("Prompt selection = %q, want %q", selection, dir)
 	}
-	if diff := cmp.Diff("project/file.txt\nproject/\nproject/child.txt\nother.txt\n", r.Stdin.String()); diff != "" {
+	if diff := cmp.Diff("project/\nproject/file.txt\nother.txt\nproject/nested/child.txt\n", r.Stdin.String()); diff != "" {
 		t.Fatal(diff)
 	}
 	wantCalls := [][]string{
-		{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
+		{"fd", "--max-depth", "2", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
+		{"fd", "--min-depth", "3", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
 		{"fzf", "--reverse", "--height", "70%", "--tmux", "70%", "--no-sort"},
 	}
 	if diff := cmp.Diff(wantCalls, r.Calls); diff != "" {
@@ -120,6 +109,12 @@ func TestPrompt(t *testing.T) {
 			wantError: true,
 		},
 		{
+			name:      "deep scan failure takes precedence over selection",
+			fd:        "if [ \"$1\" = --max-depth ]; then printf 'project/\\n'; else exit 7; fi",
+			fzf:       "while IFS= read -r line; do :; done; printf 'project/\\n'",
+			wantError: true,
+		},
+		{
 			name:      "fzf failure",
 			fd:        "printf 'project/\n'",
 			fzf:       "exit 2",
@@ -130,7 +125,6 @@ func TestPrompt(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			home := t.TempDir()
 			t.Setenv("HOME", home)
-			t.Setenv("XDG_STATE_HOME", t.TempDir())
 			bin := t.TempDir()
 			t.Setenv("PATH", bin)
 			for name, script := range map[string]string{"fd": tt.fd, "fzf": tt.fzf} {

@@ -9,12 +9,15 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestFdReturnsUnmodifiedOutput(t *testing.T) {
+func TestFdStreamsShallowPathsBeforeDeepPaths(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	want := "./project/\nproject/file.txt\nproject/file.txt\n"
+	shallow := "project/\nproject/file.txt\n"
+	deep := "project/nested/file.txt\n"
+	want := shallow + deep
 	runner := &spy.SpyRunner{Responses: []spy.Response{
-		{OnRun: mock.WriteToStdout(want)},
+		{OnRun: mock.WriteToStdout(shallow)},
+		{OnRun: mock.WriteToStdout(deep)},
 	}}
 	input, err := (Cmd{Runner: runner}).Fd()
 	if err != nil {
@@ -28,7 +31,10 @@ func TestFdReturnsUnmodifiedOutput(t *testing.T) {
 	if diff := cmp.Diff(want, string(output)); diff != "" {
 		t.Fatal(diff)
 	}
-	wantCalls := [][]string{{"fd", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home}}
+	wantCalls := [][]string{
+		{"fd", "--max-depth", "2", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
+		{"fd", "--min-depth", "3", "--follow", "--hidden", "--exclude", "{.git,node_modules,Library}", ".", "--base-directory", home},
+	}
 	if diff := cmp.Diff(wantCalls, runner.Calls); diff != "" {
 		t.Fatal(diff)
 	}
