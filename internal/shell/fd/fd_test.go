@@ -4,8 +4,8 @@ import (
 	"io"
 	"testing"
 
-	"github.com/eskelinenantti/herdr-zipln/internal/test/mock"
-	"github.com/eskelinenantti/herdr-zipln/internal/test/spy"
+	"github.com/eskelinenantti/zipln/internal/test/mock"
+	"github.com/eskelinenantti/zipln/internal/test/spy"
 	"github.com/google/go-cmp/cmp"
 )
 

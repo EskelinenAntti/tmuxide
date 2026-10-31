@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/fd"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/fzf"
+	"github.com/eskelinenantti/zipln/internal/shell/fd"
+	"github.com/eskelinenantti/zipln/internal/shell/fzf"
 )
 
 func Prompt(fdCmd fd.Cmd, fzfCmd fzf.Cmd) (string, error) {

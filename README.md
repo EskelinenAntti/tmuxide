@@ -1,4 +1,4 @@
-# herdr-zipln 🪄
+# zipln 🪄
 
 Open `zipln`, pick any file or folder from the fuzzy finder, and you'll find yourself in the right herdr workspace.
 
@@ -9,7 +9,7 @@ It doesn't matter if the workspace doesn't exist yet, or the file is buried in a
 Install zipln as a herdr plugin:
 
 ```bash
-herdr plugin install eskelinenantti/herdr-zipln
+herdr plugin install eskelinenantti/zipln
 ```
 
 You'll need herdr 0.9.1 or newer, Go 1.25.1 or newer to build the plugin, and `fd`, `fzf`, and `git`. If you are already using homebrew and are missing any of these dependencies, run `brew install fd fzf git`.
@@ -21,7 +21,7 @@ You'll need herdr 0.9.1 or newer, Go 1.25.1 or newer to build the plugin, and `f
 > [[keys.command]]
 > key = "prefix+f"
 > type = "plugin_action"
-> command = "herdr-zipln.open"
+> command = "zipln.open"
 > description = "Open project or file"
 > ```
 
@@ -52,7 +52,7 @@ path/to/file.txt
 
 ### tmux
 
-zipln also supports tmux sessions. Install `zipln` with `go install github.com/eskelinenantti/herdr-zipln/zipln@latest` and add this to your `tmux.conf`:
+zipln also supports tmux sessions. Install `zipln` with `go install github.com/eskelinenantti/zipln/zipln@latest` and add this to your `tmux.conf`:
 
 ```tmux
 bind-key o "run 'zipln --mux tmux'"

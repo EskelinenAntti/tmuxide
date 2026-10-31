@@ -3,8 +3,8 @@ package tmux
 import (
 	"testing"
 
-	"github.com/eskelinenantti/herdr-zipln/internal/project"
-	"github.com/eskelinenantti/herdr-zipln/internal/test/spy"
+	"github.com/eskelinenantti/zipln/internal/project"
+	"github.com/eskelinenantti/zipln/internal/test/spy"
 	"github.com/google/go-cmp/cmp"
 )
 

@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/fd"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/fzf"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/git"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/path"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/runner"
+	"github.com/eskelinenantti/zipln/internal/shell/fd"
+	"github.com/eskelinenantti/zipln/internal/shell/fzf"
+	"github.com/eskelinenantti/zipln/internal/shell/git"
+	"github.com/eskelinenantti/zipln/internal/shell/path"
+	"github.com/eskelinenantti/zipln/internal/shell/runner"
 )
 
 var ErrCommandNotInstalled = errors.New("not installed")

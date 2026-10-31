@@ -1,4 +1,4 @@
-id = "herdr-zipln"
+id = "zipln"
 name = "zipln"
 version = "9.0.2"
 min_herdr_version = "0.9.1"
@@ -12,7 +12,7 @@ command = ["go", "build", "-o", "bin/zipln", "./zipln"]
 id = "open"
 title = "Open project or file"
 contexts = ["workspace"]
-command = ["herdr", "plugin", "pane", "open", "--plugin", "herdr-zipln", "--entrypoint", "picker"]
+command = ["herdr", "plugin", "pane", "open", "--plugin", "zipln", "--entrypoint", "picker"]
 
 [[panes]]
 id = "picker"

@@ -1,4 +1,4 @@
-module github.com/eskelinenantti/herdr-zipln
+module github.com/eskelinenantti/zipln
 
 go 1.25.1
 

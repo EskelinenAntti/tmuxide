@@ -4,8 +4,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/eskelinenantti/herdr-zipln/internal/project"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/runner"
+	"github.com/eskelinenantti/zipln/internal/project"
+	"github.com/eskelinenantti/zipln/internal/shell/runner"
 )
 
 type Cmd struct {

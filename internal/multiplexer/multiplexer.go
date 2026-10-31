@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/eskelinenantti/herdr-zipln/internal/project"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/herdr"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/path"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/runner"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/tmux"
+	"github.com/eskelinenantti/zipln/internal/project"
+	"github.com/eskelinenantti/zipln/internal/shell"
+	"github.com/eskelinenantti/zipln/internal/shell/herdr"
+	"github.com/eskelinenantti/zipln/internal/shell/path"
+	"github.com/eskelinenantti/zipln/internal/shell/runner"
+	"github.com/eskelinenantti/zipln/internal/shell/tmux"
 )
 
 type Multiplexer interface {

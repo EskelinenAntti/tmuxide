@@ -6,12 +6,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/eskelinenantti/herdr-zipln/internal/multiplexer"
-	"github.com/eskelinenantti/herdr-zipln/internal/picker"
-	"github.com/eskelinenantti/herdr-zipln/internal/project"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/path"
-	"github.com/eskelinenantti/herdr-zipln/internal/shell/runner"
+	"github.com/eskelinenantti/zipln/internal/multiplexer"
+	"github.com/eskelinenantti/zipln/internal/picker"
+	"github.com/eskelinenantti/zipln/internal/project"
+	"github.com/eskelinenantti/zipln/internal/shell"
+	"github.com/eskelinenantti/zipln/internal/shell/path"
+	"github.com/eskelinenantti/zipln/internal/shell/runner"
 	"github.com/spf13/cobra"
 )
 
