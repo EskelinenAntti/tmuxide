@@ -17,13 +17,6 @@ func TestPromptWritesShallowPathsBeforeDeepPaths(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	dir := filepath.Join(home, "project")
-	if err := os.Mkdir(dir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	file := filepath.Join(dir, "file.txt")
-	if err := os.WriteFile(file, nil, 0644); err != nil {
-		t.Fatal(err)
-	}
 
 	r := &spy.SpyRunner{Responses: []spy.Response{
 		{OnRun: mock.WriteToStdout("project/\nproject/file.txt\nother.txt\n")},
@@ -113,6 +106,12 @@ func TestPrompt(t *testing.T) {
 			name:      "scan exit 130 is not fzf cancellation",
 			fd:        "exit 130",
 			fzf:       "while IFS= read -r line; do :; done",
+			wantError: true,
+		},
+		{
+			name:      "deep scan failure takes precedence over selection",
+			fd:        "if [ \"$1\" = --max-depth ]; then printf 'project/\\n'; else exit 7; fi",
+			fzf:       "while IFS= read -r line; do :; done; printf 'project/\\n'",
 			wantError: true,
 		},
 		{
