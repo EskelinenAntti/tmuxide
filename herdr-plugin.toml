@@ -1,6 +1,6 @@
 id = "zipln"
 name = "zipln"
-version = "9.0.2"
+version = "10.0.0"
 min_herdr_version = "0.9.1"
 description = "Fuzzy-find files and folders and open native project workspaces"
 platforms = ["linux", "macos"]
