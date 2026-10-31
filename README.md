@@ -57,3 +57,5 @@ zipln also supports tmux sessions. Install `zipln` with `go install github.com/e
 ```tmux
 bind-key o "run 'zipln --mux tmux'"
 ```
+
+The picker lists directories within two levels of your home directory first, then streams the full file and directory search. Duplicate paths appear only once.

@@ -3,12 +3,10 @@ package picker
 import (
 	"bytes"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/eskelinenantti/herdr-zipln/internal/ranked"
 	"github.com/eskelinenantti/herdr-zipln/internal/shell/fd"
 	"github.com/eskelinenantti/herdr-zipln/internal/shell/fzf"
 	"github.com/eskelinenantti/herdr-zipln/internal/shell/pipe"
@@ -16,15 +14,13 @@ import (
 
 func Prompt(fdCmd fd.Cmd, fzfCmd fzf.Cmd) (string, error) {
 	var buffer bytes.Buffer
-	rankedStdout := ranked.History()
 	fdStdout, err := fdCmd.Fd()
 	if err != nil {
 		return "", err
 	}
 	defer fdStdout.Close()
 
-	stdin := io.MultiReader(rankedStdout, fdStdout)
-	if err := fzfCmd.Fzf(pipe.DeduplicatePaths(stdin), &buffer); err != nil {
+	if err := fzfCmd.Fzf(pipe.DeduplicatePaths(fdStdout), &buffer); err != nil {
 		if errors.Is(err, fzf.ErrCancelled) {
 			return "", nil
 		}
