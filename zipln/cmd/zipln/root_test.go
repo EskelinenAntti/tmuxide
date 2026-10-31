@@ -1,19 +1,115 @@
 package cmd
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/eskelinenantti/zipln/internal/project"
 	"github.com/eskelinenantti/zipln/internal/shell"
 	"github.com/eskelinenantti/zipln/internal/test/mock"
 	"github.com/eskelinenantti/zipln/internal/test/spy"
 	"github.com/google/go-cmp/cmp"
+	"github.com/spf13/cobra"
 )
 
 const editor string = "editor"
+
+type readerFunc func([]byte) (int, error)
+
+func (f readerFunc) Read(p []byte) (int, error) { return f(p) }
+
+func TestExecuteErrors(t *testing.T) {
+	for _, tt := range []struct {
+		name, mux, herdrEnv string
+		err                 error
+		wait                bool
+		want                string
+	}{
+		{"missing fd in popup", "herdr", "", shell.NotInstalledError{Cmd: "fd"}, true, "brew install fd fzf git"},
+		{"missing fzf in popup", "herdr", "", shell.NotInstalledError{Cmd: "fzf"}, true, "brew install fd fzf git"},
+		{"auto Herdr", "auto", "1", errors.New("workspace failed"), true, "workspace failed"},
+		{"editor configuration", "herdr", "1", ErrEditorEnvNotSet, true, "export EDITOR=vim"},
+		{"tmux override", "tmux", "1", errors.New("failed"), false, "failed"},
+		{"auto outside Herdr", "auto", "", errors.New("failed"), false, "failed"},
+		{"success or cancellation", "herdr", "1", nil, false, ""},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("HERDR_ENV", tt.herdrEnv)
+			cmd := &cobra.Command{Use: "zipln", RunE: func(*cobra.Command, []string) error { return tt.err }}
+			cmd.Flags().String("mux", "auto", "")
+			cmd.SetArgs([]string{"--mux", tt.mux})
+			var output bytes.Buffer
+			cmd.SetErr(&output)
+			read := false
+			cmd.SetIn(readerFunc(func(p []byte) (int, error) {
+				read = true
+				if !strings.Contains(output.String(), tt.want) || !strings.Contains(output.String(), "Press Enter") {
+					t.Fatalf("input read before displaying guidance: %q", output.String())
+				}
+				return copy(p, "\n"), nil
+			}))
+			code := execute(cmd)
+			if (code != 0) != (tt.err != nil) || read != tt.wait {
+				t.Fatalf("exit code = %d, read input = %v; want error = %v, wait = %v", code, read, tt.err != nil, tt.wait)
+			}
+			if !strings.Contains(output.String(), tt.want) {
+				t.Fatalf("output = %q, want %q", output.String(), tt.want)
+			}
+		})
+	}
+}
+
+func TestExecuteKeepsHerdrErrorOpenUntilAcknowledged(t *testing.T) {
+	for _, acknowledgment := range []string{"\n", ""} {
+		t.Run(fmt.Sprintf("input %q", acknowledgment), func(t *testing.T) {
+			cmd := &cobra.Command{Use: "zipln", RunE: func(*cobra.Command, []string) error {
+				return shell.NotInstalledError{Cmd: "fzf"}
+			}}
+			cmd.Flags().String("mux", "herdr", "")
+			cmd.SetArgs([]string{})
+			cmd.SetErr(io.Discard)
+			input, writer := io.Pipe()
+			t.Cleanup(func() { input.Close(); writer.Close() })
+			reading := make(chan struct{})
+			cmd.SetIn(readerFunc(func(p []byte) (int, error) {
+				close(reading)
+				return input.Read(p)
+			}))
+			done := make(chan int, 1)
+			go func() { done <- execute(cmd) }()
+			select {
+			case <-reading:
+			case <-time.After(5 * time.Second):
+				t.Fatal("did not wait for acknowledgment")
+			}
+			select {
+			case <-done:
+				t.Fatal("exited before acknowledgment")
+			default:
+			}
+			if acknowledgment != "" {
+				_, err := io.WriteString(writer, acknowledgment)
+				requireNoError(t, err)
+			}
+			writer.Close()
+			select {
+			case code := <-done:
+				if code != 1 {
+					t.Fatalf("exit code = %d, want 1", code)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("did not exit after acknowledgment or EOF")
+			}
+		})
+	}
+}
 
 func TestRunMuxOverride(t *testing.T) {
 	t.Setenv("HERDR_ENV", "1")

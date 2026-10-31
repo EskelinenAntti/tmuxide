@@ -29,6 +29,8 @@ You'll need herdr 0.9.1 or newer, Go 1.25.1 or newer to build the plugin, and `f
 
 Your shortcut opens zipln in a popup where you can fuzzy find folders and files. If a workspace for the selected location already exists, zipln will switch to it. Otherwise, zipln creates the workspace.
 
+If a required tool such as `fd` or `fzf` is missing, zipln displays installation instructions. The Herdr plugin popup keeps errors visible until you press Enter. After installing dependencies, restart Herdr if it still cannot find them on `$PATH`.
+
 Picking a folder takes you to its workspace. Picking a file opens it in your editor, in a new tab in its workspace.
 
 ### Folder targets

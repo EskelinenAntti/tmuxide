@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"os"
@@ -45,7 +46,13 @@ export EDITOR=vim`
 var helpCommandNotInstalledTemplate = `
 Did not find %s, which is a required dependency for zipln.
 
-Install %[1]s with your system's package manager and make sure it is on $PATH.`
+Install %[1]s with your system's package manager and make sure it is on $PATH.
+The file picker requires both fd and fzf, and zipln also requires git.
+With Homebrew, install them with:
+
+  brew install fd fzf git
+
+If you installed the tools while Herdr was running, restart Herdr so it picks up your updated $PATH.`
 
 var ErrEditorNotInstalled = errors.New("editor not installed")
 var ErrEditorEnvNotSet = errors.New("editor not configured")
@@ -110,24 +117,37 @@ func isDir(path string) (bool, error) {
 }
 
 func Execute() {
-	rootCmd.SilenceUsage = true
-	rootCmd.SilenceErrors = false
-	err := rootCmd.Execute()
+	if code := execute(rootCmd); code != 0 {
+		os.Exit(code)
+	}
+}
+
+func execute(cmd *cobra.Command) int {
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = false
+	err := cmd.Execute()
 
 	if err == nil {
-		return
+		return 0
 	}
 
 	if errors.Is(err, ErrEditorEnvNotSet) {
-		rootCmd.PrintErrln(helpNoEditorConfigured)
+		cmd.PrintErrln(helpNoEditorConfigured)
 	}
 
 	var commandNotInstalled shell.NotInstalledError
 	if errors.As(err, &commandNotInstalled) {
-		rootCmd.PrintErrln(fmt.Sprintf(helpCommandNotInstalledTemplate, commandNotInstalled.Cmd))
+		cmd.PrintErrln(fmt.Sprintf(helpCommandNotInstalledTemplate, commandNotInstalled.Cmd))
 	}
 
-	os.Exit(1)
+	mux, _ := cmd.Flags().GetString("mux")
+	if mux == "herdr" || (mux == "auto" && os.Getenv("HERDR_ENV") == "1") {
+		cmd.PrintErr("\nPress Enter to close this popup...")
+		// Keep the popup's process alive until the user acknowledges the error.
+		// EOF also lets noninteractive callers exit without hanging.
+		_, _ = bufio.NewReader(cmd.InOrStdin()).ReadString('\n')
+	}
+	return 1
 }
 
 func editorCmd(path path.ShellPath) ([]string, error) {
