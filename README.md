@@ -1,6 +1,6 @@
-# zipln 🪄
+# zipln
 
-Open `zipln`, pick any file or folder from the fuzzy finder, and you'll find yourself in the right herdr workspace.
+Fuzzy find any file or folder and zipline into its herdr workspace 🚡
 
 It doesn't matter if the workspace doesn't exist yet, or the file is buried in a subfolder of a subfolder. It'll *just work* 🪄
 
@@ -12,7 +12,7 @@ Install zipln as a herdr plugin:
 herdr plugin install eskelinenantti/zipln
 ```
 
-You'll need herdr 0.9.1 or newer, Go 1.25.1 or newer to build the plugin, and `fd`, `fzf`, and `git`. If you are already using homebrew and are missing any of these dependencies, run `brew install fd fzf git`.
+You'll need Go 1.25.1 or newer to build the plugin, and `fd`, `fzf` and `git` to run it. If you are already using homebrew and are missing any of these dependencies, run `brew install go fd fzf git`.
 
 > [!TIP]
 > Add the following config to your `~/.config/herdr/config.toml` to start jumping between folders and files from anywhere in herdr with the `prefix+f` shortcut.
@@ -22,7 +22,7 @@ You'll need herdr 0.9.1 or newer, Go 1.25.1 or newer to build the plugin, and `f
 > key = "prefix+f"
 > type = "plugin_action"
 > command = "zipln.open"
-> description = "Open project or file"
+> description = "Open zipln"
 > ```
 
 ## Manual
