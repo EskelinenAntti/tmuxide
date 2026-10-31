@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -43,16 +44,12 @@ For example, to use Vim as your editor, add the following line to your ~/.zshrc 
 				
 export EDITOR=vim`
 
-var helpCommandNotInstalledTemplate = `
-Did not find %s, which is a required dependency for zipln.
-
-Install %[1]s with your system's package manager and make sure it is on $PATH.
-The file picker requires both fd and fzf, and zipln also requires git.
-With Homebrew, install them with:
-
-  brew install fd fzf git
-
-If you installed the tools while Herdr was running, restart Herdr so it picks up your updated $PATH.`
+func installHelp(commands []string, shellPath path.ShellPath) string {
+	if shellPath.Contains("brew") {
+		return "\nTo install, run:\n\n  brew install " + strings.Join(commands, " ") + "\n"
+	}
+	return "\nInstall the missing tools with your package manager and make sure they're on $PATH."
+}
 
 var ErrEditorNotInstalled = errors.New("editor not installed")
 var ErrEditorEnvNotSet = errors.New("editor not configured")
@@ -136,18 +133,20 @@ func execute(cmd *cobra.Command) int {
 	}
 
 	var commandNotInstalled shell.NotInstalledError
-	if errors.As(err, &commandNotInstalled) {
-		cmd.PrintErrln(fmt.Sprintf(helpCommandNotInstalledTemplate, commandNotInstalled.Cmd))
+	var missingTools shell.MissingToolsError
+	if errors.As(err, &missingTools) {
+		cmd.PrintErrln(installHelp(missingTools.Tools, path.Path{}))
+	} else if errors.As(err, &commandNotInstalled) {
+		cmd.PrintErrln(installHelp([]string{commandNotInstalled.Cmd}, path.Path{}))
 	}
 
-	mux, _ := cmd.Flags().GetString("mux")
-	if mux == "herdr" || (mux == "auto" && os.Getenv("HERDR_ENV") == "1") {
-		cmd.PrintErr("\nPress Enter to close this popup...")
-		// Keep the popup's process alive until the user acknowledges the error.
-		// EOF also lets noninteractive callers exit without hanging.
-		_, _ = bufio.NewReader(cmd.InOrStdin()).ReadString('\n')
-	}
+	waitForEnter(cmd.InOrStdin(), cmd.ErrOrStderr())
 	return 1
+}
+
+func waitForEnter(input io.Reader, output io.Writer) {
+	fmt.Fprint(output, "\nPress Enter to close.")
+	_, _ = bufio.NewReader(input).ReadString('\n')
 }
 
 func editorCmd(path path.ShellPath) ([]string, error) {

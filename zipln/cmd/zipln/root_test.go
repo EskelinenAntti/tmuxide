@@ -13,6 +13,7 @@ import (
 
 	"github.com/eskelinenantti/zipln/internal/project"
 	"github.com/eskelinenantti/zipln/internal/shell"
+	"github.com/eskelinenantti/zipln/internal/shell/path"
 	"github.com/eskelinenantti/zipln/internal/test/mock"
 	"github.com/eskelinenantti/zipln/internal/test/spy"
 	"github.com/google/go-cmp/cmp"
@@ -32,15 +33,19 @@ func TestExecuteErrors(t *testing.T) {
 		wait                bool
 		want                string
 	}{
-		{"missing fd in popup", "herdr", "", shell.NotInstalledError{Cmd: "fd"}, true, "brew install fd fzf git"},
-		{"missing fzf in popup", "herdr", "", shell.NotInstalledError{Cmd: "fzf"}, true, "brew install fd fzf git"},
+		{"missing fd in popup", "herdr", "", shell.NotInstalledError{Cmd: "fd"}, true, "brew install fd\n"},
+		{"missing fzf in popup", "herdr", "", shell.NotInstalledError{Cmd: "fzf"}, true, "brew install fzf\n"},
+		{"missing multiple tools", "herdr", "", shell.MissingToolsError{Tools: []string{"fd", "fzf"}}, true, "brew install fd fzf\n"},
 		{"auto Herdr", "auto", "1", errors.New("workspace failed"), true, "workspace failed"},
 		{"editor configuration", "herdr", "1", ErrEditorEnvNotSet, true, "export EDITOR=vim"},
-		{"tmux override", "tmux", "1", errors.New("failed"), false, "failed"},
-		{"auto outside Herdr", "auto", "", errors.New("failed"), false, "failed"},
+		{"tmux override", "tmux", "1", errors.New("failed"), true, "failed"},
+		{"auto outside Herdr", "auto", "", errors.New("failed"), true, "failed"},
 		{"success or cancellation", "herdr", "1", nil, false, ""},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			if strings.HasPrefix(tt.want, "brew install") && !(path.Path{}).Contains("brew") {
+				tt.want = "Install the missing tools with your package manager"
+			}
 			t.Setenv("HERDR_ENV", tt.herdrEnv)
 			cmd := &cobra.Command{Use: "zipln", RunE: func(*cobra.Command, []string) error { return tt.err }}
 			cmd.Flags().String("mux", "auto", "")
@@ -67,7 +72,7 @@ func TestExecuteErrors(t *testing.T) {
 }
 
 func TestExecuteKeepsHerdrErrorOpenUntilAcknowledged(t *testing.T) {
-	for _, acknowledgment := range []string{"\n", ""} {
+	for _, acknowledgment := range []string{"\n", "text\n", ""} {
 		t.Run(fmt.Sprintf("input %q", acknowledgment), func(t *testing.T) {
 			cmd := &cobra.Command{Use: "zipln", RunE: func(*cobra.Command, []string) error {
 				return shell.NotInstalledError{Cmd: "fzf"}
@@ -78,8 +83,12 @@ func TestExecuteKeepsHerdrErrorOpenUntilAcknowledged(t *testing.T) {
 			input, writer := io.Pipe()
 			t.Cleanup(func() { input.Close(); writer.Close() })
 			reading := make(chan struct{})
+			var started bool
 			cmd.SetIn(readerFunc(func(p []byte) (int, error) {
-				close(reading)
+				if !started {
+					close(reading)
+					started = true
+				}
 				return input.Read(p)
 			}))
 			done := make(chan int, 1)
@@ -106,6 +115,30 @@ func TestExecuteKeepsHerdrErrorOpenUntilAcknowledged(t *testing.T) {
 				}
 			case <-time.After(5 * time.Second):
 				t.Fatal("did not exit after acknowledgment or EOF")
+			}
+		})
+	}
+}
+
+func TestInstallHelpHomebrew(t *testing.T) {
+	for _, hasBrew := range []bool{true, false} {
+		t.Run(fmt.Sprintf("brew installed %t", hasBrew), func(t *testing.T) {
+			shellPath := mock.Path{}
+			if !hasBrew {
+				shellPath.Missing = []string{"brew"}
+			}
+			help := installHelp([]string{"fd", "fzf"}, shellPath)
+			if hasBrew {
+				if !strings.Contains(help, "brew install fd fzf\n") {
+					t.Fatalf("missing Homebrew command: %s", help)
+				}
+			} else {
+				if strings.Contains(help, "brew") {
+					t.Fatalf("Homebrew suggested without brew on PATH: %s", help)
+				}
+				if !strings.Contains(help, "your package manager") || !strings.Contains(help, "$PATH") {
+					t.Fatalf("missing installation guidance: %s", help)
+				}
 			}
 		})
 	}
