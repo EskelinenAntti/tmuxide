@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -42,10 +44,12 @@ For example, to use Vim as your editor, add the following line to your ~/.zshrc 
 				
 export EDITOR=vim`
 
-var helpCommandNotInstalledTemplate = `
-Did not find %s, which is a required dependency for zipln.
-
-Install %[1]s with your system's package manager and make sure it is on $PATH.`
+func installHelp(commands []string, shellPath path.ShellPath) string {
+	if shellPath.Contains("brew") {
+		return "\nTo install, run:\n\n  brew install " + strings.Join(commands, " ") + "\n"
+	}
+	return "\nInstall the missing tools with your package manager and make sure they're on $PATH."
+}
 
 var ErrEditorNotInstalled = errors.New("editor not installed")
 var ErrEditorEnvNotSet = errors.New("editor not configured")
@@ -110,24 +114,39 @@ func isDir(path string) (bool, error) {
 }
 
 func Execute() {
-	rootCmd.SilenceUsage = true
-	rootCmd.SilenceErrors = false
-	err := rootCmd.Execute()
+	if code := execute(rootCmd); code != 0 {
+		os.Exit(code)
+	}
+}
+
+func execute(cmd *cobra.Command) int {
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = false
+	err := cmd.Execute()
 
 	if err == nil {
-		return
+		return 0
 	}
 
 	if errors.Is(err, ErrEditorEnvNotSet) {
-		rootCmd.PrintErrln(helpNoEditorConfigured)
+		cmd.PrintErrln(helpNoEditorConfigured)
 	}
 
 	var commandNotInstalled shell.NotInstalledError
-	if errors.As(err, &commandNotInstalled) {
-		rootCmd.PrintErrln(fmt.Sprintf(helpCommandNotInstalledTemplate, commandNotInstalled.Cmd))
+	var missingTools shell.MissingToolsError
+	if errors.As(err, &missingTools) {
+		cmd.PrintErrln(installHelp(missingTools.Tools, path.Path{}))
+	} else if errors.As(err, &commandNotInstalled) {
+		cmd.PrintErrln(installHelp([]string{commandNotInstalled.Cmd}, path.Path{}))
 	}
 
-	os.Exit(1)
+	waitForEnter(cmd.InOrStdin(), cmd.ErrOrStderr())
+	return 1
+}
+
+func waitForEnter(input io.Reader, output io.Writer) {
+	fmt.Fprint(output, "\nPress Enter to close.")
+	_, _ = bufio.NewReader(input).ReadString('\n')
 }
 
 func editorCmd(path path.ShellPath) ([]string, error) {

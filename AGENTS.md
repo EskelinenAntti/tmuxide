@@ -1,0 +1,1 @@
+- Only update README.md when changing a core user flow or adding a new one.

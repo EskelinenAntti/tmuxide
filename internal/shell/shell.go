@@ -3,6 +3,7 @@ package shell
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/eskelinenantti/zipln/internal/shell/fd"
 	"github.com/eskelinenantti/zipln/internal/shell/fzf"
@@ -26,6 +27,22 @@ func (e NotInstalledError) Unwrap() error {
 	return ErrCommandNotInstalled
 }
 
+type MissingToolsError struct {
+	Tools []string
+}
+
+func (e MissingToolsError) Error() string {
+	return "couldn't find " + strings.Join(e.Tools, ", ")
+}
+
+func (e MissingToolsError) Unwrap() []error {
+	errs := make([]error, len(e.Tools))
+	for i, command := range e.Tools {
+		errs[i] = NotInstalledError{Cmd: command}
+	}
+	return errs
+}
+
 type Shell struct {
 	Fd  fd.Cmd
 	Fzf fzf.Cmd
@@ -33,10 +50,14 @@ type Shell struct {
 }
 
 func Init(path path.ShellPath, runner runner.Runner) (Shell, error) {
+	var missing []string
 	for _, dependency := range dependencies {
-		if err := assertInstalled(dependency, path); err != nil {
-			return Shell{}, err
+		if !path.Contains(dependency) {
+			missing = append(missing, dependency)
 		}
+	}
+	if len(missing) > 0 {
+		return Shell{}, MissingToolsError{Tools: missing}
 	}
 
 	return Shell{
@@ -44,11 +65,4 @@ func Init(path path.ShellPath, runner runner.Runner) (Shell, error) {
 		Fzf: fzf.Cmd{Runner: runner},
 		Git: git.Cmd{Runner: runner},
 	}, nil
-}
-
-func assertInstalled(command string, path path.ShellPath) error {
-	if !path.Contains(command) {
-		return NotInstalledError{Cmd: command}
-	}
-	return nil
 }
